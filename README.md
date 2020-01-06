@@ -6,68 +6,118 @@ HOPR is a privacy-preserving messaging protocol that incentivizes users to parti
 ### For further details, see the full [protocol specification on the wiki](../../wiki)
 
 ## Proof of Concept
-The following is an early and unstable proof of concept that highlights the functionality of HOPR. Use it at your own risk. While we're giving our best to buidl a secure and privacy-preserving base layer of the web of today and tomorrow, we do not guaratee that your funds are safu and we do not guarantee that your communication is really metadata-private.
+The following is an early and unstable proof of concept that highlights the functionality of HOPR. Use it at your own risk. While we're giving our best to buidl a secure and privacy-preserving base layer of the web of today and tomorrow, we do not guaratee that your funds are safe and we do not guarantee that your communication is really metadata-private.
 
 ### Dependencies
 The current implementation of HOPR is in JavaScript so you need:
-- [`Node.js`](https://nodejs.org/en/download/) >= 10
-- [`yarn`](https://yarnpkg.com/en/docs/install)
+- [`Node.js`](https://nodejs.org/en/download/) 11
+- [`yarn`](https://yarnpkg.com/en/docs/install) >= 1.19.0
 
-On Windows? 👀 here: [Windows Setup](../../wiki/Setup#Windows)
+<!-- On Windows? 👀 here: [Windows Setup](../../wiki/Setup#Windows) -->
 
 ### Get HOPR!
 
-Start by cloning this repository and install it:
+Start by cloning this repository and let `yarn` install the dependencies:
 ```sh
-git clone https://github.com/validitylabs/hopr.git
-cd hopr
+git clone https://github.com/hoprnet/hopr-core.git
+cd hopr-core
 yarn install
 ```
 
-### Setup Ethereum accounts
-You need to have an account with (Ropsten testnet) Ether on it to pay relayers for their services and to open payment channels. The software needs access to sign transactions and therefore you need to provide a private key corresponding to an Ethereum address. The private key corresponding to the Ethereum address hodling some Ropsten ETH needs to be configured in the config file.
+### Project structure
 
-1. [`Generate an Ethereum private key`](../../wiki/Setup/#PrivateKeyGeneration). 
-2. Rename the settings file `.env.example` to `.env`
-3. Add your private key (make sure the private key starts with `0x`) to the settings file by replacing the value in the for e.g. private key 0 (you can easily run HOPR from multiple identities, the index of which is passed via command line parameter in the last step):
-```markdown
-DEMO_ACCOUNTS = 6
-DEMO_ACCOUNT_0_PRIVATE_KEY = 0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-DEMO_ACCOUNT_1_PRIVATE_KEY = 0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-DEMO_ACCOUNT_2_PRIVATE_KEY = 0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-DEMO_ACCOUNT_3_PRIVATE_KEY = 0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-DEMO_ACCOUNT_4_PRIVATE_KEY = 0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-DEMO_ACCOUNT_5_PRIVATE_KEY = 0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-DEMO_ACCOUNT_6_PRIVATE_KEY = 0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+For the time being, HOPR comes with a builtin chat client that is mostly used for demonstration purposes. It will not be part of HOPR in future releases.
+
+```sh
+.
+├── db # will be generated at startup
+├── migrations # contains Truffle migration scripts
+├── src # the hopr src code
+|   ├── ...
+├── ...
+├── hopr.js # contains the demo chat application
+├── .env # configuration
+└── config.js # parses the .env file
 ```
-4. Please make sure that you have more than 0.15 ETH on each account. You may want to use the [faucet](https://faucet.ropsten.be/) to receive some Ropsten testnet Ether and transfer them to funding account.
 
+### Setup and configuration
 
-### Setup Ethereum RPC endpoint
-HOPR works with your own node running e.g. locally or a hosted service like Infura (note that this limits your privacy!)
+For demonstration and testing purposes, `hopr` allows to run multiple instances of itself in the same folder. It will create individual database folders for each instance.
+
+```sh
+# normal usage
+node hopr
+
+# demo usage
+node hopr <instance number, e. g. 0>
+```
+
+#### Demo accounts
+
+In case you intend to use demo instances, make sure that you insert the private keys of these accounts into `.env.example`
+
+```
+DEMO_ACCOUNT_<number>_PRIVATE_KEY = <private key, e.g. 0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef>
+```
+
+Also make sure that you insert the amount of demo accounts that you intend to use.
+
+```
+DEMO_ACCOUNTS = <number of demo accounts>
+```
+
+If you need help when creating Ethereum accounts and/or equip them with Testnet Ether, follow these [instructions](../../wiki/Setup/#PrivateKeyGeneration). You also may want to use the [faucet](https://faucet.ropsten.be/) to receive some Ropsten testnet Ether and transfer them to funding account.
+
+Please make sure that you have at least 0.15 (testnet) Ether on each of these accounts.
+
+#### Ethereum RPC endpoint
+
+In order to perform any on-chain interactions, you will need a connection to an Ethereum node. This can be a local Ganache testnet, a fully-fledged Ethereum node running on your computer or an Ethereum node that is run by a third party like Infura (note that this limits your privacy!).
 
 #### Infura setup
 1. Sign up for [`Infura and obtain your Project ID`](../../wiki/Setup/#Infura).
-2. Replace the Infura Project ID with your own:
+2. Insert the project id into `.env.example` :
 ```markdown
+...
 # Infura config
 INFURA_PROJECT_ID = 0123456789abcdef0123456789abcbde
 ```
 
-#### Local Ethereum node (e.g. Geth)
-Overwrite the endpoint that sets up Infura by default
-```markdown
-PROVIDER = ${PROVIDER_ROPSTEN}
+#### Ethereum network
+
+HOPR supports multiple Ethereum networks, e.g. `mainnet` or `ropsten` testnet as well as `ganache`. Make sure that you change `NETWORK` in `env.example` according to the network you intend to use.
+
+```
+NETWORK = ganache
 ```
 
-with your own (e.g. local) Ethereum node:
-```markdown
-PROVIDER = http://localhost:8545
+Also make sure that you have set a connection endpoint for that network.
+
 ```
+PROVIDER_<YOUR NETWORK> = <url to the RPC endpoint, e.g. http://localhost:8545>
+```
+
+#### Bootstrap node
+
+HOPR is supposed to be a decentralized network, so in order to bootstrap the network and tell recently joined nodes about the participants of the network, there needs to be a bootstrap node that is publicly known. Make sure that you set one or more bootstrap nodes in your `.env.example`.
+
+```
+BOOTSTRAP_NODES = <Multiaddr of your node, e.g. /ip4/142.93.163.250/tcp/9091/ipfs/16Uiu2HAm5xi9cMSE7rnW3wGtAbRR2oJDSJXbrzHYdgdJd7rNJtFf>
+```
+
+To start a node, run `node hopr -b`
 
 ### Run HOPR!
+
 Now that everything is set up you should be able to run HOPR via
+
 ```sh
-node hopr 0
+mv .env.example .env
+
+# normal usage
+node hopr
+
+# demo usage
+node hopr <number>
 ```
 The parameter `0` references the index of the private key from the settings file that controls some Ropsten testnet Ether (see above).

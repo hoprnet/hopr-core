@@ -3848,8 +3848,8 @@ libp2p-kad-dht@robertkiel/js-libp2p-kad-dht:
     multihashing-async "~0.6.0"
     p-queue "^5.0.0"
     p-times "^2.1.0"
-    peer-id "~0.12.3"
-    peer-info "~0.16.0"
+    peer-id "~0.13.3"
+    peer-info "~0.16.2"
     priorityqueue "~0.2.1"
     promise-to-callback "^1.0.0"
     promisify-es6 "^1.0.3"
@@ -4793,7 +4793,7 @@ peer-book@^0.9.1:
     peer-id "~0.12.2"
     peer-info "~0.15.1"
 
-peer-id@^0.12.2, peer-id@~0.12.2:
+peer-id@^0.12.2, peer-id@~0.12.2, peer-id@~0.12.3:
   version "0.12.5"
   resolved "https://registry.yarnpkg.com/peer-id/-/peer-id-0.12.5.tgz#b22a1edc5b4aaaa2bb830b265ba69429823e5179"
   integrity sha512-3xVWrtIvNm9/OPzaQBgXDrfWNx63AftgFQkvqO6YSZy7sP3Fuadwwbn54F/VO9AnpyW/26i0WRQz9FScivXrmw==
@@ -4823,7 +4823,7 @@ peer-info@~0.15.1:
     peer-id "~0.12.2"
     unique-by "^1.0.0"
 
-peer-info@~0.16.2:
+peer-info@~0.16.0, peer-info@~0.16.2:
   version "0.16.2"
   resolved "https://registry.yarnpkg.com/peer-info/-/peer-info-0.16.2.tgz#e3ea76f938246f1ac78848fbb85901730301bdb6"
   integrity sha512-SUgLe7ETUKWBVFcmJT8xfp2fJFvW0OrNULRp8ywmQBxeHxpBIkFEqKRbpTxPbrjj39hO4l/498AGcQgf2QW/Aw==
