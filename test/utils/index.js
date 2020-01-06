@@ -124,13 +124,20 @@ module.exports.stakeEther = async node => {
 module.exports.startBlockchain = () =>
     new Promise(async (resolve, reject) => {
         createDirectoryIfNotExists('db/testnet')
+        const accounts = []
+        for (let i = 0; i <= process.env['DEMO_ACCOUNTS']; i++) {
+            accounts.push({
+                balance: `0x${toWei(new BN(100), 'ether').toString('hex')}`,
+                secretKey: process.env[`DEMO_ACCOUNT_${i}_PRIVATE_KEY`]
+            })
+        }
         const server = Ganache.server({
-            accounts: [
+            accounts: accounts.concat([
                 {
                     balance: `0x${toWei(new BN(100), 'ether').toString('hex')}`,
                     secretKey: process.env['FUND_ACCOUNT_PRIVATE_KEY']
                 }
-            ],
+            ]),
             network_id: '1',
             gasPrice: process.env['GAS_PRICE'],
             db: LevelDown(`${process.cwd()}/db/testnet`),

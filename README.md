@@ -114,6 +114,13 @@ To start a local Ganache-driven testnet, run `yarn startTestnet`
 Successfully started local Ganache instance at 'ws://[::]:8545'.
 ```
 
+Once you have seen that message, open another terminal and run `yarn deployContract` to deploy the smart contract.
+
+```
+Deployed contract on ganache at 0x4A3CDa9bbfc63ee1Db1fC749d86B769334fe27Fb
+Nonce is now 0.
+```
+
 #### Bootstrap node
 
 HOPR is supposed to be a decentralized network, so in order to bootstrap the network and tell recently joined nodes about the participants of the network, there needs to be a bootstrap node that is publicly known. Make sure that you set one or more bootstrap nodes in your `.env.example`.
