@@ -116,9 +116,15 @@ Successfully started local Ganache instance at 'ws://[::]:8545'.
 
 Once you have seen that message, open another terminal and run `yarn deployContract` to deploy the smart contract.
 
-```
-Deployed contract on ganache at 0x4A3CDa9bbfc63ee1Db1fC749d86B769334fe27Fb
-Nonce is now 0.
+In case you have set `NETWORK` to something different from `ganache` like `mainnet` or `ropsten`, please make sure that you have set an `ETHERSCAN_API_KEY` in your `.env.example` file.
+
+
+```sh
+mv .env.example .env
+
+yarn deployContract
+// Deployed contract on ganache at 0x4A3CDa9bbfc63ee1Db1fC749d86B769334fe27Fb
+// Nonce is now 0.
 ```
 
 #### Bootstrap node
@@ -131,14 +137,17 @@ BOOTSTRAP_NODES = <Multiaddr of your node, e.g. /ip4/142.93.163.250/tcp/9091/ipf
 
 To start a bootstrap node, run `node hopr -b`
 
-```
-Welcome to HOPR!
+```sh
+mv .env.example .env
 
-Available under the following addresses:
- /ip4/127.0.0.1/tcp/9091/ipfs/16Uiu2HAm5xi9cMSE7rnW3wGtAbRR2oJDSJXbrzHYdgdJd7rNJtFf
- /ip4/192.168.1.106/tcp/9091/ipfs/16Uiu2HAm5xi9cMSE7rnW3wGtAbRR2oJDSJXbrzHYdgdJd7rNJtFf
-
-... running as bootstrap node!.
+node hopr -b
+// Welcome to HOPR!
+//
+// Available under the following addresses:
+//  /ip4/127.0.0.1/tcp/9091/ipfs/16Uiu2HAm5xi9cMSE7rnW3wGtAbRR2oJDSJXbrzHYdgdJd7rNJtFf
+//  /ip4/192.168.1.106/tcp/9091/ipfs/16Uiu2HAm5xi9cMSE7rnW3wGtAbRR2oJDSJXbrzHYdgdJd7rNJtFf
+//
+// ... running as bootstrap node!.
 ```
 
 ### Run HOPR!
