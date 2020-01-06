@@ -110,7 +110,7 @@ HOPR is supposed to be a decentralized network, so in order to bootstrap the net
 BOOTSTRAP_NODES = <Multiaddr of your node, e.g. /ip4/142.93.163.250/tcp/9091/ipfs/16Uiu2HAm5xi9cMSE7rnW3wGtAbRR2oJDSJXbrzHYdgdJd7rNJtFf>
 ```
 
-To start a node, run `node hopr -b`
+To start a bootstrap node, run `node hopr -b`
 
 ### Run HOPR!
 
@@ -125,4 +125,3 @@ node hopr
 # demo usage
 node hopr <number>
 ```
-The parameter `0` references the index of the private key from the settings file that controls some Ropsten testnet Ether (see above).
