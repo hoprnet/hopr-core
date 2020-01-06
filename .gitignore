@@ -21,3 +21,6 @@ db/
 # Exclude .env files
 .env
 .env.save
+
+# Exclude Typescript builds
+lib/
