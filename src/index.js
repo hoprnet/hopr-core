@@ -237,7 +237,16 @@ class Hopr extends libp2p {
         for (let n = 0; n < msg.length / PACKET_SIZE; n++) {
             promises.push(
                 new Promise(async (resolve, reject) => {
-                    let intermediateNodes = await this.getIntermediateNodes(destination)
+                    let intermediateNodes
+                    try {
+                        intermediateNodes = await this.getIntermediateNodes(destination)
+                    } catch (err) {
+                        return reject(err.message.toString())
+                    }
+
+                    if (intermediateNodes.length < MAX_HOPS - 1) {
+                        return reject('Could not find enough intermediate nodes to build a path.')
+                    }
 
                     let path = intermediateNodes.concat(destination)
 
