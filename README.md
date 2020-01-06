@@ -63,7 +63,7 @@ node hopr <instance number, e. g. 0>
 
 #### Demo accounts
 
-In case you intend to use demo instances, make sure that you insert the private keys of these accounts into `.env.example`
+In case you intend to use demo instances, make sure that you insert the private keys of these accounts into your `.env.example` file.
 
 ```
 DEMO_ACCOUNT_<number>_PRIVATE_KEY = <private key, e.g. 0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef>
@@ -94,10 +94,10 @@ INFURA_PROJECT_ID = 0123456789abcdef0123456789abcbde
 
 #### Ethereum network
 
-HOPR supports multiple Ethereum networks, e.g. `mainnet` or `ropsten` testnet as well as `ganache`. Make sure that you change `NETWORK` in `env.example` according to the network you intend to use.
+HOPR supports multiple Ethereum networks, e.g. `mainnet` or `ropsten` testnet as well as `ganache`. Make sure that you change the `NETWORK`-property in the `env.example` file according to the network you intend to use.
 
 ```
-NETWORK = ganache
+NETWORK = <name of the network, e.g. ganache>
 ```
 
 Also make sure that you have set a connection endpoint for that network.
@@ -123,7 +123,7 @@ Nonce is now 0.
 
 #### Bootstrap node
 
-HOPR is supposed to be a decentralized network, so in order to bootstrap the network and tell recently joined nodes about the participants of the network, there needs to be a bootstrap node that is publicly known. Make sure that you set one or more bootstrap nodes in your `.env.example`.
+HOPR is supposed to be a decentralized network, so in order to bootstrap the network and tell recently joined nodes about the participants of the network, there needs to be a bootstrap node that is publicly known. Make sure that you set one or more bootstrap nodes in your `.env.example` file.
 
 ```
 BOOTSTRAP_NODES = <Multiaddr of your node, e.g. /ip4/142.93.163.250/tcp/9091/ipfs/16Uiu2HAm5xi9cMSE7rnW3wGtAbRR2oJDSJXbrzHYdgdJd7rNJtFf>
@@ -146,6 +146,7 @@ Available under the following addresses:
 Now that everything is set up you should be able to run HOPR via
 
 ```sh
+# finally move the prepared configuration file
 mv .env.example .env
 
 # normal usage
