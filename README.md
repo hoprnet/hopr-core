@@ -25,6 +25,10 @@ The current implementation of HOPR is in JavaScript so you need:
 Start by cloning this repository and let `yarn` install the dependencies:
 ```sh
 git clone https://github.com/hoprnet/hopr-core.git
+
+# in case you are using NVM (Node Versioning Manager), run
+nvm use
+
 cd hopr-core
 yarn install
 ```
@@ -102,6 +106,14 @@ Also make sure that you have set a connection endpoint for that network.
 PROVIDER_<YOUR NETWORK> = <url to the RPC endpoint, e.g. http://localhost:8545>
 ```
 
+#### Local testnet
+
+To start a local Ganache-driven testnet, run `yarn startTestnet`
+
+```
+Successfully started local Ganache instance at 'ws://[::]:8545'.
+```
+
 #### Bootstrap node
 
 HOPR is supposed to be a decentralized network, so in order to bootstrap the network and tell recently joined nodes about the participants of the network, there needs to be a bootstrap node that is publicly known. Make sure that you set one or more bootstrap nodes in your `.env.example`.
@@ -111,6 +123,16 @@ BOOTSTRAP_NODES = <Multiaddr of your node, e.g. /ip4/142.93.163.250/tcp/9091/ipf
 ```
 
 To start a bootstrap node, run `node hopr -b`
+
+```
+Welcome to HOPR!
+
+Available under the following addresses:
+ /ip4/127.0.0.1/tcp/9091/ipfs/16Uiu2HAm5xi9cMSE7rnW3wGtAbRR2oJDSJXbrzHYdgdJd7rNJtFf
+ /ip4/192.168.1.106/tcp/9091/ipfs/16Uiu2HAm5xi9cMSE7rnW3wGtAbRR2oJDSJXbrzHYdgdJd7rNJtFf
+
+... running as bootstrap node!.
+```
 
 ### Run HOPR!
 
