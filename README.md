@@ -4,7 +4,7 @@
 
 HOPR is a privacy-preserving messaging protocol that incentivizes users to participate in the network. It provides privacy by relaying messages via several relay nodes to the recipient. Relay nodes are getting paid via payment channels for their services.
 
-### For further details, see the full [protocol specification on the wiki](../../wiki)
+### For further details, see the [protocol specification on the wiki](../../wiki)
 
 Note that the documentation is under active development and does not always represent the latest version of the protocol.
 
@@ -18,7 +18,8 @@ The current implementation of HOPR is in JavaScript so you need:
 - [`Node.js`](https://nodejs.org/en/download/) 11
 - [`yarn`](https://yarnpkg.com/en/docs/install) >= 1.19.0
 
-<!-- On Windows? 👀 here: [Windows Setup](../../wiki/Setup#Windows) -->
+#### [OSX Setup](../../wiki/Setup#Windows)
+#### [Windows Setup](../../wiki/Setup#Windows)
 
 ### Get HOPR!
 
