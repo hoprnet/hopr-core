@@ -45,7 +45,7 @@ For the time being, HOPR comes with a builtin chat client that is mostly used fo
 ├── db # generated at startup
 ├── migrations # Truffle migration scripts
 ├── src # the hopr source code
-|   ├── ...
+|   └── ...
 ├── .env # configuration
 ├── config.js # parses the .env file
 ├── hopr.js #  command-line interface
