@@ -26,11 +26,11 @@ The current implementation of HOPR is in JavaScript so you need:
 Start by cloning this repository and let `yarn` install the dependencies:
 ```
 $ git clone https://github.com/hoprnet/hopr-core.git
+$ cd hopr-core
 
 # in case you are using NVM (Node Versioning Manager), run
 $ nvm use
 
-$ cd hopr-core
 $ yarn install
 
 $ mv .env.example .env
