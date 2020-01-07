@@ -4,6 +4,11 @@ const dotenv = require('dotenv')
 const dotenvExpand = require('dotenv-expand')
 
 const myEnv = dotenv.config()
+
+if (myEnv.error) {
+    throw myEnv.error.message
+}
+
 dotenvExpand(myEnv)
 
 const { toWei } = require('web3-utils')
