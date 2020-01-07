@@ -50,7 +50,7 @@ class Hopr extends libp2p {
             // The libp2p modules for this libp2p bundle
             modules: {
                 transport: [
-                    TCP,
+                    TCP
                     // WebRTCv4,
                     // WebRTCv6
                 ],
@@ -125,7 +125,14 @@ class Hopr extends libp2p {
      * @throws an error if none of the bootstrapservers is online
      */
     async connectToBootstrapServers() {
-        const results = await Promise.all(this.bootstrapServers.map(addr => this.dial(addr).then(() => true, () => false)))
+        const results = await Promise.all(
+            this.bootstrapServers.map(addr =>
+                this.dial(addr).then(
+                    () => true,
+                    () => false
+                )
+            )
+        )
 
         if (!results.some(online => online)) throw Error('Unable to connect to any bootstrap server.')
     }
@@ -331,11 +338,18 @@ class Hopr extends libp2p {
     }
 
     static openDatabase(db_dir, options) {
-        if (options && Number.isInteger(options.id)) {
-            // Only for unit testing !!!
-            db_dir = `${db_dir}/node ${options.id}`
-        } else if (options && options['bootstap-node']) {
-            db_dir = `${db_dir}/bootstrap ${options.id}`
+        if (options != null) {
+            db_dir += `/${process.env['NETWORK']}/`
+            if (Number.isInteger(options.id) && options['bootstrap-node'] == false) {
+                // For testing ...
+                db_dir += `node_${options.id}`
+            } else if (!Number.isInteger(options.id) && options['bootstrap-node'] == false) {
+                db_dir += `node`
+            } else if (!Number.isInteger(options.id) && options['bootstrap-node'] == true) {
+                db_dir += `bootstrap`
+            } else {
+                throw Error(`Cannot run hopr with index ${options.id} as bootstrap node.`)
+            }
         }
 
         createDirectoryIfNotExists(db_dir)

@@ -273,7 +273,7 @@ async function runAsRegularNode() {
     const code = (await node.paymentChannels.web3.eth.getCode(process.env['CONTRACT_ADDRESS'])).replace(/0x/, '')
 
     if (code.length == 0) {
-        console.log(chalk.red(`There seems to be no smart contract a address ${process.env['CONTRACT_ADDRESS']}. Please make sure that you deploy a smart contract before trying to call its functions.`))
+        console.log(chalk.red(`There seems to be no smart contract a address ${process.env['CONTRACT_ADDRESS']}. Please make sure that you deploy a smart contract before trying to call its functions.\n\nYou might want tu run:\n\t${chalk.bold('yarn deployContract')}`))
         return stopNode()
     }
 
