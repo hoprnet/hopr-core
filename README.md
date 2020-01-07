@@ -18,7 +18,7 @@ The current implementation of HOPR is in JavaScript so you need:
 - [`Node.js`](https://nodejs.org/en/download/) 11
 - [`yarn`](https://yarnpkg.com/en/docs/install) >= 1.19.0
 
-#### [OSX Setup](../../wiki/Setup#Windows)
+#### [OSX Setup](../../wiki/Setup#Mac--OSX)
 #### [Windows Setup](../../wiki/Setup#Windows)
 
 ### Get HOPR!
