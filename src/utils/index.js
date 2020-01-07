@@ -589,7 +589,13 @@ function updateContractAddress(fileNames, contractAddress) {
 
     return Promise.all(
         fileNames.map(async filename => {
-            let file = (await fsPromise.readFile(filename)).toString()
+            let file
+            try {
+                file = (await fsPromise.readFile(filename)).toString()
+            } catch (err) {
+                return
+            }
+
             const regex = new RegExp(`CONTRACT_ADDRESS_${process.env.NETWORK.toUpperCase()}\\s{0,}=(\\s{0,}0x[0-9a-fA-F]{0,})?`, 'g')
 
             file = file.replace(regex, `CONTRACT_ADDRESS_${process.env.NETWORK.toUpperCase()} = ${contractAddress}`)
