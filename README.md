@@ -173,3 +173,23 @@ $ node hopr <number>
 // Funds: 100 ETH
 // Stake: 0 ETH
 ```
+
+### Testnet testing
+
+Start Ganache:
+```
+$ yarn startTestnet
+```
+
+Start bootstrap node:
+```
+$ node hopr -b
+```
+
+Start HOPR nodes:
+```
+$ node hopr 0
+$ node hopr 1
+$ node hopr 2
+$ node hopr 3
+```
