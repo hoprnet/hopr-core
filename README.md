@@ -38,8 +38,9 @@ The current implementation of HOPR is in JavaScript so you need:
 - [`yarn`](https://yarnpkg.com/en/docs/install) >= 1.19.0
 
 You might need to setup further operating system dependent, please refer to the wiki links below for more details: 
-- [OSX Setup](../../wiki/Setup#Mac--OSX)
-- [Windows Setup](../../wiki/Setup#Windows)
+- [Ubuntu](../../wiki/Setup#Ubuntu)
+- [macOS](../../wiki/Setup#macOS)
+- [Windows](../../wiki/Setup#Windows)
 
 ## Get HOPR
 
@@ -85,7 +86,7 @@ $ yarn startTestnet
 ```
 
 ## Deploy Contracts
-Once Ganache is up and running, open another terminal (in many terminal applications you can simply open a new tab in the terminal via `[Command]` + `[t]`) and run `yarn deployContract` to deploy the smart contract.
+Once Ganache is up and running, open another terminal (in many terminal applications you can simply open a new tab in the terminal via `[Command]` + `[t]`) and run `yarn deployContract` to deploy the smart contract. Just FYI, HOPR is using the account associated with the `FUND_ACCOUNT_PRIVATE_KEY` to deploy the smart contract. 
 
 ```
 $ yarn deployContract
