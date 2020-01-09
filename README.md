@@ -48,7 +48,8 @@ Start by cloning this repository, let `yarn` install the dependencies and change
 $ git clone https://github.com/hoprnet/hopr-core.git
 $ cd hopr-core
 
-# in case you are using NVM (Node Versioning Manager), run
+# in case you are using NVM (Node Versioning Manager), run the following two commands:
+$ nvm install 11.15
 $ nvm use
 
 $ yarn install
