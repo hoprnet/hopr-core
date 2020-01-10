@@ -22,12 +22,13 @@ Note that the documentation is under active development and does not always repr
     - [Check Your Addresses](#check-your-addresses)
     - [Send Message](#send-message)
 - [Public Testnet - Here Be Dragons!](#public-testnet---here-be-dragons)
+  - [Bootstrap Node](#bootstrap-node)
   - [Ethereum RPC Endpoint](#ethereum-rpc-endpoint)
     - [Infura Setup](#infura-setup)
   - [Ethereum Network](#ethereum-network)
+  - [HOPR Contract Address](#hopr-contract-address)
   - [Accounts and Keys](#accounts-and-keys)
     - [Demo Accounts](#demo-accounts)
-  - [Bootstrap Node](#bootstrap-node)
 - [Project Structure](#project-structure)
 # Setup
 
@@ -226,6 +227,14 @@ The latency of the initial message is always longer than the following messages 
 
 The first public testnet has a few caveats and is likely going to be frustrating to test. You have been warned but you will get extra love for moving on. One major issue that we are currently solving is the missing NAT traversal which currently prevents you from receiving messages behind a router, mobile hotspot or alike. You also need to configure keys and settings as outlined below.
 
+## Bootstrap Node
+Make sure that you set one or more bootstrap nodes in your `.env` file.
+
+```
+BOOTSTRAP_NODES = <Multiaddr of your bootstrap node, e.g. /ip4/142.93.163.250/tcp/9091/ipfs/16Uiu2HAm5xi9cMSE7rnW3wGtAbRR2oJDSJXbrzHYdgdJd7rNJtFf>
+```
+This allows you to configure your own bootstrap node. For the public testnet we are running a public bootstrap node at hopr.network.
+
 ## Ethereum RPC Endpoint
 
 In order to perform any on-chain interactions, you will need a connection to an Ethereum node. This can be a local Ganache testnet, a fully-fledged Ethereum node running on your computer or an Ethereum node that is run by a third party like Infura (note that this limits your privacy!).
@@ -241,19 +250,22 @@ INFURA_PROJECT_ID = 0123456789abcdef0123456789abcbde
 
 ## Ethereum Network
 
-HOPR supports multiple Ethereum networks, e.g. `mainnet` or `ropsten` testnet as well as `ganache`. Make sure that you change the `NETWORK`-property in the `.env` file according to the network you intend to use.
+HOPR supports multiple Ethereum networks, e.g. mainnet or public testnets such as Rinkeby, Ropsten or Kovan as well as the local Ganache testnet which is used in the local HOPR testnet above. Make sure that you change the `NETWORK`-property in the `.env` file according to the network you intend to use, e.g.:
 
 ```
-NETWORK = <name of the network, e.g. ganache>
+NETWORK = kovan
 ```
 
-Also make sure that you have set a connection endpoint for that network.
+Also make sure that you have set a connection endpoint for that network. In case you work with Infura as your provider, no changes are necessary, HOPR is smart enough to understand that by changing your network as set above. Otherwise you can provide a custom provider:
 
 ```
 PROVIDER_<YOUR NETWORK> = <url to the RPC endpoint, e.g. http://localhost:8545>
 ```
 
-In case you have set `NETWORK` to something different than `ganache` like `mainnet` or `ropsten`, please make sure that you have set an `ETHERSCAN_API_KEY` in your `.env` file such that the contract gets verified on Etherscan. This is only required if you want to deploy the HOPR smart contracts.
+OPTIONAL: If you want to verify the smart contracts that you deploy on Etherscan and you have set `NETWORK` to something different than `ganache` like `mainnet` or `ropsten`, please make sure that you have set an `ETHERSCAN_API_KEY` in your `.env` file such that the contract gets verified on Etherscan. This is only required if you want to deploy the HOPR smart contracts in some public Ethereum net.
+
+## HOPR Contract Address
+Make sure to set the smart contract address of the HOPR payment channel. Ensure that this address is valid on the network that you chose above.
 
 ## Accounts and Keys
 
@@ -283,14 +295,6 @@ DEMO_ACCOUNT_<number>_PRIVATE_KEY = <private key, e.g. 0x0123456789abcdef0123456
 If you need help when creating Ethereum accounts and/or equip them with Testnet Ether, follow these [instructions](../../wiki/Setup/#PrivateKeyGeneration). You also may want to use the [faucet](https://faucet.ropsten.be/) to receive some Ropsten testnet Ether and transfer them to funding account.
 
 Please make sure that you have at least `0.15` (testnet) Ether on each of these accounts.
-
-## Bootstrap Node
-Make sure that you set one or more bootstrap nodes in your `.env` file.
-
-```
-BOOTSTRAP_NODES = <Multiaddr of your bootstrap node, e.g. /ip4/142.93.163.250/tcp/9091/ipfs/16Uiu2HAm5xi9cMSE7rnW3wGtAbRR2oJDSJXbrzHYdgdJd7rNJtFf>
-```
-This allows you to configure your own bootstrap node. For the public testnet we are running a public bootstrap node at hopr.network.
 
 # Project Structure
 
