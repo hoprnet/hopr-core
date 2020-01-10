@@ -22,13 +22,16 @@ Note that the documentation is under active development and does not always repr
     - [Check Your Addresses](#check-your-addresses)
     - [Send Message](#send-message)
 - [Public Testnet - Here Be Dragons!](#public-testnet---here-be-dragons)
+  - [Get Kovan Ether](#get-kovan-ether)
+  - [Set Network](#set-network)
+  - [Connect Node (e.g. Infura)](#connect-node-eg-infura)
   - [Bootstrap Node](#bootstrap-node)
-  - [Ethereum RPC Endpoint](#ethereum-rpc-endpoint)
-    - [Infura Setup](#infura-setup)
-  - [Ethereum Network](#ethereum-network)
+  - [Optional API Keys](#optional-api-keys)
   - [HOPR Contract Address](#hopr-contract-address)
   - [Accounts and Keys](#accounts-and-keys)
-    - [Demo Accounts](#demo-accounts)
+    - [Single Account Mode (Recommended)](#single-account-mode-recommended)
+    - [Multi Account Mode](#multi-account-mode)
+  - [Use HOPR Testnet](#use-hopr-testnet)
 - [Project Structure](#project-structure)
 # Setup
 
@@ -225,76 +228,90 @@ The latency of the initial message is always longer than the following messages 
 
 # Public Testnet - Here Be Dragons!
 
-The first public testnet has a few caveats and is likely going to be frustrating to test. You have been warned but you will get extra love for moving on. One major issue that we are currently solving is the missing NAT traversal which currently prevents you from receiving messages behind a router, mobile hotspot or alike. You also need to configure keys and settings as outlined below.
+The first public testnet has a few caveats and is likely going to be frustrating to test. You have been warned but you will get extra love for moving on. One major issue that we are currently solving is the missing NAT traversal which currently prevents you from receiving messages behind a router, mobile hotspot or alike. You also need to fund your account and adjust settings as outlined below.
 
-## Bootstrap Node
-Make sure that you set one or more bootstrap nodes in your `.env` file.
+## Get Kovan Ether
+The public HOPR testnet is running on the Ethereum Kovan testnet so that you do not have to pay real Ether. Get yourself some [Kovan Ether from the faucet](https://gitter.im/kovan-testnet/faucet). 
 
+## Set Network
+Configure your HOPR node to interface the Kovan testnet by setting the network in the `.env` file
 ```
-BOOTSTRAP_NODES = <Multiaddr of your bootstrap node, e.g. /ip4/142.93.163.250/tcp/9091/ipfs/16Uiu2HAm5xi9cMSE7rnW3wGtAbRR2oJDSJXbrzHYdgdJd7rNJtFf>
+# Network
+NETWORK = kovan
 ```
-This allows you to configure your own bootstrap node. For the public testnet we are running a public bootstrap node at hopr.network.
 
-## Ethereum RPC Endpoint
+## Connect Node (e.g. Infura)
+In order to perform any on-chain interactions, you will need a connection to an Ethereum node running the Kovan testnet. Note that using a third party like Infura limits your privacy! For our testnet purposes it is however sufficient.
 
-In order to perform any on-chain interactions, you will need a connection to an Ethereum node. This can be a local Ganache testnet, a fully-fledged Ethereum node running on your computer or an Ethereum node that is run by a third party like Infura (note that this limits your privacy!).
-
-### Infura Setup
 1. Sign up for [`Infura and obtain your Project ID`](../../wiki/Setup/#Infura).
-2. Insert the project id into `.env` :
-```markdown
-...
+2. Insert the Infura Project ID into the `.env` file:
+```
 # Infura config
 INFURA_PROJECT_ID = 0123456789abcdef0123456789abcbde
 ```
 
-## Ethereum Network
-
-HOPR supports multiple Ethereum networks, e.g. mainnet or public testnets such as Rinkeby, Ropsten or Kovan as well as the local Ganache testnet which is used in the local HOPR testnet above. Make sure that you change the `NETWORK`-property in the `.env` file according to the network you intend to use, e.g.:
-
-```
-NETWORK = kovan
-```
-
-Also make sure that you have set a connection endpoint for that network. In case you work with Infura as your provider, no changes are necessary, HOPR is smart enough to understand that by changing your network as set above. Otherwise you can provide a custom provider:
+## Bootstrap Node
+Uncomment the line of the public bootstrap node in your `.env` file and comment the line with the local bootstrap node that you used for the local testnet. In the end that section of the settings file should look as follows:
 
 ```
-PROVIDER_<YOUR NETWORK> = <url to the RPC endpoint, e.g. http://localhost:8545>
+# Bootstrap servers
+BOOTSTRAP_SERVERS = /dns4/hopr.network/tcp/${PORT}/ipfs/16Uiu2HAm5xi9cMSE7rnW3wGtAbRR2oJDSJXbrzHYdgdJd7rNJtFf
+# BOOTSTRAP_SERVERS = /ip4/127.0.0.1/tcp/${PORT}/ipfs/16Uiu2HAm3WbbQzwcaN7bVG5LRfYPSVXZydkMN6wHk7FZT69heSg7
 ```
+This allows you to configure your own bootstrap node. For the public testnet we are running a public bootstrap node at hopr.network.
 
-OPTIONAL: If you want to verify the smart contracts that you deploy on Etherscan and you have set `NETWORK` to something different than `ganache` like `mainnet` or `ropsten`, please make sure that you have set an `ETHERSCAN_API_KEY` in your `.env` file such that the contract gets verified on Etherscan. This is only required if you want to deploy the HOPR smart contracts in some public Ethereum net.
+## Optional API Keys
+If you want to verify the smart contracts that you deploy on Etherscan and you have set `NETWORK` to something different than `ganache` like `mainnet` or `kovan`, please make sure that you have set an `ETHERSCAN_API_KEY` in your `.env` file such that the contract gets verified on Etherscan. This is only required if you want to deploy the HOPR smart contracts in some public Ethereum net.
 
 ## HOPR Contract Address
-Make sure to set the smart contract address of the HOPR payment channel. Ensure that this address is valid on the network that you chose above.
+Make sure to set the smart contract address of the HOPR payment channel. Ensure that this address is valid on the network that you chose above. For the Ethereum Kovan testnet we are currently using the smart contract at address [0xebdb4082b08bcef3e286ac4dfc44b8ca61adcc4f](https://kovan.etherscan.io/address/0xebdb4082b08bcef3e286ac4dfc44b8ca61adcc4f).
 
 ## Accounts and Keys
+HOPR allows can be run in two modes: single account mode or multi account mode. The single-account mode is closer to a production setting and hence recommended for the public testnet while the multi-account mode is useful for testing multiple accounts on the same machine but it has plaintext private keys in the settings file which is a security risk.
 
-For demonstration and testing purposes, `hopr` allows to run multiple instances of itself in the same folder and from the same machine so that you can chat with yourself with the integrated PoC chat app. It will create individual database folders for each instance.
-
+### Single Account Mode (Recommended)
+Start hopr without any number parameter and it will ask you to provide a password to encrypt the generated private key. It will then generate your HOPR identity and a corresponding Ethereum address.
 ```
-# normal usage
 $ node hopr
+Welcome to HOPR!
 
-# demo usage
-$ node hopr <instance number, e. g. 0>
+(node:42198) ExperimentalWarning: queueMicrotask() is experimental.
+Please type in the password that will be used to encrypt the generated key. ***************
+
+Done. Using peerId 16Uiu2HAmNPVU9L5Fcb4Xn5W1Ws6e4TFSTUonX4YJkGrKyLjSRpdj
+
+<Buffer f8 b6 a0 2c a9 32 b0 1b 16 c8 df 60 a4 6b c9 8a 94 53 86 42 58 44 da 6e 51 73 cf 3e 39 42 b0 88 f2 83 f0 8c 23 3a 37 bd cb 4a 1b dc 89 10 60 72 b8 86 ... 134 more bytes>
+
+Available under the following addresses:
+ /ip4/127.0.0.1/tcp/9091/ipfs/16Uiu2HAmNPVU9L5Fcb4Xn5W1Ws6e4TFSTUonX4YJkGrKyLjSRpdj
+ /ip4/192.168.1.2/tcp/9091/ipfs/16Uiu2HAmNPVU9L5Fcb4Xn5W1Ws6e4TFSTUonX4YJkGrKyLjSRpdj
+
+Own Ethereum address: 0x94C1289565A62371CaC82D90bAEAA469eb2E77B7
+Funds: 0 ETH
+Stake: 0 ETH
+
+Staked Ether is less than 0.1 ETH. Do you want to increase the stake now? (Y/n):
 ```
+You cannot stake yet as your account has no funds, so go ahead and send some Kovan Ether to the Ethereum address shown on your screen. Then stop the HOPR node via `ctrl` + `c` and restart it once the Kovan Ether arrived.
 
-**Make sure that you prefix your private key with `0x`!**
+Next time you start the HOPR node (remember to use the same password as before) you will see your balance. 
 
-Also make sure that you insert the amount of demo accounts that you intend to use.
+### Multi Account Mode
+For demonstration and testing purposes, `hopr` allows you to run multiple instances of itself in the same folder and from the same machine so that you can chat with yourself with the integrated PoC chat app. It will create individual database folders for each instance. This is what we were running in the local testnet when starting hopr with the additional parameter `noder hopr 2` accessing the third private key from the `.env` file. You can 
 
-### Demo Accounts
-
-In case you intend to use demo instances, make sure that you insert the private keys of these accounts into your `.env` file.
+In case you intend to use demo instances with custom keys, make sure that you insert the private keys of these accounts into your `.env` file.
 
 ```
 DEMO_ACCOUNTS = <number of demo accounts, e.g. 6>
 DEMO_ACCOUNT_<number>_PRIVATE_KEY = <private key, e.g. 0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef>
 ```
 
-If you need help when creating Ethereum accounts and/or equip them with Testnet Ether, follow these [instructions](../../wiki/Setup/#PrivateKeyGeneration). You also may want to use the [faucet](https://faucet.ropsten.be/) to receive some Ropsten testnet Ether and transfer them to funding account.
+If you need help when creating Ethereum accounts and/or obtain Testnet Ether, follow these [instructions](../../wiki/Setup/#PrivateKeyGeneration).
 
-Please make sure that you have at least `0.15` (testnet) Ether on each of these accounts.
+## Use HOPR Testnet
+Stake some Kovan Ether and then proceed testing in the same way as with the [local testnet](#use-hopr).
+
+Please keep in mind that currently you can only use the public HOPR testnet with a public IP. If you are using a computer behind wifi router or mobile hotspot then this is usually not the case. Consider testing HOPR on a cloud machine with a public IP.
 
 # Project Structure
 
