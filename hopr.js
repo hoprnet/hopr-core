@@ -439,14 +439,12 @@ async function close(query) {
                 )
                 clearInterval(interval)
                 setTimeout(() => {
-                    readline.clearLine(process.stdin, 0)
                     rl.prompt()
                 })
             })
             .catch(err => {
                 console.log(err.message)
                 clearInterval(interval)
-                readline.clearLine(process.stdin, 0)
                 rl.prompt()
             })
         // @TODO suppress the message in case of an error
@@ -521,7 +519,6 @@ async function open(query) {
         .finally(() => {
             clearInterval(interval)
             setTimeout(() => {
-                readline.clearLine(process.stdin, 0)
                 rl.prompt()
             })
         })
@@ -630,7 +627,6 @@ async function crawl() {
         console.log(chalk.red(err.message))
     } finally {
         setTimeout(() => {
-            readline.clearLine(process.stdin, 0)
             rl.prompt()
         })
     }
