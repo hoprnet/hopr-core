@@ -8,6 +8,8 @@ For further details, see the [protocol specification on the wiki](../../wiki).
 
 Note that the documentation is under active development and does not always represent the latest version of the protocol.
 
+**Hint: There is a lot of development going on in our development → [branch](https://github.com/hoprnet/hopr-core/tree/jigsaw) ← !**
+
 ## Table of Contents
 - [Setup](#setup)
   - [Dependencies](#dependencies)
