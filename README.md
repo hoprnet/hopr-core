@@ -228,9 +228,11 @@ Message "Hello from HOPR!" latency 1019 ms.
 
 The latency of the initial message is always longer than the following messages as we open payment channels on demand. The production release will open payment channels before sending messages to reduce latency but on the other hand there will be some (configurable) artificial delay to allow for efficient packet mixing and thus privacy.
 
-# Public Testnet - Here Be Dragons!
+# Public Testnet - Here Be Dragons! 🐉
 
 The first public testnet has a few caveats and is likely going to be frustrating to test. You have been warned but you will get extra love for moving on. One major issue that we are currently solving is the missing NAT traversal which currently prevents you from receiving messages behind a router, mobile hotspot or alike. You also need to fund your account and adjust settings as outlined below.
+
+**⚠️ Please keep in mind that currently you can only use the public HOPR testnet with a public IP. If you are using a computer behind a wifi router or mobile hotspot then this is usually not the case. Consider testing HOPR on a virtual private server using a cloud provider able to issue your machine a public IP. ⚠️**
 
 ## Get Kovan Ether
 The public HOPR testnet is running on the Ethereum Kovan testnet so that you do not have to pay real Ether. Get yourself some [Kovan Ether from the faucet](https://gitter.im/kovan-testnet/faucet). 
@@ -312,8 +314,6 @@ If you need help when creating Ethereum accounts and/or obtain Testnet Ether, fo
 
 ## Use HOPR Testnet
 Stake some Kovan Ether and then proceed testing in the same way as with the [local testnet](#use-hopr).
-
-Please keep in mind that currently you can only use the public HOPR testnet with a public IP. If you are using a computer behind wifi router or mobile hotspot then this is usually not the case. Consider testing HOPR on a cloud machine with a public IP.
 
 # Project Structure
 
