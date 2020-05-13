@@ -24,3 +24,6 @@ db/
 
 # Exclude Typescript builds
 lib/
+
+# Exclude vim swap files
+*.swp
