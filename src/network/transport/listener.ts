@@ -8,7 +8,7 @@ const error = debug('libp2p:tcp:listener:error')
 import { socketToConn } from './socket-to-conn'
 import { CODE_P2P } from './constants'
 import { getMultiaddrs, multiaddrToNetConfig } from './utils'
-import { MultiaddrConnection } from './types'
+import { MultiaddrConnection, Connection, Upgrader } from './types'
 import Multiaddr from 'multiaddr'
 
 export interface Listener extends EventEmitter {
@@ -30,16 +30,18 @@ async function attemptClose(maConn: MultiaddrConnection) {
   }
 }
 
-export function createListener({ handler, upgrader }, options: any) {
+export function createListener(
+  { handler, upgrader }: { handler: (_conn: Connection) => void; upgrader: Upgrader },
+  options: any
+): Listener {
   const listener = new EventEmitter() as Listener
 
   const server = net.createServer(async socket => {
     // Avoid uncaught errors caused by unstable connections
-    console.log('received connection')
     socket.on('error', err => log('socket error', err))
 
     let maConn: MultiaddrConnection
-    let conn: MultiaddrConnection
+    let conn: Connection
     try {
       maConn = socketToConn(socket, { listeningAddr })
       log('new inbound connection %s', maConn.remoteAddr)
@@ -100,7 +102,7 @@ export function createListener({ handler, upgrader }, options: any) {
   }
 
   listener.getAddrs = () => {
-    let addrs = []
+    let addrs: Multiaddr[] = []
     const address = server.address() as AddressInfo
 
     if (!address) {

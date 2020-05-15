@@ -14,8 +14,8 @@ export type Stream = {
 
 export type Handler = {
   stream: Stream
-  connection: Connection
-  protocol: string
+  connection?: Connection
+  protocol?: string
 }
 
 export interface MultiaddrConnection extends Stream {
@@ -75,7 +75,7 @@ export interface Registrar {
 }
 
 export interface Dialer {
-  connectToPeer(peer: PeerInfo | PeerId, options?: any): Promise<Connection>
+  connectToPeer(peer: PeerInfo, options?: any): Promise<Connection>
 }
 
 export type ConnHandler = (conn: Connection) => void

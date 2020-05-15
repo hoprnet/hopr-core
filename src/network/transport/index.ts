@@ -4,7 +4,6 @@ import mafmt from 'mafmt'
 const errCode = require('err-code')
 const log = require('debug')('libp2p:tcp')
 import { socketToConn } from './socket-to-conn'
-import { relayToConn } from './relay-to-conn'
 
 // @ts-ignore
 import libp2p = require('libp2p')
@@ -14,21 +13,25 @@ import { multiaddrToNetConfig } from './utils'
 import { AbortError } from 'abortable-iterator'
 import { CODE_CIRCUIT, CODE_P2P } from './constants'
 
-import type Multiaddr from 'multiaddr'
+import Multiaddr from 'multiaddr'
 import PeerInfo from 'peer-info'
 import PeerId from 'peer-id'
 
 import pipe from 'it-pipe'
 
 import { pubKeyToPeerId } from '../../utils'
-import { u8aToHex, u8aEquals } from '@hoprnet/hopr-utils'
-
+import { u8aToHex, u8aEquals, u8aAdd } from '@hoprnet/hopr-utils'
 const RELAY_REGISTER = '/hopr/relay-register/0.0.1'
 const RELAY_UNREGISTER = '/hopr/relay-unregister/0.0.1'
 const DELIVERY_REGISTER = '/hopr/delivery-register/0.0.1'
 const RELAY_DELIVER = (from: Uint8Array) => `/hopr/deliver${u8aToHex(from)}/0.0.1`
-const RELAY_FORWARD = (from: Uint8Array, to: Uint8Array) =>
-  `/hopr/forward${u8aToHex(from)}${u8aToHex(to)}/0.0.1`
+const RELAY_FORWARD = (from: Uint8Array, to: Uint8Array) => {
+  if (from.length !== to.length) {
+    throw Error(`Could not generate RELAY_FORWARD protocol string because array lengths do not match`)
+  }
+
+  return `/hopr/forward${u8aToHex(u8aAdd(false, from, to))}/0.0.1`
+}
 
 const OK = new TextEncoder().encode('OK')
 const FAIL = new TextEncoder().encode('FAIL')
@@ -41,8 +44,9 @@ import type {
   Dialer,
   ConnHandler,
   Handler,
+  Stream,
+  MultiaddrConnection,
 } from './types'
-import { Stream } from 'stream'
 
 /**
  * @class TCP
@@ -53,30 +57,30 @@ class TCP {
   }
 
   private _upgrader: Upgrader
-  private _peerInfo: PeerInfo
   private _dialer: Dialer
   private _registrar: Registrar
-  private _handle: (protocols: string[] | string, handler: Handler) => void
+  private _peerInfo: PeerInfo
+  private _handle: (protocols: string[] | string, handler: (connection: Handler) => void) => void
   private _unhandle: (protocols: string[] | string) => void
+  private relay?: PeerInfo
 
   private connHandler: ConnHandler
 
-  constructor({ upgrader, libp2p }: { upgrader: Upgrader; libp2p: libp2p }) {
+  constructor({ upgrader, libp2p, bootstrap }: { upgrader: Upgrader; libp2p: libp2p; bootstrap?: PeerInfo }) {
     if (!upgrader) {
-      throw new Error(
-        'An upgrader must be provided. See https://github.com/libp2p/interface-transport#upgrader.'
-      )
+      throw new Error('An upgrader must be provided. See https://github.com/libp2p/interface-transport#upgrader.')
     }
 
     if (!libp2p) {
       throw new Error('Transport module needs access to libp2p.')
     }
 
+    this.relay = bootstrap
     this._registrar = libp2p.registrar
-    this._handle = libp2p.handle
-    this._unhandle = libp2p.unhandle
-    this._peerInfo = libp2p.peerInfo
+    this._handle = libp2p.handle.bind(libp2p)
+    this._unhandle = libp2p.unhandle.bind(libp2p)
     this._dialer = libp2p.dialer
+    this._peerInfo = libp2p.peerInfo
     this._upgrader = upgrader
 
     this._handle(RELAY_REGISTER, this.handleRelayRegister.bind(this))
@@ -84,10 +88,32 @@ class TCP {
     this._handle(DELIVERY_REGISTER, this.handleDeliveryRegister.bind(this))
   }
 
-  deliveryHandlerFactory(sender: PeerId) {
-    return async ({ stream }: Handler) => {
+  private relayToConn(options: { stream: Stream; counterparty: PeerId }): MultiaddrConnection {
+    const maConn: MultiaddrConnection = {
+      ...options.stream,
+      conn: options.stream,
+      remoteAddr: Multiaddr(`/p2p/${options.counterparty.toB58String()}`),
+      close: async (err?: Error) => {
+        if (err !== undefined) {
+          console.log(err)
+        }
+
+        await this.closeConnection(options.counterparty)
+
+        maConn.timeline.close = Date.now()
+      },
+      timeline: {
+        open: Date.now(),
+      },
+    }
+
+    return maConn
+  }
+
+  deliveryHandlerFactory(sender: PeerId): (handler: Handler) => void {
+    return async ({ stream, connection }: Handler) => {
       const conn = await this._upgrader.upgradeInbound(
-        relayToConn({
+        this.relayToConn({
           stream,
           counterparty: sender,
         })
@@ -99,18 +125,24 @@ class TCP {
     }
   }
 
-  forwardHandlerFactory(counterparty: PeerId): ({ stream }: Handler) => void {
-    return (async ({ stream }: { stream: Stream }) => {
+  forwardHandlerFactory(counterparty: PeerId): (handler: Handler) => void {
+    return (async ({ stream, connection }: Handler) => {
       let conn: Connection
 
       try {
-        conn = await this._dialer.connectToPeer(counterparty)
+        conn = await this._dialer.connectToPeer(new PeerInfo(counterparty))
       } catch (err) {
         console.log(`Could not forward packet to ${counterparty.toB58String()}. Error was :\n`, err)
+        try {
+          pipe([FAIL], stream)
+        } catch (err) {
+          console.log(`Failed to inform counterparty ${connection.remotePeer.toB58String()}`)
+        }
+
         return
       }
 
-      const { stream: innerStream } = await conn.newStream([RELAY_DELIVER(new Uint8Array([0xff]))])
+      const { stream: innerStream } = await conn.newStream([RELAY_DELIVER(connection.remotePeer.pubKey.marshal())])
 
       pipe(stream, innerStream, stream)
     }).bind(this)
@@ -120,14 +152,11 @@ class TCP {
     pipe(
       stream,
       (source: AsyncIterable<Uint8Array>) => {
-        return async function* () {
+        return async function* (this: TCP) {
           for await (const msg of source) {
             const sender = await pubKeyToPeerId(msg.slice())
 
-            this._registrar.handle(
-              RELAY_DELIVER(new Uint8Array([0xff])),
-              this.deliveryHandlerFactory(sender)
-            )
+            this._handle(RELAY_DELIVER(sender.pubKey.marshal()), this.deliveryHandlerFactory(sender))
             yield OK
           }
         }.apply(this)
@@ -136,54 +165,79 @@ class TCP {
     )
   }
 
-  handleRelayUnregister({ stream }: Handler) {
-    pipe(stream, (source: AsyncIterable<Uint8Array>) => {
-      return async function* () {
-        for await (const msg of source) {
-          const counterparty = await pubKeyToPeerId(msg.slice())
+  handleRelayUnregister({ stream, connection }: Handler) {
+    pipe(
+      /* prettier-ignore */
+      stream,
+      (source: AsyncIterable<Uint8Array>) => {
+        return async function* (this: TCP) {
+          for await (const msg of source) {
+            const counterparty = await pubKeyToPeerId(msg.slice())
 
-          this._unhandle(
-            RELAY_FORWARD(
-              /* prettier-ignore */
-              new Uint8Array([0xff]),
-              new Uint8Array([0xff])
-            )
-          )
-          yield OK
-        }
-      }.apply(this)
-    })
+            try {
+              this._unhandle(
+                RELAY_FORWARD(
+                  /* prettier-ignore */
+                  connection.remotePeer.pubKey.marshal(),
+                  counterparty.pubKey.marshal()
+                )
+              )
+            } catch (err) {
+              console.log(err)
+            }
+
+            let conn: Connection
+            try {
+              conn = await this._dialer.connectToPeer(new PeerInfo(counterparty))
+            } catch (err) {}
+
+            yield OK
+          }
+        }.apply(this)
+      },
+      stream
+    )
   }
 
-  async closeConnection(counterparty: PeerId, relayer: PeerId) {
-    this._unhandle(RELAY_DELIVER(new Uint8Array([0xff])))
+  async closeConnection(counterparty: PeerId) {
+    this._unhandle(RELAY_DELIVER(counterparty.pubKey.marshal()))
 
     let conn: Connection
 
     try {
-      conn = await this._dialer.connectToPeer(relayer)
+      conn = await this._dialer.connectToPeer(this.relay)
     } catch (err) {
-      console.log(`Could not request relayer ${relayer.toB58String()} to tear down relayed connection. Error was:\n`, err.message)
+      console.log(
+        `Could not request relayer ${this.relay.id.toB58String()} to tear down relayed connection. Error was:\n`,
+        err
+      )
       return
     }
 
     const { stream } = await conn.newStream([RELAY_UNREGISTER])
 
-
-    pipe(
+    await pipe(
       /* prettier-ignore */
       [counterparty.pubKey.marshal()],
-      stream
+      stream,
+      async (source: AsyncIterable<Uint8Array>) => {
+        for await (const msg of source) {
+          return msg.slice()
+        }
+      }
     )
+
+    return
   }
 
   async registerDelivery(outerconnection: Connection, counterparty: PeerId): Promise<Uint8Array> {
     let conn: Connection
 
     try {
-      conn = await this._dialer.connectToPeer(counterparty)
+      conn = await this._dialer.connectToPeer(new PeerInfo(counterparty))
     } catch (err) {
       console.log(err)
+      return
     }
 
     const { stream } = await conn.newStream([DELIVERY_REGISTER])
@@ -205,7 +259,7 @@ class TCP {
       /* prettier-ignore */
       stream,
       (source: AsyncIterable<Uint8Array>) => {
-        return async function* () {
+        return async function* (this: TCP) {
           for await (const msg of source) {
             const counterparty = await pubKeyToPeerId(msg.slice())
 
@@ -214,13 +268,11 @@ class TCP {
             const answer = await this.registerDelivery(connection, counterparty)
 
             if (u8aEquals(answer, OK)) {
-              this._registrar.handle(
+              this._handle(
                 RELAY_FORWARD(
                   /* prettier-ignore */
-                  new Uint8Array([0xff]),
-                  new Uint8Array([0xff])
-                  // connection.remotePeer.pubKey.marshal(),
-                  // counterparty.pubKey.marshal()
+                  connection.remotePeer.pubKey.marshal(),
+                  counterparty.pubKey.marshal()
                 ),
                 this.forwardHandlerFactory(counterparty)
               )
@@ -247,79 +299,68 @@ class TCP {
   async dial(ma: Multiaddr, options?: DialOptions): Promise<Connection> {
     options = options || {}
 
-    console.log(ma.toString())
-
-    const destinationPeerId = PeerId.createFromCID(ma.getPeerId())
-
-    if (
-      options.relay &&
-      !destinationPeerId.isEqual(
-        PeerInfo.isPeerInfo(options.relay) ? options.relay.id : options.relay
-      )
-    ) {
-      let relayConnection = this._registrar.getConnection(
-        PeerInfo.isPeerInfo(options.relay) ? options.relay : new PeerInfo(options.relay)
-      )
-
-      if (!relayConnection) {
-        relayConnection = await this._dialer.connectToPeer(options.relay)
+    try {
+      return await this.dialDirectly(ma, options)
+    } catch (err) {
+      if (this.relay === undefined) {
+        throw err
       }
 
-      const { stream } = await relayConnection.newStream([RELAY_REGISTER])
-
-      console.log('connection estabalished', stream)
-
-      const answer = await pipe(
-        /* prettier-ignore */
-        [destinationPeerId.pubKey.marshal()],
-        stream,
-        async (source: AsyncIterable<Uint8Array>) => {
-          for await (const msg of source) {
-            return msg.slice()
-          }
-        }
-      )
-
-      if (u8aEquals(answer, OK)) {
-        const { stream } = await relayConnection.newStream([
-          RELAY_FORWARD(
-            new Uint8Array([0xff]),
-            new Uint8Array([0xff])
-            // this._peerInfo.id.pubKey.marshal(),
-            // destinationPeerId.pubKey.marshal(),
-          ),
-        ])
-
-        let conn: Connection
-
-        try {
-          conn = await this._upgrader.upgradeOutbound(
-            relayToConn({
-              stream,
-              counterparty: destinationPeerId,
-            })
-          )
-        } catch (err) {
-          console.log(err)
-        }
-
-        console.log(`connection`)
-      } else {
-        console.log(`Register relaying failed. Received '${answer}'.`)
-      }
-    } else {
-      console.log(`establishing normal connection`)
-      const socket = await this._connect(ma, options)
-      const maConn = socketToConn(socket, { remoteAddr: ma, signal: options.signal })
-
-      log('new outbound connection %s', maConn.remoteAddr)
-      const conn = await this._upgrader.upgradeOutbound(maConn)
-
-      log('outbound connection %s upgraded', maConn.remoteAddr)
-      return conn
+      return await this.dialWithRelay(ma, options)
     }
   }
 
+  async dialWithRelay(ma: Multiaddr, options?: DialOptions): Promise<Connection> {
+    const destinationPeerId = PeerId.createFromCID(ma.getPeerId())
+
+    console.log(`dailing ${ma.toString()} over relay node`)
+
+    let relayConnection = this._registrar.getConnection(this.relay)
+
+    if (!relayConnection) {
+      relayConnection = await this._dialer.connectToPeer(this.relay)
+    }
+
+    const { stream: registerStream } = await relayConnection.newStream([RELAY_REGISTER])
+
+    const answer = await pipe(
+      /* prettier-ignore */
+      [destinationPeerId.pubKey.marshal()],
+      registerStream,
+      async (source: AsyncIterable<Uint8Array>) => {
+        for await (const msg of source) {
+          return msg.slice()
+        }
+      }
+    )
+
+    if (!u8aEquals(answer, OK)) {
+      throw Error(`Register relaying failed. Received '${answer}'.`)
+    }
+
+    const { stream: msgStream } = await relayConnection.newStream([
+      RELAY_FORWARD(this._peerInfo.id.pubKey.marshal(), destinationPeerId.pubKey.marshal()),
+    ])
+
+    return await this._upgrader.upgradeOutbound(
+      this.relayToConn({
+        stream: msgStream,
+        counterparty: destinationPeerId,
+      })
+    )
+  }
+
+  async dialDirectly(ma: Multiaddr, options?: DialOptions): Promise<Connection> {
+    console.log(`dailing ${ma.toString()} directly`)
+    const socket = await this._connect(ma, options)
+    const maConn = socketToConn(socket, { remoteAddr: ma, signal: options.signal })
+
+    log('new outbound connection %s', maConn.remoteAddr)
+    const conn = await this._upgrader.upgradeOutbound(maConn)
+
+    log('outbound connection %s upgraded', maConn.remoteAddr)
+    return conn
+  }
   /**
    * @private
    * @param {Multiaddr} ma
@@ -336,7 +377,7 @@ class TCP {
       const start = Date.now()
       const cOpts = multiaddrToNetConfig(ma) as any
 
-      log('dialing %j', cOpts)
+      console.log('dialing %j', cOpts)
       const rawSocket = net.connect(cOpts)
 
       const onError = (err: Error) => {
@@ -346,10 +387,7 @@ class TCP {
 
       const onTimeout = () => {
         log('connnection timeout %s:%s', cOpts.host, cOpts.port)
-        const err = errCode(
-          new Error(`connection timeout after ${Date.now() - start}ms`),
-          'ERR_CONNECT_TIMEOUT'
-        )
+        const err = errCode(new Error(`connection timeout after ${Date.now() - start}ms`), 'ERR_CONNECT_TIMEOUT')
         // Note: this will result in onError() being called
         rawSocket.emit('error', err)
       }
@@ -391,8 +429,6 @@ class TCP {
    * @returns {Listener} A TCP listener
    */
   createListener(options: any, handler: (connection: any) => void): Listener {
-    console.log(options, handler)
-
     if (typeof options === 'function') {
       handler = options
       options = {}

@@ -228,6 +228,11 @@ function runAsBootstrapNode() {
   node.on('peer:connect', (peer: PeerInfo) => {
     console.log(`Incoming connection from ${chalk.blue(peer.id.toB58String())}.`)
   })
+
+  process.once('exit', async () => {
+    await node.down()
+    return
+  })
 }
 
 async function main() {
@@ -246,7 +251,7 @@ async function main() {
     console.log(err.message + '\n')
     return
   }
-
+  
   try {
     node = await Hopr.create(options)
   } catch (err) {
