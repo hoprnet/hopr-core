@@ -17,21 +17,26 @@ declare class TCP {
     private _peerInfo;
     private _handle;
     private _unhandle;
-    private relay?;
+    private relays?;
+    private stunServers;
+    private _encoder;
+    private _decoder;
     private connHandler;
-    constructor({ upgrader, libp2p, bootstrap }: {
+    constructor({ upgrader, libp2p, bootstrapServers, }: {
         upgrader: Upgrader;
         libp2p: libp2p;
-        bootstrap?: PeerInfo;
+        bootstrapServers?: PeerInfo[];
     });
     private relayToConn;
     deliveryHandlerFactory(sender: PeerId): (handler: Handler) => void;
     forwardHandlerFactory(counterparty: PeerId): (handler: Handler) => void;
+    handleDeliveryUnregister({ stream }: Handler): void;
     handleDeliveryRegister({ stream }: Handler): void;
     handleRelayUnregister({ stream, connection }: Handler): void;
-    closeConnection(counterparty: PeerId): Promise<void>;
+    closeConnection(counterparty: PeerId, relay: PeerId): Promise<void>;
     registerDelivery(outerconnection: Connection, counterparty: PeerId): Promise<Uint8Array>;
     handleRelayRegister({ stream, connection }: Handler): void;
+    handleWebRTC({ stream }: Handler): void;
     /**
      * @async
      * @param {Multiaddr} ma
@@ -40,7 +45,10 @@ declare class TCP {
      * @returns {Connection} An upgraded Connection
      */
     dial(ma: Multiaddr, options?: DialOptions): Promise<Connection>;
-    dialWithRelay(ma: Multiaddr, options?: DialOptions): Promise<Connection>;
+    tryWebRTC(conn: Connection, counterparty: PeerId, options?: {
+        signal: AbortSignal;
+    }): Promise<Connection>;
+    dialWithRelay(ma: Multiaddr, relays: PeerInfo[], options?: DialOptions): Promise<Connection>;
     dialDirectly(ma: Multiaddr, options?: DialOptions): Promise<Connection>;
     /**
      * @private
