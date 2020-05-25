@@ -126,7 +126,7 @@ export function createListener(
     // we need to capture from the passed multiaddr
     if (listeningAddr.toString().startsWith('/ip4')) {
       addrs.push(Multiaddr(`/ip4/${externalIp.address}/tcp/${externalIp.port}`))
-      addrs.push(...getMultiaddrs('ip4', address.address, address.port))
+      // addrs.push(...getMultiaddrs('ip4', address.address, address.port))
     } else if (address.family === 'IPv6') {
       addrs = addrs.concat(getMultiaddrs('ip6', address.address, address.port))
     }

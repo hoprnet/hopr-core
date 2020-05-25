@@ -43,7 +43,7 @@ describe('should create a socket and connect to it', function () {
       err: null,
       sw: true,
     })
-    
+
     await server.start()
 
     return server
@@ -131,8 +131,6 @@ describe('should create a socket and connect to it', function () {
     console.log(`Counterparty ${chalk.yellow(counterparty.peerInfo.id.toB58String())}\n`)
 
     console.log(`Relay        ${chalk.yellow(relay.peerInfo.id.toB58String())}\n`)
-
-
 
     connectionHelper([sender, relay])
     connectionHelper([relay, counterparty])

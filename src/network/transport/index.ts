@@ -576,6 +576,8 @@ class TCP {
                 return resolve(await this._dialer.connectToPeer(relay, { signal: options?.signal }))
               } catch {}
             }
+
+            return resolve(relayConnection)
           })
       )
     )
