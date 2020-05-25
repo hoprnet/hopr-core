@@ -224,6 +224,8 @@ class TCP {
   }
 
   handleDeliveryRegister({ stream }: Handler) {
+    log(`registering delivery functionality`)
+
     pipe(
       stream,
       (source: AsyncIterable<Uint8Array>) => {
@@ -356,6 +358,7 @@ class TCP {
   }
 
   handleRelayRegister({ stream, connection }: Handler) {
+    log(`registering relay functionality for ${connection.remotePeer.toB58String()}`)
     pipe(
       /* prettier-ignore */
       stream,
