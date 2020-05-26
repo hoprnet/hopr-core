@@ -9,7 +9,7 @@ import type PeerInfo from 'peer-info'
 
 import { checkPeerIdInput, encodeMessage, isBootstrapNode } from '../utils'
 import { clearString } from '@hoprnet/hopr-utils'
-import { getOpenChannelPeerIds } from '../utils'
+import { getOpenChannels } from '../utils'
 import { MAX_HOPS } from '../../src/constants'
 
 import readline from 'readline'
@@ -23,7 +23,7 @@ export default class SendMessage implements AbstractCommand {
    */
   async execute(rl: readline.Interface, query?: string): Promise<void> {
     if (query == null) {
-      console.log(chalk.red(`Invalid arguments. Expected 'open <peerId>'. Received '${query}'`))
+      console.log(chalk.red(`Invalid arguments. Expected 'send <peerId>'. Received '${query}'`))
       return
     }
 
@@ -60,9 +60,7 @@ export default class SendMessage implements AbstractCommand {
 
     try {
       if (manualPath) {
-        await this.node.sendMessage(encodeMessage(message), peerId, () =>
-          this.selectIntermediateNodes(rl, query)
-        )
+        await this.node.sendMessage(encodeMessage(message), peerId, () => this.selectIntermediateNodes(rl))
       } else {
         await this.node.sendMessage(encodeMessage(message), peerId)
       }
@@ -78,10 +76,7 @@ export default class SendMessage implements AbstractCommand {
   ): Promise<void> {
     const peerInfos: PeerInfo[] = []
     for (const peerInfo of this.node.peerStore.peers.values()) {
-      if (
-        (!query || peerInfo.id.toB58String().startsWith(query)) &&
-        !isBootstrapNode(this.node, peerInfo.id)
-      ) {
+      if ((!query || peerInfo.id.toB58String().startsWith(query)) && !isBootstrapNode(this.node, peerInfo.id)) {
         peerInfos.push(peerInfo)
       }
     }
@@ -97,22 +92,23 @@ export default class SendMessage implements AbstractCommand {
       return cb(undefined, [[''], line])
     }
 
-    return cb(undefined, [
-      peerInfos.map((peerInfo: PeerInfo) => `send ${peerInfo.id.toB58String()}`),
-      line,
-    ])
+    return cb(undefined, [peerInfos.map((peerInfo: PeerInfo) => `send ${peerInfo.id.toB58String()}`), line])
   }
 
-  async selectIntermediateNodes(rl: readline.Interface, destination: string): Promise<PeerId[]> {
-    console.log(chalk.yellow('Please select the intermediate nodes: (hint use tabCompletion)'))
-
+  async selectIntermediateNodes(rl: readline.Interface): Promise<PeerId[]> {
+    let done = false
     let selected: PeerId[] = []
 
-    while (selected.length < MAX_HOPS) {
-      const lastSelected =
-        selected.length > 0 ? selected[selected.length - 1] : this.node.peerInfo.id
-      const openChannels = await getOpenChannelPeerIds(this.node, lastSelected)
+    while (!done) {
+      console.log(chalk.yellow(`Please select intermediate node ${selected.length}: (leave empty for no hops)`))
+
+      const lastSelected = selected.length > 0 ? selected[selected.length - 1] : this.node.peerInfo.id
+      const openChannels = await getOpenChannels(this.node, lastSelected)
       const validPeers = openChannels.map(peer => peer.toB58String())
+
+      if (validPeers.length === 0) {
+        console.log(chalk.yellow(`No peers with open channels found, you may enter a peer manually.`))
+      }
 
       // detach old prompt
       // @ts-ignore
@@ -124,10 +120,9 @@ export default class SendMessage implements AbstractCommand {
       // attach new prompt
       rl.setPrompt('')
       // @ts-ignore
-      rl.completer = (
-        line: string,
-        cb: (err: Error | undefined, hits: [string[], string]) => void
-      ) => {
+      rl.completer = (line: string, cb: (err: Error | undefined, hits: [string[], string]) => void) => {
+        console.log('completer', validPeers)
+
         return cb(undefined, [validPeers.filter(peerId => peerId.startsWith(line)), line])
       }
 
@@ -155,9 +150,14 @@ export default class SendMessage implements AbstractCommand {
         })
       )
 
-      // update selected list
-      if (peerId) {
+      if (typeof peerId === 'undefined') {
+        done = true
+      } else {
         selected.push(peerId)
+
+        if (selected.length >= MAX_HOPS - 1) {
+          done = true
+        }
       }
 
       rl.setPrompt(oldPrompt)

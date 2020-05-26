@@ -6,13 +6,23 @@ import { u8aEquals } from '@hoprnet/hopr-utils'
 import { pubKeyToPeerId } from '../../src/utils'
 import { isBootstrapNode } from './isBootstrapNode'
 
-function getNodes(node: Hopr<HoprCoreConnector>) {
-  return Array.from(node.peerStore.peers.values()).filter(peerInfo => {
-    return isBootstrapNode(node, peerInfo.id)
-  })
+/**
+ * Get node's peers.
+ * @returns an array of peer ids
+ */
+export function getPeers(node: Hopr<HoprCoreConnector>): PeerId[] {
+  return Array.from(node.peerStore.peers.values())
+    .map(peerInfo => peerInfo.id)
+    .filter(peerId => {
+      return !isBootstrapNode(node, peerId)
+    })
 }
 
-export function getMyOpenChannelPeerIds(node: Hopr<HoprCoreConnector>): Promise<PeerId[]> {
+/**
+ * Get node's open channels by looking into connector's DB.
+ * @returns a promise that resolves to an array of peer ids
+ */
+export function getMyOpenChannels(node: Hopr<HoprCoreConnector>): Promise<PeerId[]> {
   return new Promise<PeerId[]>((resolve, reject) => {
     try {
       let peerIds: PeerId[] = []
@@ -38,13 +48,13 @@ export function getMyOpenChannelPeerIds(node: Hopr<HoprCoreConnector>): Promise<
   })
 }
 
-export async function getPartyOpenChannelPeerIds(
-  node: Hopr<HoprCoreConnector>,
-  partyPeerId: PeerId
-): Promise<PeerId[]> {
+/**
+ * Get node's open channels and a counterParty's using connector's indexer.
+ * @returns a promise that resolves to an array of peer ids
+ */
+export async function getPartyOpenChannels(node: Hopr<HoprCoreConnector>, party: PeerId): Promise<PeerId[]> {
   const { indexer, utils } = node.paymentChannels
-  const pubKey = partyPeerId.marshalPubKey()
-  const accountId = await utils.pubKeyToAccountId(pubKey)
+  const accountId = await utils.pubKeyToAccountId(party.pubKey.marshal())
 
   // get indexed open channels
   const channels = await indexer.get({
@@ -55,38 +65,42 @@ export async function getPartyOpenChannelPeerIds(
   })
 
   // get available nodes
-  const nodes = getNodes(node)
-  const nodeAccountIds = await Promise.all(
-    nodes.map(async node => {
+  const peers = await Promise.all(
+    getPeers(node).map(async peer => {
       return {
-        node,
-        accountId: await utils.pubKeyToAccountId(node.id.marshalPubKey()),
+        peer,
+        accountId: await utils.pubKeyToAccountId(party.pubKey.marshal()),
       }
     })
   )
 
-  return nodeAccountIds
+  // console.log('party', party.toB58String())
+  // console.log('indexer:', channels.length)
+  // console.log('peers:', peers.length)
+
+  return peers
     .filter(({ accountId }) => {
       return channelAccountIds.find(channelAccountId => {
         return u8aEquals(accountId, channelAccountId)
       })
     })
-    .map(node => node.node.id)
+    .map(peer => peer.peer)
 }
 
-export async function getOpenChannelPeerIds(
-  node: Hopr<HoprCoreConnector>,
-  partyPeerId: PeerId
-): Promise<PeerId[]> {
+/**
+ * Get node's open channels with a counterParty using connector's DB or indexer if supported.
+ * @returns a promise that resolves to an array of peer ids
+ */
+export async function getOpenChannels(node: Hopr<HoprCoreConnector>, partyPeerId: PeerId): Promise<PeerId[]> {
   const supportsIndexer = typeof node.paymentChannels.indexer !== 'undefined'
   const partyIfSelf = node.peerInfo.id.equals(partyPeerId)
 
-  if (partyIfSelf) {
-    // if party is self, prefer to use 'getMyOpenChannelPeerIds'
-    return getMyOpenChannelPeerIds(node)
-  } else if (supportsIndexer) {
+  if (supportsIndexer) {
     // if connector supports indexeer
-    return getPartyOpenChannelPeerIds(node, partyPeerId)
+    return getPartyOpenChannels(node, partyPeerId)
+  } else if (partyIfSelf) {
+    // if party is self, and indexer not supported
+    return getMyOpenChannels(node)
   } else {
     // return an emptry array if connector does not support indexer
     return []
