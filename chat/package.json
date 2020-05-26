@@ -6,7 +6,8 @@
   "scripts": {
     "build": "yarn clean && tsc -p . --noEmit false",
     "clean": "rm -rf ./lib",
-    "test": "mocha --exit"
+    "test": "mocha --exit || echo '⚠️  Currently no tests available'",
+    "start": "node lib/index.js"
   },
   "engines": {
     "node": "^12",
@@ -16,8 +17,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@hoprnet/hopr-core": "^0.4.3-dev.59f99ec",
+    "@hoprnet/hopr-core": "^0.4.5-dev.f7beb27",
     "@hoprnet/hopr-core-connector-interface": "^1.0.1-0",
+    "@hoprnet/hopr-core-ethereum": "~0.0.2-dev.b46cf2c",
+    "@hoprnet/hopr-demo-seeds": "1.0.1",
     "@hoprnet/hopr-utils": "^0.1.3",
     "bn.js": "^5.1.2",
     "chalk": "^4.0.0",
