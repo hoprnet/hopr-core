@@ -12,7 +12,7 @@ import SECIO = require('libp2p-secio')
 
 import PeerId from 'peer-id'
 
-import { MultiaddrConnection, Handler } from './types'
+import { Handler } from './types'
 
 import TCP from '.'
 import Multiaddr from 'multiaddr'
@@ -22,38 +22,20 @@ import pipe from 'it-pipe'
 import { u8aEquals } from '@hoprnet/hopr-utils'
 
 import chalk from 'chalk'
-
-// @ts-ignore
-import miniStun = require('ministun')
+import { randomBytes } from 'crypto'
+import { privKeyToPeerId } from '../../utils'
+import { RELAY_CIRCUIT_TIMEOUT } from './constants'
 
 const TEST_PROTOCOL = `/test/0.0.1`
 
 describe('should create a socket and connect to it', function () {
-  const upgrader = {
-    upgradeOutbound: async (maConn: MultiaddrConnection) => maConn,
-    upgradeInbound: async (maConn: MultiaddrConnection) => maConn,
-  }
-
-  async function startStun() {
-    const server = new miniStun({
-      udp4: true,
-      upd6: true,
-      port: 3478,
-      log: null,
-      err: null,
-      sw: true,
-    })
-
-    await server.start()
-
-    return server
-  }
-
   async function generateNode(
     options: {
       id: number
       ipv4?: boolean
       ipv6?: boolean
+      useWebRTC?: boolean
+      startNode?: boolean
     },
     bootstrap?: PeerInfo
   ): Promise<libp2p> {
@@ -82,6 +64,7 @@ describe('should create a socket and connect to it', function () {
       config: {
         transport: {
           TCP: {
+            useWebRTC: options.useWebRTC,
             bootstrapServers: [bootstrap],
           },
         },
@@ -101,13 +84,7 @@ describe('should create a socket and connect to it', function () {
       pipe(
         /* prettier-ignore */
         handler.stream,
-        (source: AsyncIterable<Uint8Array>) => {
-          return (async function* () {
-            for await (const msg of source) {
-              yield msg
-            }
-          })()
-        },
+        // echoing msg
         handler.stream
       )
     })
@@ -117,28 +94,128 @@ describe('should create a socket and connect to it', function () {
     return node
   }
 
-  it('should set up a socket', async function () {
-    // const server = await startStun()
+  it('should establish a direct connection between two nodes', async function () {
+    const [sender, counterparty] = await Promise.all([
+      generateNode({ id: 0, ipv4: true, useWebRTC: false }),
+      generateNode({ id: 1, ipv4: true, useWebRTC: false }),
+    ])
 
+    const conn = await sender.dialProtocol(
+      Multiaddr(`/ip4/127.0.0.1/tcp/9092/p2p/${counterparty.peerInfo.id.toB58String()}`),
+      TEST_PROTOCOL
+    )
+
+    let msgReceived = false
+    const testMessage = randomBytes(123)
+
+    await pipe(
+      /* prettier-ignore */
+      [testMessage],
+      conn.stream,
+      async (source: AsyncIterable<Uint8Array>) => {
+        for await (const msg of source) {
+          assert(u8aEquals(msg.slice(), testMessage), 'sent message and received message must be identical')
+          msgReceived = true
+          return
+        }
+      }
+    )
+
+    assert(msgReceived, `Message must be received by counterparty.`)
+
+    await Promise.all([sender.stop(), counterparty.stop()])
+  })
+
+  it('must not establish a connection to a non-existing node', async function () {
+    const [sender, fakeCounterparty] = await Promise.all([
+      generateNode({ id: 0, ipv4: true, useWebRTC: false }),
+      privKeyToPeerId(randomBytes(32)),
+    ])
+
+    let errThrown = false
+    try {
+      await sender.dialProtocol(
+        Multiaddr(`/ip4/127.0.0.1/tcp/9094/p2p/${fakeCounterparty.toB58String()}`),
+        TEST_PROTOCOL
+      )
+    } catch (err) {
+      errThrown = true
+    }
+
+    assert(errThrown, `Must throw error in case other node node is not reachable`)
+
+    await Promise.all([sender.stop()])
+  })
+
+  it('must not establish a relayed connection to a non-existing node', async function () {
+    this.timeout(RELAY_CIRCUIT_TIMEOUT * 2)
+
+    const relay = await generateNode({ id: 2, ipv4: true })
+
+    const [sender, fakeCounterparty] = await Promise.all([
+      generateNode({ id: 0, ipv4: true, useWebRTC: false }, relay.peerInfo),
+      privKeyToPeerId(randomBytes(32)),
+    ])
+
+    connectionHelper([sender, relay])
+
+    let errThrown = false
+    const INVALID_PORT = 9999
+    try {
+      await sender.dialProtocol(
+        Multiaddr(`/ip4/127.0.0.1/tcp/${INVALID_PORT}/p2p/${fakeCounterparty.toB58String()}`),
+        TEST_PROTOCOL
+      )
+    } catch (err) {
+      errThrown = true
+    }
+
+    assert(errThrown, `Must throw error in case other node node is not reachable`)
+
+    await Promise.all([sender.stop(), relay.stop()])
+  })
+
+  it('must not establish a relayed connection to an offline node', async function () {
+    this.timeout(RELAY_CIRCUIT_TIMEOUT * 2)
+
+    const relay = await generateNode({ id: 2, ipv4: true })
+
+    const [sender, offlineCounterparty] = await Promise.all([
+      generateNode({ id: 0, ipv4: true, useWebRTC: false }, relay.peerInfo),
+      generateNode({ id: 1, ipv4: true, useWebRTC: false }, relay.peerInfo),
+    ])
+
+    connectionHelper([sender, relay])
+    connectionHelper([relay, offlineCounterparty])
+
+    await offlineCounterparty.stop()
+
+    let errThrown = false
+    const INVALID_PORT = 9999
+    try {
+      await sender.dialProtocol(
+        Multiaddr(`/ip4/127.0.0.1/tcp/${INVALID_PORT}/p2p/${offlineCounterparty.peerInfo.id.toB58String()}`),
+        TEST_PROTOCOL
+      )
+    } catch (err) {
+      errThrown = true
+    }
+
+    assert(errThrown, `Must throw error in case other node node is not reachable`)
+
+    await Promise.all([sender.stop(), relay.stop()])
+  })
+
+  it('should set up a relayed connection and exchange messages', async function () {
     const relay = await generateNode({ id: 2, ipv4: true, ipv6: true })
 
     const [sender, counterparty] = await Promise.all([
-      generateNode({ id: 0, ipv4: true }, relay.peerInfo),
-      generateNode({ id: 1, ipv6: true }, relay.peerInfo),
+      generateNode({ id: 0, ipv4: true, useWebRTC: false }, relay.peerInfo),
+      generateNode({ id: 1, ipv6: true, useWebRTC: false }, relay.peerInfo),
     ])
-
-    console.log(`Sender       ${chalk.yellow(sender.peerInfo.id.toB58String())}`)
-    console.log(`Counterparty ${chalk.yellow(counterparty.peerInfo.id.toB58String())}\n`)
-
-    console.log(`Relay        ${chalk.yellow(relay.peerInfo.id.toB58String())}\n`)
 
     connectionHelper([sender, relay])
     connectionHelper([relay, counterparty])
-
-    // const conn1 = await sender.dial(counterparty.peerInfo)
-
-    // sender.peerStore.remove(counterparty.peerInfo.id)
-    // await sender.hangUp(counterparty.peerInfo)
 
     const INVALID_PORT = 8758
     const conn2 = await sender.dialProtocol(
@@ -147,6 +224,8 @@ describe('should create a socket and connect to it', function () {
     )
 
     const testMessage = new TextEncoder().encode('12356')
+
+    let msgReceived = false
     await pipe(
       /* prettier-ignore */
       [testMessage],
@@ -154,12 +233,68 @@ describe('should create a socket and connect to it', function () {
       async (source: AsyncIterable<Uint8Array>) => {
         for await (const msg of source) {
           assert(u8aEquals(msg.slice(), testMessage), 'sent message and received message must be identical')
-          console.log(`message received`)
+          msgReceived = true
           return
         }
       }
     )
+
+    assert(msgReceived, `Message must be received by counterparty`)
+
+    await Promise.all([
+      sender.stop(),
+      counterparty.stop(),
+      relay.stop()
+    ])
   })
+
+  // it('should set up a relayed connection and upgrade to WebRTC', async function () {
+  //   const relay = await generateNode({ id: 2, ipv4: true, ipv6: true })
+
+  //   const [sender, counterparty] = await Promise.all([
+  //     generateNode({ id: 0, ipv4: true }, relay.peerInfo),
+  //     generateNode({ id: 1, ipv6: true }, relay.peerInfo),
+  //   ])
+
+  //   console.log(`Sender       ${chalk.yellow(sender.peerInfo.id.toB58String())}`)
+  //   console.log(`Counterparty ${chalk.yellow(counterparty.peerInfo.id.toB58String())}\n`)
+
+  //   console.log(`Relay        ${chalk.yellow(relay.peerInfo.id.toB58String())}\n`)
+
+  //   connectionHelper([sender, relay])
+  //   connectionHelper([relay, counterparty])
+
+  //   // const conn1 = await sender.dial(counterparty.peerInfo)
+
+  //   // sender.peerStore.remove(counterparty.peerInfo.id)
+  //   // await sender.hangUp(counterparty.peerInfo)
+
+  //   const INVALID_PORT = 8758
+  //   const conn2 = await sender.dialProtocol(
+  //     Multiaddr(`/ip4/127.0.0.1/tcp/${INVALID_PORT}/p2p/${counterparty.peerInfo.id.toB58String()}`),
+  //     TEST_PROTOCOL
+  //   )
+
+  //   const testMessage = new TextEncoder().encode('12356')
+  //   await pipe(
+  //     /* prettier-ignore */
+  //     [testMessage],
+  //     conn2.stream,
+  //     async (source: AsyncIterable<Uint8Array>) => {
+  //       for await (const msg of source) {
+  //         assert(u8aEquals(msg.slice(), testMessage), 'sent message and received message must be identical')
+  //         console.log(`message received`)
+  //         return
+  //       }
+  //     }
+  //   )
+
+  //   await Promise.all([
+  //     sender.stop(),
+  //     counterparty.stop(),
+  //     relay.stop()
+  //   ])
+  // })
 })
 
 /**
