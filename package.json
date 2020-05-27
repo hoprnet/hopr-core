@@ -1,6 +1,6 @@
 {
   "name": "@hoprnet/hopr-core",
-  "version": "0.4.5-dev.f7beb27",
+  "version": "0.4.6-dev.878fb3f",
   "description": "Privacy-preserving messaging protocol with incentivations for relay operators",
   "license": "GPL-3.0-only",
   "keywords": [
