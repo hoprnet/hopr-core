@@ -98,6 +98,7 @@ export default class SendMessage implements AbstractCommand {
     let done = false
     let selected: PeerId[] = []
 
+    // ask for node until user fills all nodes or enters an empty id
     while (!done) {
       console.log(chalk.yellow(`Please select intermediate node ${selected.length}: (leave empty for no hops)`))
 
@@ -109,7 +110,7 @@ export default class SendMessage implements AbstractCommand {
         console.log(chalk.yellow(`No peers with open channels found, you may enter a peer manually.`))
       }
 
-      // detach old prompt
+      // detach prompt
       // @ts-ignore
       const oldPrompt = rl._prompt
       // @ts-ignore
@@ -159,10 +160,10 @@ export default class SendMessage implements AbstractCommand {
         }
       }
 
+      // reattach prompt
       rl.setPrompt(oldPrompt)
       // @ts-ignore
       rl.completer = oldCompleter
-
       // @ts-ignore
       oldListeners.forEach(oldListener => rl.on('line', oldListener))
     }

@@ -54,14 +54,15 @@ export function getMyOpenChannels(node: Hopr<HoprCoreConnector>): Promise<PeerId
  */
 export async function getPartyOpenChannels(node: Hopr<HoprCoreConnector>, party: PeerId): Promise<PeerId[]> {
   const { indexer, utils } = node.paymentChannels
-  const accountId = await utils.pubKeyToAccountId(party.pubKey.marshal())
+  const partyAccountId = await utils.pubKeyToAccountId(party.pubKey.marshal())
 
   // get indexed open channels
   const channels = await indexer.get({
-    partyA: accountId,
+    partyA: partyAccountId,
   })
+  // get the counterparty of each channel
   const channelAccountIds = channels.map(channel => {
-    return u8aEquals(channel.partyA, accountId) ? channel.partyB : channel.partyA
+    return u8aEquals(channel.partyA, partyAccountId) ? channel.partyB : channel.partyA
   })
 
   // get available nodes
@@ -69,14 +70,10 @@ export async function getPartyOpenChannels(node: Hopr<HoprCoreConnector>, party:
     getPeers(node).map(async peer => {
       return {
         peer,
-        accountId: await utils.pubKeyToAccountId(party.pubKey.marshal()),
+        accountId: await utils.pubKeyToAccountId(peer.pubKey.marshal()),
       }
     })
   )
-
-  // console.log('party', party.toB58String())
-  // console.log('indexer:', channels.length)
-  // console.log('peers:', peers.length)
 
   return peers
     .filter(({ accountId }) => {
