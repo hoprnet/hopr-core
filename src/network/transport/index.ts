@@ -520,7 +520,6 @@ class TCP {
 
   async dialWithRelay(ma: Multiaddr, relays: PeerInfo[], options?: DialOptions): Promise<Connection> {
     const destination = PeerId.createFromCID(ma.getPeerId())
-    console.log(chalk.greenBright('here'), relays[0].multiaddrs.toArray())
 
     let relayConnection = await Promise.race(
       relays.map(

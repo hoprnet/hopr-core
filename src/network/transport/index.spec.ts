@@ -192,6 +192,8 @@ describe('should create a socket and connect to it', function () {
 
     let errThrown = false
     const INVALID_PORT = 9999
+
+    const now = Date.now()
     try {
       await sender.dialProtocol(
         Multiaddr(`/ip4/127.0.0.1/tcp/${INVALID_PORT}/p2p/${offlineCounterparty.peerInfo.id.toB58String()}`),
@@ -200,6 +202,8 @@ describe('should create a socket and connect to it', function () {
     } catch (err) {
       errThrown = true
     }
+
+    assert(Date.now() - now >= RELAY_CIRCUIT_TIMEOUT, `Establishing connection must not fail before relay timeout`)
 
     assert(errThrown, `Must throw error in case other node node is not reachable`)
 
