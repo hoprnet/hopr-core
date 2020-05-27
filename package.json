@@ -1,6 +1,6 @@
 {
   "name": "@hoprnet/hopr-core",
-  "version": "0.4.3-dev.59f99ec",
+  "version": "0.4.6-dev.878fb3f",
   "description": "Privacy-preserving messaging protocol with incentivations for relay operators",
   "license": "GPL-3.0-only",
   "keywords": [
@@ -8,8 +8,8 @@
     "web3",
     "messaging"
   ],
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
+  "main": "lib/src/index.js",
+  "types": "lib/src/index.d.ts",
   "files": [
     "lib/",
     "README.md"
@@ -32,7 +32,7 @@
     "clean": "rm -rf ./lib",
     "fundAccounts": "ts-node -T ./scripts/fundAccounts.ts",
     "test": "mocha --exit",
-    "prepublish": "yarn build"
+    "prepublishOnly": "yarn build"
   },
   "dependencies": {
     "@hoprnet/hopr-core-connector-interface": "1.0.1-0",
