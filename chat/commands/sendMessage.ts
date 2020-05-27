@@ -1,5 +1,5 @@
 import type HoprCoreConnector from '@hoprnet/hopr-core-connector-interface'
-import type Hopr from '../../src'
+import type Hopr from '@hoprnet/hopr-core'
 import type AbstractCommand from './abstractCommand'
 
 import chalk from 'chalk'
@@ -7,10 +7,9 @@ import chalk from 'chalk'
 import type PeerId from 'peer-id'
 import type PeerInfo from 'peer-info'
 
-import { checkPeerIdInput, encodeMessage, isBootstrapNode } from '../utils'
+import { checkPeerIdInput, encodeMessage, isBootstrapNode, getOpenChannels } from '../utils'
 import { clearString } from '@hoprnet/hopr-utils'
-import { getOpenChannels } from '../utils'
-import { MAX_HOPS } from '../../src/constants'
+import { MAX_HOPS } from '@hoprnet/hopr-core/lib/src/constants'
 
 import readline from 'readline'
 
