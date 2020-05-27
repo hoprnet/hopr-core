@@ -1,4 +1,6 @@
 import net from 'net'
+import abortable from 'abortable-iterator'
+
 import type { Socket } from 'net'
 import mafmt from 'mafmt'
 const errCode = require('err-code')
@@ -383,7 +385,7 @@ class TCP {
 
         if (err) {
           reject(err)
-        } else if (this.connHandler) {
+        } else {
           resolve(conn)
         }
       }
@@ -407,7 +409,11 @@ class TCP {
 
       while (!connected) {
         const msg = await shaker.read()
-        channel.signal(JSON.parse(this._decoder.decode(msg.slice())))
+        if (msg) {
+          channel.signal(JSON.parse(this._decoder.decode(msg.slice())))
+        } else {
+          connected = false
+        }
       }
     })
   }
@@ -512,8 +518,14 @@ class TCP {
 
       channel.once('connect', onConnect)
 
+      let msg: any
       while (!connected) {
-        channel.signal(JSON.parse(this._decoder.decode((await shaker.read()).slice())))
+        msg = await shaker.read()
+        if (msg) {
+          channel.signal(JSON.parse(this._decoder.decode(msg.slice())))
+        } else {
+          connected = true
+        }
       }
     })
   }

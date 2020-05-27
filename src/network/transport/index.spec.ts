@@ -126,6 +126,38 @@ describe('should create a socket and connect to it', function () {
     await Promise.all([sender.stop(), counterparty.stop()])
   })
 
+  it('should establish a direct connection between two nodes over IPv6', async function () {
+    const [sender, counterparty] = await Promise.all([
+      generateNode({ id: 0, ipv6: true, useWebRTC: false }),
+      generateNode({ id: 1, ipv6: true, useWebRTC: false }),
+    ])
+
+    const conn = await sender.dialProtocol(
+      Multiaddr(`/ip6/::1/tcp/9093/p2p/${counterparty.peerInfo.id.toB58String()}`),
+      TEST_PROTOCOL
+    )
+
+    let msgReceived = false
+    const testMessage = randomBytes(123)
+
+    await pipe(
+      /* prettier-ignore */
+      [testMessage],
+      conn.stream,
+      async (source: AsyncIterable<Uint8Array>) => {
+        for await (const msg of source) {
+          assert(u8aEquals(msg.slice(), testMessage), 'sent message and received message must be identical')
+          msgReceived = true
+          return
+        }
+      }
+    )
+
+    assert(msgReceived, `Message must be received by counterparty.`)
+
+    await Promise.all([sender.stop(), counterparty.stop()])
+  })
+
   it('must not establish a connection to a non-existing node', async function () {
     const [sender, fakeCounterparty] = await Promise.all([
       generateNode({ id: 0, ipv4: true, useWebRTC: false }),
@@ -252,53 +284,53 @@ describe('should create a socket and connect to it', function () {
     ])
   })
 
-  // it('should set up a relayed connection and upgrade to WebRTC', async function () {
-  //   const relay = await generateNode({ id: 2, ipv4: true, ipv6: true })
+  it('should set up a relayed connection and upgrade to WebRTC', async function () {
+    const relay = await generateNode({ id: 2, ipv4: true, ipv6: true })
 
-  //   const [sender, counterparty] = await Promise.all([
-  //     generateNode({ id: 0, ipv4: true }, relay.peerInfo),
-  //     generateNode({ id: 1, ipv6: true }, relay.peerInfo),
-  //   ])
+    const [sender, counterparty] = await Promise.all([
+      generateNode({ id: 0, ipv4: true }, relay.peerInfo),
+      generateNode({ id: 1, ipv6: true }, relay.peerInfo),
+    ])
 
-  //   console.log(`Sender       ${chalk.yellow(sender.peerInfo.id.toB58String())}`)
-  //   console.log(`Counterparty ${chalk.yellow(counterparty.peerInfo.id.toB58String())}\n`)
+    console.log(`Sender       ${chalk.yellow(sender.peerInfo.id.toB58String())}`)
+    console.log(`Counterparty ${chalk.yellow(counterparty.peerInfo.id.toB58String())}\n`)
 
-  //   console.log(`Relay        ${chalk.yellow(relay.peerInfo.id.toB58String())}\n`)
+    console.log(`Relay        ${chalk.yellow(relay.peerInfo.id.toB58String())}\n`)
 
-  //   connectionHelper([sender, relay])
-  //   connectionHelper([relay, counterparty])
+    connectionHelper([sender, relay])
+    connectionHelper([relay, counterparty])
 
-  //   // const conn1 = await sender.dial(counterparty.peerInfo)
+    // const conn1 = await sender.dial(counterparty.peerInfo)
 
-  //   // sender.peerStore.remove(counterparty.peerInfo.id)
-  //   // await sender.hangUp(counterparty.peerInfo)
+    // sender.peerStore.remove(counterparty.peerInfo.id)
+    // await sender.hangUp(counterparty.peerInfo)
 
-  //   const INVALID_PORT = 8758
-  //   const conn2 = await sender.dialProtocol(
-  //     Multiaddr(`/ip4/127.0.0.1/tcp/${INVALID_PORT}/p2p/${counterparty.peerInfo.id.toB58String()}`),
-  //     TEST_PROTOCOL
-  //   )
+    const INVALID_PORT = 8758
+    const conn2 = await sender.dialProtocol(
+      Multiaddr(`/ip4/127.0.0.1/tcp/${INVALID_PORT}/p2p/${counterparty.peerInfo.id.toB58String()}`),
+      TEST_PROTOCOL
+    )
 
-  //   const testMessage = new TextEncoder().encode('12356')
-  //   await pipe(
-  //     /* prettier-ignore */
-  //     [testMessage],
-  //     conn2.stream,
-  //     async (source: AsyncIterable<Uint8Array>) => {
-  //       for await (const msg of source) {
-  //         assert(u8aEquals(msg.slice(), testMessage), 'sent message and received message must be identical')
-  //         console.log(`message received`)
-  //         return
-  //       }
-  //     }
-  //   )
+    const testMessage = new TextEncoder().encode('12356')
+    await pipe(
+      /* prettier-ignore */
+      [testMessage],
+      conn2.stream,
+      async (source: AsyncIterable<Uint8Array>) => {
+        for await (const msg of source) {
+          assert(u8aEquals(msg.slice(), testMessage), 'sent message and received message must be identical')
+          console.log(`message received`)
+          return
+        }
+      }
+    )
 
-  //   await Promise.all([
-  //     sender.stop(),
-  //     counterparty.stop(),
-  //     relay.stop()
-  //   ])
-  // })
+    await Promise.all([
+      sender.stop(),
+      counterparty.stop(),
+      relay.stop()
+    ])
+  })
 })
 
 /**
