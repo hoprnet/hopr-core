@@ -37,7 +37,7 @@ export const keywords: string[][] = [
   ['balance', 'shows our current balance'],
   ['listConnectors', 'lists all installed blockchain connectors'],
   ['ping', 'pings another node to check its availability'],
-  ['version', 'shows the versions for `hopr-core` and active `connector`'],
+  ['version', 'shows the versions for `hopr-chat` and `hopr-core`'],
   ['help', 'shows this help page'],
 ].sort((a, b) => a[0].localeCompare(b[0], 'en', { sensitivity: 'base' }))
 
