@@ -1,11 +1,11 @@
 import type AbstractCommand from './abstractCommand'
-import pkg from '../../package.json'
+import pkg from '../package.json'
 
 export default class Version implements AbstractCommand {
-  constructor() {}
+  #display = [`hopr-chat: ${pkg.version}`, `hopr-core: ${pkg.dependencies['@hoprnet/hopr-core']}`].join('\n')
 
-  async execute(query?: string) {
-    console.log(pkg.version)
+  async execute() {
+    console.log(this.#display)
   }
 
   complete() {}
