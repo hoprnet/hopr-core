@@ -7,8 +7,7 @@
     "target": "es2019",
     "declaration": true,
     "sourceMap": true,
-    "noEmit": true,
-    "resolveJsonModule": true
+    "noEmit": true
   },
-  "include": ["src/**/*.ts"],
+  "include": ["./**/*.ts"]
 }

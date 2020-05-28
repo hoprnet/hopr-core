@@ -30,10 +30,12 @@ import Debug, { Debugger } from 'debug'
 import PeerId from 'peer-id'
 import PeerInfo from 'peer-info'
 
+import { Handler } from './network/transport/types'
+
 import type HoprCoreConnector from '@hoprnet/hopr-core-connector-interface'
 import type { HoprCoreConnectorStatic } from '@hoprnet/hopr-core-connector-interface'
 
-import { Interactions, Duplex } from './interactions'
+import { Interactions } from './interactions'
 import * as DbKeys from './dbKeys'
 
 interface NetOptions {
@@ -70,12 +72,12 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
   public bootstrapServers: PeerInfo[]
 
   // @TODO add libp2p types
-  declare dial: (addr: Multiaddr | PeerInfo | PeerId, options?: { signal: AbortSignal }) => Promise<any>
+  declare dial: (addr: Multiaddr | PeerInfo | PeerId, options?: { signal: AbortSignal }) => Promise<Handler>
   declare dialProtocol: (
     addr: Multiaddr | PeerInfo | PeerId,
     protocol: string,
     options?: { signal: AbortSignal }
-  ) => Promise<{ stream: Duplex; protocol: string }>
+  ) => Promise<Handler>
   declare hangUp: (addr: PeerInfo | PeerId | Multiaddr | string) => Promise<void>
   declare peerInfo: PeerInfo
   declare peerStore: {
@@ -120,7 +122,7 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
           config: {
             transport: {
               TCP: {
-                bootstrap: options.bootstrapServers,
+                bootstrapServers: options.bootstrapServers,
               },
             },
             dht: {
@@ -225,7 +227,7 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
 
     this.log(`Database closed.`)
 
-    this.network.heartbeat?.stop()
+    await this.network.stop()
 
     await this.paymentChannels?.stop()
 
@@ -337,7 +339,9 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
       // exclude bootstrap server(s) from crawling results
       !this.bootstrapServers.some((pInfo: PeerInfo) => pInfo.id.isEqual(peerInfo.id))
 
-    await this.network.crawler.crawl(filter)
+    try {
+      await this.network.crawler.crawl(filter)
+    } catch {}
 
     const array = []
     for (const peerInfo of this.peerStore.peers.values()) {
