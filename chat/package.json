@@ -1,10 +1,10 @@
 {
   "name": "@hoprnet/hopr-chat",
-  "version": "0.0.0",
+  "version": "1.0.0-rc",
   "description": "",
   "main": "index.ts",
   "scripts": {
-    "build": "yarn clean && tsc -p . --noEmit false",
+    "build": "yarn clean && tsc -p . --noEmit false && cp package.json lib",
     "clean": "rm -rf ./lib",
     "test": "mocha --exit || echo '⚠️  Currently no tests available'",
     "start": "node lib/index.js"
@@ -17,7 +17,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@hoprnet/hopr-core": "^0.4.5-dev.f7beb27",
+    "@hoprnet/hopr-core": "0.5.3-natTraversal.56db0cd",
     "@hoprnet/hopr-core-connector-interface": "^1.0.1-0",
     "@hoprnet/hopr-core-ethereum": "~0.0.3-dev.3102b43",
     "@hoprnet/hopr-demo-seeds": "1.0.1",
