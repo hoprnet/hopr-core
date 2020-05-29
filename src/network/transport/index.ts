@@ -18,7 +18,7 @@ import libp2p = require('libp2p')
 import { createListener, Listener } from './listener'
 import { multiaddrToNetConfig } from './utils'
 import { AbortError } from 'abortable-iterator'
-import { USE_WEBRTC, CODE_P2P, RELAY_CIRCUIT_TIMEOUT, USE_OWN_STUN_SERVERS } from './constants'
+import { USE_WEBRTC, CODE_P2P, RELAY_CIRCUIT_TIMEOUT, USE_OWN_STUN_SERVERS, WEBRTC_TIMEOUT } from './constants'
 
 import Multiaddr from 'multiaddr'
 import PeerInfo from 'peer-info'
@@ -269,23 +269,24 @@ class TCP {
       relay: connection.remotePeer,
     }
 
-    // sinkBuffer.end()
-    this.handleWebRTC(srcBuffer, sinkBuffer)
-    conn = await this._upgrader.upgradeInbound(this.relayToConn(relayConn))
-
-    // if (this._useWebRTC) {
-    //   try {
-    //     conn = await this.handleWebRTC(srcBuffer, sinkBuffer)
-    //   } catch (err) {
-    //     log(`Could not establish WebRTC connection. Error was: ${err}`)
-
-    //     console.log('webrtc successfully failed')
-    //   }
-    // } else {
-    //   srcBuffer.end()
-    //   sinkBuffer.end()
-    //   conn = await this._upgrader.upgradeInbound(this.relayToConn(relayConn))
-    // }
+    try {
+      if (this._useWebRTC) {
+        setTimeout(() => {
+          sinkBuffer.end()
+          srcBuffer.end()
+        }, WEBRTC_TIMEOUT)
+        conn = await Promise.race([
+          this.handleWebRTC(srcBuffer, sinkBuffer),
+          this._upgrader.upgradeInbound(this.relayToConn(relayConn)),
+        ])
+      } else {
+        sinkBuffer.end()
+        srcBuffer.end()
+        conn = await this._upgrader.upgradeInbound(this.relayToConn(relayConn))
+      }
+    } catch (err) {
+      console.log(err)
+    }
 
     this.connHandler?.call(conn)
 
@@ -439,9 +440,7 @@ class TCP {
         srcBuffer.end()
         sinkBuffer.end()
 
-        if (err || this._failIntentionallyOnWebRTC) {
-          reject(err)
-        } else {
+        if (!err && !this._failIntentionallyOnWebRTC) {
           resolve(conn)
         }
       }
@@ -550,9 +549,7 @@ class TCP {
         srcBuffer.end()
         sinkBuffer.end()
 
-        if (err || this._failIntentionallyOnWebRTC) {
-          reject(err)
-        } else {
+        if (!err && !this._failIntentionallyOnWebRTC) {
           resolve(conn)
         }
       }
@@ -659,28 +656,20 @@ class TCP {
       relay: relayConnection.remotePeer,
     }
 
-    this.tryWebRTC(srcBuffer, sinkBuffer, destination, { signal: options.signal })
-    conn = await this._upgrader.upgradeOutbound(this.relayToConn(relayConn))
-
-    // if (u8aEquals(answer, OK)) {
-    //   if (this._useWebRTC) {
-    //     try {
-    //       conn = await this.tryWebRTC(srcBuffer, sinkBuffer, destination, { signal: options.signal })
-    //     } catch (err) {
-    //       console.log('heree')
-    //       conn = await this._upgrader.upgradeOutbound(this.relayToConn(relayConn))
-    //       console.log('hereee')
-    //     }
-    //   } else {
-    //     conn = await this._upgrader.upgradeOutbound(this.relayToConn(relayConn))
-    //   }
-    // } else {
-    //   throw Error(
-    //     `Could not establish relayed connection to ${chalk.yellow(destination.toB58String())} over relay ${chalk.yellow(
-    //       relayConnection.remotePeer.toB58String()
-    //     )}.`
-    //   )
-    // }
+    if (this._useWebRTC) {
+      setTimeout(() => {
+        sinkBuffer.end()
+        srcBuffer.end()
+      }, WEBRTC_TIMEOUT)
+      conn = await Promise.race([
+        this.tryWebRTC(srcBuffer, sinkBuffer, destination, { signal: options.signal }),
+        this._upgrader.upgradeOutbound(this.relayToConn(relayConn)),
+      ])
+    } else {
+      sinkBuffer.end()
+      srcBuffer.end()
+      conn = await this._upgrader.upgradeOutbound(this.relayToConn(relayConn))
+    }
 
     return conn
   }
