@@ -125,7 +125,11 @@ describe('should create a socket and connect to it', function () {
 
     assert(msgReceived, `Message must be received by counterparty.`)
 
-    await Promise.all([sender.stop(), counterparty.stop()])
+    await Promise.all([
+      /* prettier-ignore */
+      sender.stop(), 
+      counterparty.stop()
+    ])
   })
 
   it('should establish a direct connection between two nodes over IPv6', async function () {
@@ -181,68 +185,76 @@ describe('should create a socket and connect to it', function () {
     await Promise.all([sender.stop()])
   })
 
-  // it('must not establish a relayed connection to a non-existing node', async function () {
-  //   this.timeout(RELAY_CIRCUIT_TIMEOUT * 2)
+  it('must not establish a relayed connection to a non-existing node', async function () {
+    this.timeout(RELAY_CIRCUIT_TIMEOUT * 2)
 
-  //   const relay = await generateNode({ id: 2, ipv4: true })
+    const relay = await generateNode({ id: 2, ipv4: true })
 
-  //   const [sender, fakeCounterparty] = await Promise.all([
-  //     generateNode({ id: 0, ipv4: true, useWebRTC: false }, relay.peerInfo),
-  //     privKeyToPeerId(randomBytes(32)),
-  //   ])
+    const [sender, fakeCounterparty] = await Promise.all([
+      generateNode({ id: 0, ipv4: true, useWebRTC: false }, relay.peerInfo),
+      privKeyToPeerId(randomBytes(32)),
+    ])
 
-  //   connectionHelper([sender, relay])
+    connectionHelper([sender, relay])
 
-  //   let errThrown = false
-  //   const INVALID_PORT = 9999
-  //   try {
-  //     await sender.dialProtocol(
-  //       Multiaddr(`/ip4/127.0.0.1/tcp/${INVALID_PORT}/p2p/${fakeCounterparty.toB58String()}`),
-  //       TEST_PROTOCOL
-  //     )
-  //   } catch (err) {
-  //     errThrown = true
-  //   }
+    let errThrown = false
+    const INVALID_PORT = 9999
+    try {
+      await sender.dialProtocol(
+        Multiaddr(`/ip4/127.0.0.1/tcp/${INVALID_PORT}/p2p/${fakeCounterparty.toB58String()}`),
+        TEST_PROTOCOL
+      )
+    } catch (err) {
+      errThrown = true
+    }
 
-  //   assert(errThrown, `Must throw error in case other node node is not reachable`)
+    assert(errThrown, `Must throw error in case other node node is not reachable`)
 
-  //   await Promise.all([sender.stop(), relay.stop()])
-  // })
+    await Promise.all([
+      /* prettier-ignore */
+      sender.stop(),
+      relay.stop(),
+    ])
+  })
 
-  // it('must not establish a relayed connection to an offline node', async function () {
-  //   this.timeout(RELAY_CIRCUIT_TIMEOUT * 2)
+  it('must not establish a relayed connection to an offline node', async function () {
+    this.timeout(RELAY_CIRCUIT_TIMEOUT * 2)
 
-  //   const relay = await generateNode({ id: 2, ipv4: true })
+    const relay = await generateNode({ id: 2, ipv4: true })
 
-  //   const [sender, offlineCounterparty] = await Promise.all([
-  //     generateNode({ id: 0, ipv4: true, useWebRTC: false }, relay.peerInfo),
-  //     generateNode({ id: 1, ipv4: true, useWebRTC: false }, relay.peerInfo),
-  //   ])
+    const [sender, offlineCounterparty] = await Promise.all([
+      generateNode({ id: 0, ipv4: true, useWebRTC: false }, relay.peerInfo),
+      generateNode({ id: 1, ipv4: true, useWebRTC: false }, relay.peerInfo),
+    ])
 
-  //   connectionHelper([sender, relay])
-  //   connectionHelper([relay, offlineCounterparty])
+    connectionHelper([sender, relay])
+    connectionHelper([relay, offlineCounterparty])
 
-  //   await offlineCounterparty.stop()
+    await offlineCounterparty.stop()
 
-  //   let errThrown = false
-  //   const INVALID_PORT = 9999
+    let errThrown = false
+    const INVALID_PORT = 9999
 
-  //   const now = Date.now()
-  //   try {
-  //     await sender.dialProtocol(
-  //       Multiaddr(`/ip4/127.0.0.1/tcp/${INVALID_PORT}/p2p/${offlineCounterparty.peerInfo.id.toB58String()}`),
-  //       TEST_PROTOCOL
-  //     )
-  //   } catch (err) {
-  //     errThrown = true
-  //   }
+    const now = Date.now()
+    try {
+      await sender.dialProtocol(
+        Multiaddr(`/ip4/127.0.0.1/tcp/${INVALID_PORT}/p2p/${offlineCounterparty.peerInfo.id.toB58String()}`),
+        TEST_PROTOCOL
+      )
+    } catch (err) {
+      errThrown = true
+    }
 
-  //   assert(Date.now() - now >= RELAY_CIRCUIT_TIMEOUT, `Establishing connection must not fail before relay timeout`)
+    assert(Date.now() - now >= RELAY_CIRCUIT_TIMEOUT, `Establishing connection must not fail before relay timeout`)
 
-  //   assert(errThrown, `Must throw error in case other node node is not reachable`)
+    assert(errThrown, `Must throw error in case other node node is not reachable`)
 
-  //   await Promise.all([sender.stop(), relay.stop()])
-  // })
+    await Promise.all([
+      /* prettier-ignore */
+      sender.stop(), 
+      relay.stop()
+    ])
+  })
 
   it('should set up a relayed connection and exchange messages', async function () {
     const relay = await generateNode({ id: 2, ipv4: true, ipv6: true })
@@ -345,7 +357,6 @@ describe('should create a socket and connect to it', function () {
       Multiaddr(`/ip4/127.0.0.1/tcp/${INVALID_PORT}/p2p/${counterparty.peerInfo.id.toB58String()}`),
       TEST_PROTOCOL
     )
-
 
     let msgReceived = false
 

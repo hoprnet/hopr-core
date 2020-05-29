@@ -596,11 +596,11 @@ class TCP {
   async dialWithRelay(ma: Multiaddr, relays: PeerInfo[], options?: DialOptions): Promise<Connection> {
     const destination = PeerId.createFromCID(ma.getPeerId())
 
-    let relayConnection = await Promise.race(
-      relays.map(
-        (relay: PeerInfo) =>
-          this._registrar.getConnection(relay) || this._dialer.connectToPeer(relay, { signal: options?.signal })
-      )
+    let [relayConnection, index] = await Promise.race(
+      relays.map(async (relay: PeerInfo, index: number): Promise<[Connection, number]> => [
+        this._registrar.getConnection(relay) || (await this._dialer.connectToPeer(relay, { signal: options?.signal })),
+        index
+      ])
     )
 
     if (!relayConnection) {
@@ -620,6 +620,12 @@ class TCP {
     let answer = (await shaker.read())?.slice()
 
     shaker.rest()
+
+    if (!u8aEquals(answer, OK)) {
+      throw Error(
+        `Could not establish relayed connection to ${chalk.blue(destination.toB58String())} over relay ${relays[index].id.toB58String()}`
+      )
+    }
 
     let conn: Connection
 
