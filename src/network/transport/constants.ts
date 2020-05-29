@@ -11,4 +11,4 @@ export const USE_OWN_STUN_SERVERS = false
 
 export const WEBRTC_TIMEOUT = 1000
 
-export const USE_WEBRTC = false
+export const USE_WEBRTC = true

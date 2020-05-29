@@ -24,7 +24,7 @@ import { u8aEquals } from '@hoprnet/hopr-utils'
 import chalk from 'chalk'
 import { randomBytes } from 'crypto'
 import { privKeyToPeerId } from '../../utils'
-import { RELAY_CIRCUIT_TIMEOUT } from './constants'
+import { RELAY_CIRCUIT_TIMEOUT, WEBRTC_TIMEOUT } from './constants'
 
 const TEST_PROTOCOL = `/test/0.0.1`
 
@@ -36,7 +36,8 @@ describe('should create a socket and connect to it', function () {
       ipv6?: boolean
       useWebRTC?: boolean
       startNode?: boolean
-      failIntentionallyOnWebRTC?: boolean
+      failIntentionallyOnWebRTC?: boolean,
+      timeoutIntentionallyOnWebRTC?: Promise<void>
     },
     bootstrap?: PeerInfo
   ): Promise<libp2p> {
@@ -68,6 +69,7 @@ describe('should create a socket and connect to it', function () {
             useWebRTC: options.useWebRTC,
             bootstrapServers: [bootstrap],
             failIntentionallyOnWebRTC: options.failIntentionallyOnWebRTC,
+            timeoutIntentionallyOnWebRTC: options.timeoutIntentionallyOnWebRTC
           },
         },
         dht: {
@@ -268,6 +270,7 @@ describe('should create a socket and connect to it', function () {
     connectionHelper([relay, counterparty])
 
     const INVALID_PORT = 8758
+
     const conn = await sender.dialProtocol(
       Multiaddr(`/ip4/127.0.0.1/tcp/${INVALID_PORT}/p2p/${counterparty.peerInfo.id.toB58String()}`),
       TEST_PROTOCOL
@@ -382,7 +385,54 @@ describe('should create a socket and connect to it', function () {
       relay.stop()
     ])
   })
+
+  it('should set up a relayed connection and timeout while upgrading to WebRTC', async function () {
+    const relay = await generateNode({ id: 2, ipv4: true, ipv6: true })
+
+    const [sender, counterparty] = await Promise.all([
+      generateNode({ id: 0, ipv4: true, timeoutIntentionallyOnWebRTC: new Promise(resolve => setTimeout(resolve, WEBRTC_TIMEOUT)) }, relay.peerInfo),
+      generateNode({ id: 1, ipv6: true, timeoutIntentionallyOnWebRTC: new Promise(resolve => setTimeout(resolve, WEBRTC_TIMEOUT)) }, relay.peerInfo),
+    ])
+
+    connectionHelper([sender, relay])
+    connectionHelper([relay, counterparty])
+
+    const now = Date.now()
+
+    const INVALID_PORT = 8758
+    const conn = await sender.dialProtocol(
+      Multiaddr(`/ip4/127.0.0.1/tcp/${INVALID_PORT}/p2p/${counterparty.peerInfo.id.toB58String()}`),
+      TEST_PROTOCOL
+    )
+
+    assert(Date.now() - now >= WEBRTC_TIMEOUT, `Connection must not succeed before WebRTC timeout`)
+
+    let msgReceived = false
+
+    const testMessage = randomBytes(123)
+    await pipe(
+      /* prettier-ignore */
+      [testMessage],
+      conn.stream,
+      async (source: AsyncIterable<Uint8Array>) => {
+        for await (const msg of source) {
+          assert(u8aEquals(msg.slice(), testMessage), 'sent message and received message must be identical')
+          msgReceived = true
+          return
+        }
+      }
+    )
+
+    assert(msgReceived, `message must be received`)
+
+    await Promise.all([
+      sender.stop(),
+      counterparty.stop(),
+      relay.stop()
+    ])
+  })
 })
+
 
 /**
  * Informs each node about the others existence.

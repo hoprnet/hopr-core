@@ -84,6 +84,7 @@ class TCP {
   private _useOwnStunServers: boolean
   // ONLY FOR TESTING
   private _failIntentionallyOnWebRTC: boolean
+  private _timeoutIntentionallyOnWebRTC?: Promise<void>
   // END ONLY FOR TESTING
   private _upgrader: Upgrader
   private _dialer: Dialer
@@ -106,6 +107,7 @@ class TCP {
     useWebRTC,
     useOwnStunServers,
     failIntentionallyOnWebRTC,
+    timeoutIntentionallyOnWebRTC,
   }: {
     upgrader: Upgrader
     libp2p: libp2p
@@ -113,6 +115,7 @@ class TCP {
     useWebRTC: boolean
     useOwnStunServers: boolean
     failIntentionallyOnWebRTC: boolean
+    timeoutIntentionallyOnWebRTC?: Promise<void>
   }) {
     if (!upgrader) {
       throw new Error('An upgrader must be provided. See https://github.com/libp2p/interface-transport#upgrader.')
@@ -148,6 +151,7 @@ class TCP {
       }
     }
 
+    this._timeoutIntentionallyOnWebRTC = timeoutIntentionallyOnWebRTC
     this._failIntentionallyOnWebRTC = failIntentionallyOnWebRTC || false
     this._useOwnStunServers = useOwnStunServers === undefined ? USE_OWN_STUN_SERVERS : useOwnStunServers
     this._useWebRTC = useWebRTC === undefined ? USE_WEBRTC : useWebRTC
@@ -269,23 +273,19 @@ class TCP {
       relay: connection.remotePeer,
     }
 
-    try {
-      if (this._useWebRTC) {
-        setTimeout(() => {
-          sinkBuffer.end()
-          srcBuffer.end()
-        }, WEBRTC_TIMEOUT)
-        conn = await Promise.race([
-          this.handleWebRTC(srcBuffer, sinkBuffer),
-          this._upgrader.upgradeInbound(this.relayToConn(relayConn)),
-        ])
-      } else {
+    if (this._useWebRTC) {
+      setTimeout(() => {
         sinkBuffer.end()
         srcBuffer.end()
-        conn = await this._upgrader.upgradeInbound(this.relayToConn(relayConn))
-      }
-    } catch (err) {
-      console.log(err)
+      }, WEBRTC_TIMEOUT)
+      conn = await Promise.race([
+        this.handleWebRTC(srcBuffer, sinkBuffer),
+        this._upgrader.upgradeInbound(this.relayToConn(relayConn)),
+      ])
+    } else {
+      sinkBuffer.end()
+      srcBuffer.end()
+      conn = await this._upgrader.upgradeInbound(this.relayToConn(relayConn))
     }
 
     this.connHandler?.call(conn)
@@ -424,7 +424,7 @@ class TCP {
   }
 
   handleWebRTC(srcBuffer: Pushable<Uint8Array>, sinkBuffer: Pushable<Uint8Array>): Promise<Connection> {
-    return new Promise<Connection>(async (resolve, reject) => {
+    return new Promise<Connection>(async resolve => {
       let channel: SimplePeerInstance
       if (this._useOwnStunServers) {
         channel = new Peer({ wrtc, trickle: true, config: { iceServers: this.stunServers } })
@@ -432,16 +432,20 @@ class TCP {
         channel = new Peer({ wrtc, trickle: true })
       }
 
-      const done = (err?: Error, conn?: Connection) => {
+      const done = async (err?: Error, conn?: Connection) => {
         channel.removeListener('connect', onConnect)
         channel.removeListener('error', onError)
         channel.removeListener('signal', onSignal)
 
-        srcBuffer.end()
-        sinkBuffer.end()
+        if (this._timeoutIntentionallyOnWebRTC !== undefined) {
+          await this._timeoutIntentionallyOnWebRTC
+        } else {
+          srcBuffer.end()
+          sinkBuffer.end()
 
-        if (!err && !this._failIntentionallyOnWebRTC) {
-          resolve(conn)
+          if (!err && !this._failIntentionallyOnWebRTC) {
+            resolve(conn)
+          }
         }
       }
 
@@ -540,17 +544,21 @@ class TCP {
         })
       }
 
-      const done = (err?: Error, conn?: Connection) => {
+      const done = async (err?: Error, conn?: Connection) => {
         channel.removeListener('connect', onConnect)
         channel.removeListener('error', onError)
         channel.removeListener('signal', onSignal)
         options.signal && options.signal.removeEventListener('abort', onAbort)
 
-        srcBuffer.end()
-        sinkBuffer.end()
+        if (this._timeoutIntentionallyOnWebRTC !== undefined) {
+          await this._timeoutIntentionallyOnWebRTC
+        } else {
+          srcBuffer.end()
+          sinkBuffer.end()
 
-        if (!err && !this._failIntentionallyOnWebRTC) {
-          resolve(conn)
+          if (!err && !this._failIntentionallyOnWebRTC) {
+            resolve(conn)
+          }
         }
       }
 
@@ -597,10 +605,13 @@ class TCP {
     const destination = PeerId.createFromCID(ma.getPeerId())
 
     let [relayConnection, index] = await Promise.race(
-      relays.map(async (relay: PeerInfo, index: number): Promise<[Connection, number]> => [
-        this._registrar.getConnection(relay) || (await this._dialer.connectToPeer(relay, { signal: options?.signal })),
-        index
-      ])
+      relays.map(
+        async (relay: PeerInfo, index: number): Promise<[Connection, number]> => [
+          this._registrar.getConnection(relay) ||
+            (await this._dialer.connectToPeer(relay, { signal: options?.signal })),
+          index,
+        ]
+      )
     )
 
     if (!relayConnection) {
@@ -623,7 +634,9 @@ class TCP {
 
     if (!u8aEquals(answer, OK)) {
       throw Error(
-        `Could not establish relayed connection to ${chalk.blue(destination.toB58String())} over relay ${relays[index].id.toB58String()}`
+        `Could not establish relayed connection to ${chalk.blue(destination.toB58String())} over relay ${relays[
+          index
+        ].id.toB58String()}`
       )
     }
 
