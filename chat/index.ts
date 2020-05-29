@@ -251,6 +251,8 @@ async function main() {
   console.log(`Utils Version: ${chalk.bold(packageJSON.dependencies['@hoprnet/hopr-utils'])}`)
   console.log(`Connector Version: ${chalk.bold(packageJSON.dependencies['@hoprnet/hopr-core-connector-interface'])}\n`)
 
+  console.log(`Bootstrap Servers: ${chalk.bold(process.env['BOOTSTRAP_SERVERS'])}\n`)
+
   let options: HoprOptions
   try {
     options = await parseOptions()
