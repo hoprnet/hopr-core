@@ -1,4 +1,5 @@
 import assert from 'assert'
+import AbortController from 'abort-controller'
 
 // @ts-ignore
 import libp2p = require('libp2p')
@@ -21,7 +22,6 @@ import pipe from 'it-pipe'
 
 import { u8aEquals } from '@hoprnet/hopr-utils'
 
-import chalk from 'chalk'
 import { randomBytes } from 'crypto'
 import { privKeyToPeerId } from '../../utils'
 import { RELAY_CIRCUIT_TIMEOUT, WEBRTC_TIMEOUT } from './constants'
@@ -134,6 +134,28 @@ describe('should create a socket and connect to it', function () {
       counterparty.hangUp(new PeerInfo(sender.peerInfo.id)),
     ])
 
+    // Try with abort controller
+    const abort = new AbortController()
+
+    setTimeout(() => abort.abort(), 300)
+
+    try {
+      await sender.dialProtocol(
+        Multiaddr(`/ip4/127.0.0.1/tcp/9092/p2p/${counterparty.peerInfo.id.toB58String()}`),
+        TEST_PROTOCOL,
+        { signal: abort.signal }
+      )
+    } catch (err) {
+      if (err.type !== 'aborted') {
+        throw err
+      }
+    }
+
+    await Promise.all([
+      sender.hangUp(new PeerInfo(counterparty.peerInfo.id)),
+      counterparty.hangUp(new PeerInfo(sender.peerInfo.id)),
+    ])
+
     await Promise.all([
       /* prettier-ignore */
       sender.stop(),
@@ -169,6 +191,30 @@ describe('should create a socket and connect to it', function () {
     )
 
     assert(msgReceived, `Message must be received by counterparty.`)
+
+    await Promise.all([
+      sender.hangUp(new PeerInfo(counterparty.peerInfo.id)),
+      counterparty.hangUp(new PeerInfo(sender.peerInfo.id)),
+    ])
+
+    // Try with abort controller
+    const abort = new AbortController()
+
+    setTimeout(() => {
+      setImmediate(() => abort.abort())
+    }, 300)
+
+    try {
+      await sender.dialProtocol(
+        Multiaddr(`/ip6/::1/tcp/9093/p2p/${counterparty.peerInfo.id.toB58String()}`),
+        TEST_PROTOCOL,
+        { signal: abort.signal }
+      )
+    } catch (err) {
+      if (err.type !== 'aborted') {
+        throw err
+      }
+    }
 
     await Promise.all([
       sender.hangUp(new PeerInfo(counterparty.peerInfo.id)),
@@ -309,6 +355,28 @@ describe('should create a socket and connect to it', function () {
       counterparty.hangUp(new PeerInfo(sender.peerInfo.id)),
     ])
 
+    // Try with abort controller
+    const abort = new AbortController()
+
+    setTimeout(() => setImmediate(() => abort.abort()), 300)
+
+    try {
+      await sender.dialProtocol(
+        Multiaddr(`/ip4/127.0.0.1/tcp/${INVALID_PORT}/p2p/${counterparty.peerInfo.id.toB58String()}`),
+        TEST_PROTOCOL,
+        { signal: abort.signal }
+      )
+    } catch (err) {
+      if (err.type !== 'aborted') {
+        throw err
+      }
+    }
+
+    await Promise.all([
+      sender.hangUp(new PeerInfo(counterparty.peerInfo.id)),
+      counterparty.hangUp(new PeerInfo(sender.peerInfo.id)),
+    ])
+
     await Promise.all([
       /* prettier-ignore */
       sender.stop(),
@@ -351,6 +419,28 @@ describe('should create a socket and connect to it', function () {
     )
 
     assert(msgReceived, `msg must be received`)
+
+    await Promise.all([
+      sender.hangUp(new PeerInfo(counterparty.peerInfo.id)),
+      counterparty.hangUp(new PeerInfo(sender.peerInfo.id)),
+    ])
+
+    // Try with abort controller
+    const abort = new AbortController()
+
+    setTimeout(() => setImmediate(() => abort.abort()), 300)
+
+    try {
+      await sender.dialProtocol(
+        Multiaddr(`/ip4/127.0.0.1/tcp/${INVALID_PORT}/p2p/${counterparty.peerInfo.id.toB58String()}`),
+        TEST_PROTOCOL,
+        { signal: abort.signal }
+      )
+    } catch (err) {
+      if (err.type !== 'aborted') {
+        throw err
+      }
+    }
 
     await Promise.all([
       sender.hangUp(new PeerInfo(counterparty.peerInfo.id)),
@@ -592,7 +682,10 @@ describe('should create a socket and connect to it', function () {
     connectionHelper([relay, counterparty])
 
     const INVALID_PORT = 8758
-    const { stream }: { stream: Stream } = await sender.dialProtocol(Multiaddr(`/p2p/${counterparty.peerInfo.id.toB58String()}`), TEST_PROTOCOL)
+    const { stream }: { stream: Stream } = await sender.dialProtocol(
+      Multiaddr(`/p2p/${counterparty.peerInfo.id.toB58String()}`),
+      TEST_PROTOCOL
+    )
 
     let msgReceived = false
     const testMessage = randomBytes(33)
@@ -682,7 +775,6 @@ describe('should create a socket and connect to it', function () {
     filteredMultiaddr = TransportModule.filter([ip6Multiaddr])
     assert(filteredMultiaddr.length == 1 && filteredMultiaddr[0].equals(ip6Multiaddr))
   })
-
 })
 
 /**

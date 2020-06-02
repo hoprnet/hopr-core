@@ -1,5 +1,5 @@
 import net from 'net'
-import abortable from 'abortable-iterator'
+import abortable, { AbortError } from 'abortable-iterator'
 
 import type { Socket } from 'net'
 import mafmt from 'mafmt'
@@ -17,7 +17,6 @@ import libp2p = require('libp2p')
 
 import { createListener, Listener } from './listener'
 import { multiaddrToNetConfig } from './utils'
-import { AbortError } from 'abortable-iterator'
 import { USE_WEBRTC, CODE_P2P, RELAY_CIRCUIT_TIMEOUT, USE_OWN_STUN_SERVERS, WEBRTC_TIMEOUT } from './constants'
 
 import Multiaddr from 'multiaddr'
@@ -248,7 +247,7 @@ class TCP {
     const relayConn = {
       stream: myStream,
       counterparty: sender,
-      connection
+      connection,
     }
 
     if (this._useWebRTC) {
@@ -405,32 +404,38 @@ class TCP {
   async dial(ma: Multiaddr, options?: DialOptions): Promise<Connection> {
     options = options || {}
 
+    let error: Error
     try {
       return await this.dialDirectly(ma, options)
     } catch (err) {
-      const destination = PeerId.createFromCID(ma.getPeerId())
-
-      if (this.relays === undefined) {
-        throw Error(
-          `Could not connect ${chalk.yellow(
-            ma.toString()
-          )} because there was no relay defined. Connection error was:\n${err}`
-        )
+      if (err.type === 'aborted') {
+        throw err
       }
-
-      // Check whether we know some relays that we can use
-      const potentialRelays = this.relays?.filter((peerInfo: PeerInfo) => !peerInfo.id.isEqual(destination))
-
-      if (potentialRelays == null || potentialRelays.length == 0) {
-        throw Error(
-          `Destination ${chalk.yellow(
-            ma.toString()
-          )} cannot be accessed and directly and there is no other relay node known. Connection error was:\n${err}`
-        )
-      }
-
-      return await this.dialWithRelay(ma, potentialRelays, options)
+      error = err
     }
+
+    const destination = PeerId.createFromCID(ma.getPeerId())
+
+    if (this.relays === undefined) {
+      throw Error(
+        `Could not connect ${chalk.yellow(
+          ma.toString()
+        )} because there was no relay defined. Connection error was:\n${error}`
+      )
+    }
+
+    // Check whether we know some relays that we can use
+    const potentialRelays = this.relays?.filter((peerInfo: PeerInfo) => !peerInfo.id.isEqual(destination))
+
+    if (potentialRelays == null || potentialRelays.length == 0) {
+      throw Error(
+        `Destination ${chalk.yellow(
+          ma.toString()
+        )} cannot be accessed and directly and there is no other relay node known. Connection error was:\n${error}`
+      )
+    }
+
+    return await this.dialWithRelay(ma, potentialRelays, options)
   }
 
   tryWebRTC(
@@ -468,7 +473,7 @@ class TCP {
           await this._timeoutIntentionallyOnWebRTC
         }
 
-        options.signal && options.signal.removeEventListener('abort', onAbort)
+        options.signal?.removeEventListener('abort', onAbort)
 
         srcBuffer.end()
         sinkBuffer.end()
@@ -510,6 +515,8 @@ class TCP {
       channel.once('error', onError)
 
       channel.once('connect', onConnect)
+
+      options.signal?.addEventListener('abort', onAbort)
 
       await pipe(
         /* prettier-ignore */
@@ -575,8 +582,22 @@ class TCP {
       const sinkBuffer = pushable<Uint8Array>()
       const srcBuffer = pushable<Uint8Array>()
 
+      let mySource = (async function* () {
+        for await (const msg of shaker.stream.source) {
+          if (msg.slice(0, 1)[0] == REMAINING_TRAFFIC_PREFIX) {
+            yield msg.slice(1)
+          } else if (msg.slice(0, 1)[0] == WEBRTC_TRAFFIC_PREFIX) {
+            srcBuffer.push(msg.slice(1))
+          }
+        }
+      })()
+
       myStream = {
         sink: (source: AsyncIterable<Uint8Array>) => {
+          if (options.signal) {
+            source = abortable(source, options.signal)
+          }
+
           shaker.stream.sink(
             (async function* () {
               for await (const msg of sinkBuffer) {
@@ -588,15 +609,7 @@ class TCP {
             })()
           )
         },
-        source: (async function* () {
-          for await (const msg of shaker.stream.source) {
-            if (msg.slice(0, 1)[0] == REMAINING_TRAFFIC_PREFIX) {
-              yield msg.slice(1)
-            } else if (msg.slice(0, 1)[0] == WEBRTC_TRAFFIC_PREFIX) {
-              srcBuffer.push(msg.slice(1))
-            }
-          }
-        })(),
+        source: options.signal ? abortable(mySource, options.signal) : mySource,
       }
 
       const relayConn = {
@@ -615,8 +628,22 @@ class TCP {
         this._upgrader.upgradeOutbound(this.relayToConn(relayConn)),
       ])
     } else {
+      let mySource = (async function* () {
+        for await (const msg of shaker.stream.source) {
+          if (msg.slice(0, 1)[0] == REMAINING_TRAFFIC_PREFIX) {
+            yield msg.slice(1)
+          } else if (msg.slice(0, 1)[0] == WEBRTC_TRAFFIC_PREFIX) {
+            log(`Received WebRTC message but WebRTC is not enabled on this node.`)
+          }
+        }
+      })()
+
       myStream = {
         sink: (source: AsyncIterable<Uint8Array>) => {
+          if (options.signal) {
+            source = abortable(source, options.signal)
+          }
+
           shaker.stream.sink(
             (async function* () {
               for await (const msg of source) {
@@ -625,21 +652,13 @@ class TCP {
             })()
           )
         },
-        source: (async function* () {
-          for await (const msg of shaker.stream.source) {
-            if (msg.slice(0, 1)[0] == REMAINING_TRAFFIC_PREFIX) {
-              yield msg.slice(1)
-            } else if (msg.slice(0, 1)[0] == WEBRTC_TRAFFIC_PREFIX) {
-              log(`Received WebRTC message but WebRTC is not enabled on this node.`)
-            }
-          }
-        })(),
+        source: options.signal ? abortable(mySource, options.signal) : mySource,
       }
 
       const relayConn = {
         stream: myStream,
         counterparty: destination,
-        connection: relayConnection
+        connection: relayConnection,
       }
 
       conn = await this._upgrader.upgradeOutbound(this.relayToConn(relayConn))
@@ -706,7 +725,7 @@ class TCP {
         rawSocket.removeListener('error', onError)
         rawSocket.removeListener('timeout', onTimeout)
         rawSocket.removeListener('connect', onConnect)
-        options.signal && options.signal.removeEventListener('abort', onAbort)
+        options.signal?.removeEventListener('abort', onAbort)
 
         if (err) return reject(err)
         resolve(rawSocket)
@@ -715,7 +734,7 @@ class TCP {
       rawSocket.on('error', onError)
       rawSocket.on('timeout', onTimeout)
       rawSocket.on('connect', onConnect)
-      options.signal && options.signal.addEventListener('abort', onAbort)
+      options.signal?.addEventListener('abort', onAbort)
     })
   }
 
