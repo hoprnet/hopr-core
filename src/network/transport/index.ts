@@ -548,17 +548,18 @@ class TCP {
         channel.removeListener('connect', onConnect)
         channel.removeListener('error', onError)
         channel.removeListener('signal', onSignal)
-        options.signal && options.signal.removeEventListener('abort', onAbort)
 
         if (this._timeoutIntentionallyOnWebRTC !== undefined) {
           await this._timeoutIntentionallyOnWebRTC
-        } else {
-          srcBuffer.end()
-          sinkBuffer.end()
+        }
 
-          if (!err && !this._failIntentionallyOnWebRTC) {
-            resolve(conn)
-          }
+        options.signal && options.signal.removeEventListener('abort', onAbort)
+
+        srcBuffer.end()
+        sinkBuffer.end()
+
+        if (!err && !this._failIntentionallyOnWebRTC) {
+          resolve(conn)
         }
       }
 
@@ -573,7 +574,15 @@ class TCP {
 
       const onConnect = async (): Promise<void> => {
         log(`WebRTC connection with ${counterparty.toB58String()} was successful`)
-        done(undefined, await this._upgrader.upgradeOutbound(socketToConn((channel as unknown) as Socket)))
+        done(
+          undefined,
+          await this._upgrader.upgradeOutbound(
+            socketToConn((channel as unknown) as Socket, {
+              signal: options.signal,
+              remoteAddr: Multiaddr(`/p2p/${counterparty.toB58String()}`),
+            })
+          )
+        )
       }
 
       const onError = (err?: Error) => {
@@ -606,11 +615,15 @@ class TCP {
 
     let [relayConnection, index] = await Promise.race(
       relays.map(
-        async (relay: PeerInfo, index: number): Promise<[Connection, number]> => [
-          this._registrar.getConnection(relay) ||
-            (await this._dialer.connectToPeer(relay, { signal: options?.signal })),
-          index,
-        ]
+        async (relay: PeerInfo, index: number): Promise<[Connection, number]> => {
+          let relayConnection = this._registrar.getConnection(relay)
+
+          if (!relayConnection) {
+            relayConnection = await this._dialer.connectToPeer(relay, { signal: options?.signal })
+          }
+
+          return [relayConnection, index]
+        }
       )
     )
 
@@ -641,52 +654,78 @@ class TCP {
     }
 
     let conn: Connection
-
-    const sinkBuffer = pushable<Uint8Array>()
-    const srcBuffer = pushable<Uint8Array>()
-
-    const myStream = {
-      sink: (source: AsyncIterable<Uint8Array>) => {
-        shaker.stream.sink(
-          (async function* () {
-            for await (const msg of sinkBuffer) {
-              yield new bl([new Uint8Array([WEBRTC_TRAFFIC_PREFIX]), msg])
-            }
-            for await (const msg of source) {
-              yield new bl([new Uint8Array([REMAINING_TRAFFIC_PREFIX]), msg])
-            }
-          })()
-        )
-      },
-      source: (async function* () {
-        for await (const msg of shaker.stream.source) {
-          if (msg.slice(0, 1)[0] == REMAINING_TRAFFIC_PREFIX) {
-            yield msg.slice(1)
-          } else if (msg.slice(0, 1)[0] == WEBRTC_TRAFFIC_PREFIX) {
-            srcBuffer.push(msg.slice(1))
-          }
-        }
-      })(),
-    }
-
-    const relayConn = {
-      stream: myStream,
-      counterparty: destination,
-      relay: relayConnection.remotePeer,
-    }
+    let myStream: Stream
 
     if (this._useWebRTC) {
+      const sinkBuffer = pushable<Uint8Array>()
+      const srcBuffer = pushable<Uint8Array>()
+
+      myStream = {
+        sink: (source: AsyncIterable<Uint8Array>) => {
+          shaker.stream.sink(
+            (async function* () {
+              for await (const msg of sinkBuffer) {
+                yield new bl([new Uint8Array([WEBRTC_TRAFFIC_PREFIX]), msg])
+              }
+              for await (const msg of source) {
+                yield new bl([new Uint8Array([REMAINING_TRAFFIC_PREFIX]), msg])
+              }
+            })()
+          )
+        },
+        source: (async function* () {
+          for await (const msg of shaker.stream.source) {
+            if (msg.slice(0, 1)[0] == REMAINING_TRAFFIC_PREFIX) {
+              yield msg.slice(1)
+            } else if (msg.slice(0, 1)[0] == WEBRTC_TRAFFIC_PREFIX) {
+              srcBuffer.push(msg.slice(1))
+            }
+          }
+        })(),
+      }
+
+      const relayConn = {
+        stream: myStream,
+        counterparty: destination,
+        relay: relayConnection.remotePeer,
+      }
+
       setTimeout(() => {
         sinkBuffer.end()
         srcBuffer.end()
       }, WEBRTC_TIMEOUT)
+
       conn = await Promise.race([
         this.tryWebRTC(srcBuffer, sinkBuffer, destination, { signal: options.signal }),
         this._upgrader.upgradeOutbound(this.relayToConn(relayConn)),
       ])
     } else {
-      sinkBuffer.end()
-      srcBuffer.end()
+      myStream = {
+        sink: (source: AsyncIterable<Uint8Array>) => {
+          shaker.stream.sink(
+            (async function* () {
+              for await (const msg of source) {
+                yield new bl([new Uint8Array([REMAINING_TRAFFIC_PREFIX]), msg])
+              }
+            })()
+          )
+        },
+        source: (async function* () {
+          for await (const msg of shaker.stream.source) {
+            if (msg.slice(0, 1)[0] == REMAINING_TRAFFIC_PREFIX) {
+              yield msg.slice(1)
+            } else if (msg.slice(0, 1)[0] == WEBRTC_TRAFFIC_PREFIX) {
+              log(`Received WebRTC message but WebRTC is not enabled on this node.`)
+            }
+          }
+        })(),
+      }
+      const relayConn = {
+        stream: myStream,
+        counterparty: destination,
+        relay: relayConnection.remotePeer,
+      }
+
       conn = await this._upgrader.upgradeOutbound(this.relayToConn(relayConn))
     }
 

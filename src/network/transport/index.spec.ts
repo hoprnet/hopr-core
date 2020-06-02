@@ -36,7 +36,7 @@ describe('should create a socket and connect to it', function () {
       ipv6?: boolean
       useWebRTC?: boolean
       startNode?: boolean
-      failIntentionallyOnWebRTC?: boolean,
+      failIntentionallyOnWebRTC?: boolean
       timeoutIntentionallyOnWebRTC?: Promise<void>
     },
     bootstrap?: PeerInfo
@@ -69,7 +69,7 @@ describe('should create a socket and connect to it', function () {
             useWebRTC: options.useWebRTC,
             bootstrapServers: [bootstrap],
             failIntentionallyOnWebRTC: options.failIntentionallyOnWebRTC,
-            timeoutIntentionallyOnWebRTC: options.timeoutIntentionallyOnWebRTC
+            timeoutIntentionallyOnWebRTC: options.timeoutIntentionallyOnWebRTC,
           },
         },
         dht: {
@@ -129,8 +129,8 @@ describe('should create a socket and connect to it', function () {
 
     await Promise.all([
       /* prettier-ignore */
-      sender.stop(), 
-      counterparty.stop()
+      sender.stop(),
+      counterparty.stop(),
     ])
   })
 
@@ -253,8 +253,8 @@ describe('should create a socket and connect to it', function () {
 
     await Promise.all([
       /* prettier-ignore */
-      sender.stop(), 
-      relay.stop()
+      sender.stop(),
+      relay.stop(),
     ])
   })
 
@@ -294,11 +294,7 @@ describe('should create a socket and connect to it', function () {
 
     assert(msgReceived, `Message must be received by counterparty`)
 
-    await Promise.all([
-      sender.stop(),
-      counterparty.stop(),
-      relay.stop()
-    ])
+    await Promise.all([sender.stop(), counterparty.stop(), relay.stop()])
   })
 
   it('should set up a relayed connection and upgrade to WebRTC', async function () {
@@ -379,25 +375,35 @@ describe('should create a socket and connect to it', function () {
 
     assert(msgReceived, `messgae must be received`)
 
-    await Promise.all([
-      sender.stop(),
-      counterparty.stop(),
-      relay.stop()
-    ])
+    await Promise.all([sender.stop(), counterparty.stop(), relay.stop()])
   })
 
   it('should set up a relayed connection and timeout while upgrading to WebRTC', async function () {
     const relay = await generateNode({ id: 2, ipv4: true, ipv6: true })
 
+    const now = Date.now()
+
     const [sender, counterparty] = await Promise.all([
-      generateNode({ id: 0, ipv4: true, timeoutIntentionallyOnWebRTC: new Promise(resolve => setTimeout(resolve, WEBRTC_TIMEOUT)) }, relay.peerInfo),
-      generateNode({ id: 1, ipv6: true, timeoutIntentionallyOnWebRTC: new Promise(resolve => setTimeout(resolve, WEBRTC_TIMEOUT)) }, relay.peerInfo),
+      generateNode(
+        {
+          id: 0,
+          ipv4: true,
+          timeoutIntentionallyOnWebRTC: new Promise(resolve => setTimeout(resolve, WEBRTC_TIMEOUT)),
+        },
+        relay.peerInfo
+      ),
+      generateNode(
+        {
+          id: 1,
+          ipv6: true,
+          timeoutIntentionallyOnWebRTC: new Promise(resolve => setTimeout(resolve, WEBRTC_TIMEOUT)),
+        },
+        relay.peerInfo
+      ),
     ])
 
     connectionHelper([sender, relay])
     connectionHelper([relay, counterparty])
-
-    const now = Date.now()
 
     const INVALID_PORT = 8758
     const conn = await sender.dialProtocol(
@@ -425,14 +431,78 @@ describe('should create a socket and connect to it', function () {
 
     assert(msgReceived, `message must be received`)
 
+    await Promise.all([sender.stop(), counterparty.stop(), relay.stop()])
+  })
+
+  it('should set up a relayed connection and upgrade to WebRTC and keep connected even if relay goes offline', async function () {
+    const relay = await generateNode({ id: 2, ipv4: true, ipv6: true })
+
+    const [sender, counterparty] = await Promise.all([
+      generateNode({ id: 0, ipv4: true }, relay.peerInfo),
+      generateNode({ id: 1, ipv6: true }, relay.peerInfo),
+    ])
+
+    connectionHelper([sender, relay])
+    connectionHelper([relay, counterparty])
+
+    const INVALID_PORT = 8758
+    const conn = await sender.dialProtocol(
+      Multiaddr(`/ip4/127.0.0.1/tcp/${INVALID_PORT}/p2p/${counterparty.peerInfo.id.toB58String()}`),
+      TEST_PROTOCOL
+    )
+
+    let msgReceived = false
+    const firstMessage = randomBytes(33)
+    const secondMessage = randomBytes(1337)
+    const thirdMessage = randomBytes(41)
+
+    let relayStopped = false
+
+    await pipe(
+      /* prettier-ignore */
+      () => (async function * () {
+        yield firstMessage
+        await new Promise<void>(resolve => setTimeout(resolve, 500)),
+        yield secondMessage
+        await new Promise<void>(resolve => setTimeout(resolve, 500)),
+        yield thirdMessage
+      })(),
+      conn.stream,
+      async (source: AsyncIterable<Uint8Array>) => {
+        let index = 0
+        for await (const msg of source) {
+          if (index == 0) {
+            assert(u8aEquals(msg.slice(), firstMessage), 'sent message and received message must be identical')
+            index++
+          } else if (index == 1) {
+            assert(u8aEquals(msg.slice(), secondMessage), 'sent message and received message must be identical')
+            index++
+            setImmediate(() =>
+              relay.stop.call(relay).then(() => {
+                relayStopped = true
+              })
+            )
+          } else if (index == 2) {
+            assert(u8aEquals(msg.slice(), thirdMessage), 'sent message and received message must be identical')
+            index++
+            msgReceived = true
+          }
+        }
+        return
+      }
+    )
+
+    assert(relayStopped, `Relay node must have been shut down`)
+
+    assert(msgReceived, `msg must be received`)
+
     await Promise.all([
+      /* prettier-ignore */
       sender.stop(),
       counterparty.stop(),
-      relay.stop()
     ])
   })
 })
-
 
 /**
  * Informs each node about the others existence.
