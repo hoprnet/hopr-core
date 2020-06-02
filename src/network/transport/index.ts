@@ -52,9 +52,7 @@ import bl = require('bl')
 import pushable, { Pushable } from 'it-pushable'
 
 const RELAY_REGISTER = '/hopr/relay-register/0.0.1'
-const RELAY_UNREGISTER = '/hopr/relay-unregister/0.0.1'
 const DELIVERY_REGISTER = '/hopr/delivery-register/0.0.1'
-const DELIVERY_UNREGISTER = '/hopr/delivery-unregister/0.0.1'
 const WEBRTC = '/hopr/webrtc/0.0.1'
 
 const RELAY_DELIVER = (from: Uint8Array) => `/hopr/deliver${u8aToHex(from)}/0.0.1`
@@ -112,9 +110,9 @@ class TCP {
     upgrader: Upgrader
     libp2p: libp2p
     bootstrapServers?: PeerInfo[]
-    useWebRTC: boolean
-    useOwnStunServers: boolean
-    failIntentionallyOnWebRTC: boolean
+    useWebRTC?: boolean
+    useOwnStunServers?: boolean
+    failIntentionallyOnWebRTC?: boolean
     timeoutIntentionallyOnWebRTC?: Promise<void>
   }) {
     if (!upgrader) {
@@ -166,31 +164,30 @@ class TCP {
     this._decoder = new TextDecoder()
 
     this._handle(RELAY_REGISTER, this.handleRelay.bind(this))
-    this._handle(RELAY_UNREGISTER, this.handleRelayUnregister.bind(this))
     this._handle(DELIVERY_REGISTER, this.handleDelivery.bind(this))
-    this._handle(DELIVERY_UNREGISTER, this.handleDeliveryUnregister.bind(this))
     this._handle(WEBRTC, this.handleWebRTC.bind(this))
   }
 
   private relayToConn({
+    connection,
     stream,
     counterparty,
-    relay,
   }: {
+    connection: Connection
     stream: Stream
     counterparty: PeerId
-    relay: PeerId
   }): MultiaddrConnection {
     const maConn: MultiaddrConnection = {
       ...stream,
       conn: stream,
+      localAddr: Multiaddr(`/p2p/${this._peerInfo.id.toB58String()}`),
       remoteAddr: Multiaddr(`/p2p/${counterparty.toB58String()}`),
       close: async (err?: Error) => {
         if (err !== undefined) {
           log(err)
         }
 
-        await this.closeConnection(counterparty, relay)
+        await connection.close()
 
         maConn.timeline.close = Date.now()
       },
@@ -200,25 +197,6 @@ class TCP {
     }
 
     return maConn
-  }
-
-  handleDeliveryUnregister({ stream }: Handler) {
-    pipe(
-      /* prettier-ignore */
-      stream,
-      async (source: AsyncIterable<Uint8Array>) => {
-        for await (const msg of source) {
-          let counterparty: PeerId
-          try {
-            counterparty = await pubKeyToPeerId(msg.slice())
-          } catch {
-            return
-          }
-
-          this._unhandle(RELAY_DELIVER(counterparty.pubKey.marshal()))
-        }
-      }
-    )
   }
 
   async handleDelivery({ stream, connection }: Handler) {
@@ -270,7 +248,7 @@ class TCP {
     const relayConn = {
       stream: myStream,
       counterparty: sender,
-      relay: connection.remotePeer,
+      connection
     }
 
     if (this._useWebRTC) {
@@ -278,10 +256,15 @@ class TCP {
         sinkBuffer.end()
         srcBuffer.end()
       }, WEBRTC_TIMEOUT)
-      conn = await Promise.race([
-        this.handleWebRTC(srcBuffer, sinkBuffer),
-        this._upgrader.upgradeInbound(this.relayToConn(relayConn)),
-      ])
+
+      try {
+        conn = await Promise.race([
+          this.handleWebRTC(srcBuffer, sinkBuffer),
+          this._upgrader.upgradeInbound(this.relayToConn(relayConn)),
+        ])
+      } catch (err) {
+        return
+      }
     } else {
       sinkBuffer.end()
       srcBuffer.end()
@@ -289,76 +272,6 @@ class TCP {
     }
 
     this.connHandler?.call(conn)
-
-    return
-  }
-
-  handleRelayUnregister({ stream, connection }: Handler) {
-    pipe(
-      /* prettier-ignore */
-      stream,
-      async (source: AsyncIterable<Uint8Array>) => {
-        for await (const msg of source) {
-          let counterparty: PeerId
-
-          try {
-            counterparty = await pubKeyToPeerId(msg.slice())
-          } catch {
-            return
-          }
-
-          this._unhandle(
-            RELAY_FORWARD(
-              /* prettier-ignore */
-              connection.remotePeer.pubKey.marshal(),
-              counterparty.pubKey.marshal()
-            )
-          )
-
-          let conn = this._registrar.getConnection(new PeerInfo(counterparty))
-
-          if (!conn) {
-            try {
-              conn = await this._dialer.connectToPeer(new PeerInfo(counterparty))
-            } catch (err) {
-              return
-            }
-          }
-
-          const { stream: unRegisterStream } = await conn.newStream([DELIVERY_UNREGISTER])
-
-          pipe(
-            /* prettier-ignore */
-            [counterparty.pubKey.marshal()],
-            unRegisterStream
-          )
-        }
-      }
-    )
-  }
-
-  async closeConnection(counterparty: PeerId, relay: PeerId) {
-    this._unhandle(RELAY_DELIVER(counterparty.pubKey.marshal()))
-
-    // @TODO unregister at correct relay node
-    let conn = this._registrar.getConnection(new PeerInfo(relay))
-
-    if (!conn) {
-      try {
-        conn = await this._dialer.connectToPeer(new PeerInfo(relay))
-      } catch (err) {
-        log(`Could not request relayer ${relay.toB58String()} to tear down relayed connection. Error was:\n`, err)
-        return
-      }
-    }
-
-    const { stream: unRegisterStream } = await conn.newStream([RELAY_UNREGISTER])
-
-    await pipe(
-      /* prettier-ignore */
-      [counterparty.pubKey.marshal()],
-      unRegisterStream
-    )
 
     return
   }
@@ -386,9 +299,11 @@ class TCP {
 
     let conn: Connection
     try {
-      conn =
-        this._registrar.getConnection(new PeerInfo(counterparty)) ||
-        (await this._dialer.connectToPeer(new PeerInfo(counterparty), { signal: abort.signal }))
+      conn = this._registrar.getConnection(new PeerInfo(counterparty))
+
+      if (!conn) {
+        conn = await this._dialer.connectToPeer(new PeerInfo(counterparty), { signal: abort.signal })
+      }
     } catch (err) {
       clearTimeout(timeout)
       shaker.write(FAIL)
@@ -687,7 +602,7 @@ class TCP {
       const relayConn = {
         stream: myStream,
         counterparty: destination,
-        relay: relayConnection.remotePeer,
+        connection: relayConnection,
       }
 
       setTimeout(() => {
@@ -720,10 +635,11 @@ class TCP {
           }
         })(),
       }
+
       const relayConn = {
         stream: myStream,
         counterparty: destination,
-        relay: relayConnection.remotePeer,
+        connection: relayConnection
       }
 
       conn = await this._upgrader.upgradeOutbound(this.relayToConn(relayConn))
@@ -834,27 +750,6 @@ class TCP {
     return multiaddrs.filter(ma => {
       return mafmt.TCP.matches(ma.decapsulateCode(CODE_P2P)) || mafmt.P2P.matches(ma)
     })
-  }
-}
-
-function streamToPrefixStream(stream: Stream, prefix: number) {
-  return {
-    sink: (source: AsyncIterable<Uint8Array>) => {
-      stream.sink(
-        (async function* () {
-          for await (const msg of source) {
-            yield new bl([new Uint8Array([prefix]), msg])
-          }
-        })()
-      )
-    },
-    source: (async function* () {
-      for await (const msg of stream.source) {
-        if (msg.slice(0, 1)[0] == prefix) {
-          yield msg.slice(1)
-        }
-      }
-    })(),
   }
 }
 
