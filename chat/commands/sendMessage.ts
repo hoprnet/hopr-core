@@ -69,12 +69,13 @@ export default class SendMessage implements AbstractCommand {
     // @ts-ignore
     rl.completer = undefined
 
-    const manualIntermediateNodesQuestion = `Do you want to manually set the intermediate nodes? (${chalk.green('y')}, ${chalk.red('N')}): `
-    const manualIntermediateNodesAnswer = await new Promise<string>(resolve => rl.question(manualIntermediateNodesQuestion, resolve))
-
-    clearString(manualIntermediateNodesQuestion + manualIntermediateNodesAnswer, rl)
-
-    const manualPath = (manualIntermediateNodesAnswer.toLowerCase().match(/^y(es)?$/i) || '').length
+    const manualPath = process.env.MULTIHOP ?
+      (async () => {
+        const manualIntermediateNodesQuestion = `Do you want to manually set the intermediate nodes? (${chalk.green('y')}, ${chalk.red('N')}): `
+        const manualIntermediateNodesAnswer = await new Promise<string>(resolve => rl.question(manualIntermediateNodesQuestion, resolve))
+        clearString(manualIntermediateNodesQuestion + manualIntermediateNodesAnswer, rl)
+        return (manualIntermediateNodesAnswer.toLowerCase().match(/^y(es)?$/i) || '').length;
+      })() : true
 
     const messageQuestion = `${chalk.yellow(`Type in your message and press ENTER to send:`)}\n`
     const message = await new Promise<string>(resolve => rl.question(messageQuestion, resolve))
@@ -111,74 +112,77 @@ export default class SendMessage implements AbstractCommand {
   }
 
   async selectIntermediateNodes(rl: readline.Interface, destination: string): Promise<PeerId[]> {
-    console.log(chalk.yellow('Please select the intermediate nodes: (hint use tabCompletion)'))
+    return process.env.MULTIHOP ?
+      (async () => {
+        console.log(chalk.yellow('Please select the intermediate nodes: (hint use tabCompletion)'))
 
-    const openChannels = await getOpenChannels(this.node)
-    let localPeers: string[] = []
-    for (let peer of this.node.peerStore.peers.values()) {
-      let peerIdString = peer.id.toB58String()
-      if (peerIdString !== destination && openChannels.includes(peerIdString)) {
-        localPeers.push(peerIdString)
-      }
-    }
-
-    if (localPeers.length === 0) {
-      console.log(chalk.yellow('Cannot find peers in which you have open payment channels with.'))
-    }
-
-    // @ts-ignore
-    const oldPrompt = rl._prompt
-    // @ts-ignore
-    const oldCompleter = rl.completer
-
-    const oldListeners = rl.listeners('line')
-    rl.removeAllListeners('line')
-
-    rl.setPrompt('')
-    // @ts-ignore
-    rl.completer = (line: string, cb: (err: Error | undefined, hits: [string[], string]) => void) => {
-      return cb(undefined, [localPeers.filter(localPeer => localPeer.startsWith(line)), line])
-    }
-
-    let selected: PeerId[] = []
-
-    await new Promise(resolve =>
-      rl.on('line', async query => {
-        if (query == null || query === '\n' || query === '' || query.length == 0) {
-          rl.removeAllListeners('line')
-          return resolve()
-        }
-        let peerId: PeerId
-        try {
-          peerId = await checkPeerIdInput(query)
-        } catch (err) {
-          console.log(chalk.red(err.message))
+        const openChannels = await getOpenChannels(this.node)
+        let localPeers: string[] = []
+        for (let peer of this.node.peerStore.peers.values()) {
+          let peerIdString = peer.id.toB58String()
+          if (peerIdString !== destination && openChannels.includes(peerIdString)) {
+            localPeers.push(peerIdString)
+          }
         }
 
-        const peerIndex = localPeers.findIndex((str: string) => str == query)
-
-        readline.moveCursor(process.stdout, -rl.line, -1)
-        readline.clearLine(process.stdout, 0)
-
-        console.log(chalk.blue(query))
-
-        selected.push(peerId)
-        localPeers.splice(peerIndex, 1)
-
-        if (selected.length >= MAX_HOPS - 1) {
-          rl.removeAllListeners('line')
-          return resolve()
+        if (localPeers.length === 0) {
+          console.log(chalk.yellow('Cannot find peers in which you have open payment channels with.'))
         }
-      })
-    )
 
-    rl.setPrompt(oldPrompt)
-    // @ts-ignore
-    rl.completer = oldCompleter
+        // @ts-ignore
+        const oldPrompt = rl._prompt
+        // @ts-ignore
+        const oldCompleter = rl.completer
 
-    // @ts-ignore
-    oldListeners.forEach(oldListener => rl.on('line', oldListener))
+        const oldListeners = rl.listeners('line')
+        rl.removeAllListeners('line')
 
-    return selected
+        rl.setPrompt('')
+        // @ts-ignore
+        rl.completer = (line: string, cb: (err: Error | undefined, hits: [string[], string]) => void) => {
+          return cb(undefined, [localPeers.filter(localPeer => localPeer.startsWith(line)), line])
+        }
+
+        let selected: PeerId[] = []
+
+        await new Promise(resolve =>
+          rl.on('line', async query => {
+            if (query == null || query === '\n' || query === '' || query.length == 0) {
+              rl.removeAllListeners('line')
+              return resolve()
+            }
+            let peerId: PeerId
+            try {
+              peerId = await checkPeerIdInput(query)
+            } catch (err) {
+              console.log(chalk.red(err.message))
+            }
+
+            const peerIndex = localPeers.findIndex((str: string) => str == query)
+
+            readline.moveCursor(process.stdout, -rl.line, -1)
+            readline.clearLine(process.stdout, 0)
+
+            console.log(chalk.blue(query))
+
+            selected.push(peerId)
+            localPeers.splice(peerIndex, 1)
+
+            if (selected.length >= MAX_HOPS - 1) {
+              rl.removeAllListeners('line')
+              return resolve()
+            }
+          })
+        )
+
+        rl.setPrompt(oldPrompt)
+        // @ts-ignore
+        rl.completer = oldCompleter
+
+        // @ts-ignore
+        oldListeners.forEach(oldListener => rl.on('line', oldListener))
+        return selected
+
+      })() : []    
   }
 }
