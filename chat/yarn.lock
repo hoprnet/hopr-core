@@ -112,7 +112,36 @@
   resolved "https://registry.yarnpkg.com/@hoprnet/hopr-core-connector-interface/-/hopr-core-connector-interface-1.0.1-0.tgz#d6a68177224f0595ebee5c0b611b728990af8627"
   integrity sha512-crplIv7bEFb7k1nwlL6M839OLyXEdBKXxfrep1rK8cIyhucK8sG4R5H61pVCSjHGzkBL8c1v/Ye4AhSxSgecqQ==
 
-"@hoprnet/hopr-core-ethereum@0.0.3-dev.3102b43", "@hoprnet/hopr-core-ethereum@~0.0.3-dev.3102b43":
+"@hoprnet/hopr-core-connector-interface@1.2.0-testnet":
+  version "1.2.0-testnet"
+  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-core-connector-interface/-/hopr-core-connector-interface-1.2.0-testnet.tgz#a794575394944e2895fdcf3c3c9fac6d38280cd5"
+  integrity sha512-KhBvCbRcpirJ3rAlfj7iGLv+47dR2NGOnHPobR4b043vzXZYg8h5y/Z0UV4T9oGVaqJXq/jxXx0WWXjDkKrmRg==
+
+"@hoprnet/hopr-core-ethereum@0.1.0-testnet":
+  version "0.1.0-testnet"
+  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-core-ethereum/-/hopr-core-ethereum-0.1.0-testnet.tgz#7941074f6a573284e7ed993863a7c55990f50456"
+  integrity sha512-72R/MM6NiBuFC/hkSqMm8l2kc6s/fzy8Y5zS2qwQf/6G8ET6GquxBZ3N5505dDctm44I5GWxzCG6N5mVIAvciQ==
+  dependencies:
+    "@hoprnet/hopr-core-connector-interface" "~1.0.1-0"
+    "@hoprnet/hopr-demo-seeds" "~1.0.1"
+    "@hoprnet/hopr-ethereum" "~0.3.2-dev.00cc125"
+    "@hoprnet/hopr-utils" "~0.1.3"
+    bn.js "^5.1.1"
+    chalk "^4.0.0"
+    debug "^4.1.1"
+    it-pipe "^1.1.0"
+    keccak "^3.0.0"
+    levelup "^4.4.0"
+    peer-id "^0.13.9"
+    secp256k1 "^4.0.1"
+    web3 "^1.2.7"
+    web3-core "^1.2.7"
+    web3-core-helpers "^1.2.7"
+    web3-core-subscriptions "^1.2.7"
+    web3-eth "^1.2.7"
+    web3-eth-contract "^1.2.7"
+
+"@hoprnet/hopr-core-ethereum@~0.0.3-dev.3102b43":
   version "0.0.3-dev.3102b43"
   resolved "https://registry.yarnpkg.com/@hoprnet/hopr-core-ethereum/-/hopr-core-ethereum-0.0.3-dev.3102b43.tgz#5c44f0f484f150ee40c46aeef3cc5afd51f551e2"
   integrity sha512-st+dvW5yUK0AwHo16cJn9uu0OWTve114FnrlBq1wfg2Qo9Eyz80Qlrq9M1pOkGZFCEoz9dp9w6yTiZ6K5I3W2w==
@@ -9555,9 +9584,9 @@ web3-provider-engine@14.2.1:
     xhr "^2.2.0"
     xtend "^4.0.1"
 
-"web3-provider-engine@git+https://github.com/trufflesuite/provider-engine.git#web3-one":
+"web3-provider-engine@https://github.com/trufflesuite/provider-engine#web3-one":
   version "14.0.6"
-  resolved "git+https://github.com/trufflesuite/provider-engine.git#3538c60bc4836b73ccae1ac3f64c8fed8ef19c1a"
+  resolved "https://github.com/trufflesuite/provider-engine#3538c60bc4836b73ccae1ac3f64c8fed8ef19c1a"
   dependencies:
     async "^2.5.0"
     backoff "^2.5.0"
