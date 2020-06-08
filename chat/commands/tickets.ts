@@ -19,6 +19,7 @@ export default class Tickets implements AbstractCommand {
 
     const signedTickets: Map<string, Types.SignedTicket<Types.Ticket, Types.Signature>> =
       // @ts-ignore
+      // TODO: remove ignore once interface is updated
       await this.node.paymentChannels.ticket.get(this.node.paymentChannels, stringToU8a(query))
 
     if (signedTickets.size === 0) {
