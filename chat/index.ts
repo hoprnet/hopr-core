@@ -1,7 +1,7 @@
 import dotenv from 'dotenv'
 // @ts-ignore
 const dotenvExpand = require('dotenv-expand')
-const packageJSON = require('./package.json');
+const packageJSON = require('./package.json')
 
 const env = dotenv.config()
 dotenvExpand(env)
@@ -40,6 +40,7 @@ export const keywords: string[][] = [
   ['ping', 'pings another node to check its availability'],
   ['version', 'shows the versions for `hopr-chat` and `hopr-core`'],
   ['help', 'shows this help page'],
+  ['tickets', 'lists tickets of a channel'],
 ].sort((a, b) => a[0].localeCompare(b[0], 'en', { sensitivity: 'base' }))
 
 // Allowed CLI options
@@ -113,6 +114,9 @@ function tabCompletion(commands: Commands) {
         break
       case 'ping': {
         await commands.ping.complete(line, cb, query)
+      }
+      case 'tickets': {
+        await commands.tickets.complete(line, cb, query)
       }
       default:
         const hits = keywords.reduce((acc: string[], keyword: [string, string]) => {
@@ -209,6 +213,9 @@ async function runAsRegularNode() {
         break
       case 'version':
         await commands.version.execute()
+        break
+      case 'tickets':
+        await commands.tickets.execute(query)
         break
       default:
         console.log(chalk.red('Unknown command!'))
