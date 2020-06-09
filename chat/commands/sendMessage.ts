@@ -7,7 +7,7 @@ import chalk from 'chalk'
 import type PeerId from 'peer-id'
 import type PeerInfo from 'peer-info'
 
-import { checkPeerIdInput, encodeMessage, isBootstrapNode, getOpenChannels } from '../utils'
+import { checkPeerIdInput, encodeMessage, isBootstrapNode, getOpenChannels, getPeers } from '../utils'
 import { clearString } from '@hoprnet/hopr-utils'
 import { MAX_HOPS } from '@hoprnet/hopr-core/lib/constants'
 
@@ -34,11 +34,6 @@ export default class SendMessage implements AbstractCommand {
       return
     }
 
-    // @ts-ignore
-    const oldCompleter = rl.completer
-    // @ts-ignore
-    rl.completer = undefined
-
     const manualIntermediateNodesQuestion = `Do you want to manually set the intermediate nodes? (${chalk.green(
       'y'
     )}, ${chalk.red('N')}): `
@@ -59,7 +54,7 @@ export default class SendMessage implements AbstractCommand {
 
     try {
       if (manualPath) {
-        await this.node.sendMessage(encodeMessage(message), peerId, () => this.selectIntermediateNodes(rl))
+        await this.node.sendMessage(encodeMessage(message), peerId, () => this.selectIntermediateNodes(rl, peerId))
       } else {
         await this.node.sendMessage(encodeMessage(message), peerId)
       }
@@ -73,14 +68,10 @@ export default class SendMessage implements AbstractCommand {
     cb: (err: Error | undefined, hits: [string[], string]) => void,
     query?: string
   ): Promise<void> {
-    const peerInfos: PeerInfo[] = []
-    for (const peerInfo of this.node.peerStore.peers.values()) {
-      if ((!query || peerInfo.id.toB58String().startsWith(query)) && !isBootstrapNode(this.node, peerInfo.id)) {
-        peerInfos.push(peerInfo)
-      }
-    }
+    const peerIds = getPeers(this.node).map(peerId => peerId.toB58String())
+    const validPeerIds = query ? peerIds.filter(peerId => peerId.startsWith(query)) : peerIds
 
-    if (!peerInfos.length) {
+    if (!validPeerIds.length) {
       console.log(
         chalk.red(
           `\nDoesn't know any other node except apart from bootstrap node${
@@ -91,16 +82,16 @@ export default class SendMessage implements AbstractCommand {
       return cb(undefined, [[''], line])
     }
 
-    return cb(undefined, [peerInfos.map((peerInfo: PeerInfo) => `send ${peerInfo.id.toB58String()}`), line])
+    return cb(undefined, [validPeerIds.map(peerId => `send ${peerId}`), line])
   }
 
-  async selectIntermediateNodes(rl: readline.Interface): Promise<PeerId[]> {
+  async selectIntermediateNodes(rl: readline.Interface, destination: PeerId): Promise<PeerId[]> {
     let done = false
     let selected: PeerId[] = []
 
     // ask for node until user fills all nodes or enters an empty id
     while (!done) {
-      console.log(chalk.yellow(`Please select intermediate node ${selected.length}: (leave empty for no hops)`))
+      console.log(chalk.yellow(`Please select intermediate node ${selected.length}: (leave empty to exit)`))
 
       const lastSelected = selected.length > 0 ? selected[selected.length - 1] : this.node.peerInfo.id
       const openChannels = await getOpenChannels(this.node, lastSelected)
@@ -121,8 +112,6 @@ export default class SendMessage implements AbstractCommand {
       rl.setPrompt('')
       // @ts-ignore
       rl.completer = (line: string, cb: (err: Error | undefined, hits: [string[], string]) => void) => {
-        console.log('completer', validPeers)
-
         return cb(undefined, [validPeers.filter(peerId => peerId.startsWith(line)), line])
       }
 
@@ -150,14 +139,26 @@ export default class SendMessage implements AbstractCommand {
         })
       )
 
+      // no peerId selected, stop selecting nodes
       if (typeof peerId === 'undefined') {
         done = true
-      } else {
+      }
+      // check if peerId selected is destination peerId
+      else if (destination.equals(peerId)) {
+        console.log(chalk.yellow(`Peer selected is same as destination peer.`))
+      }
+      // check if peerId selected is already in the list
+      else if (selected.find(p => p.equals(peerId))) {
+        console.log(chalk.yellow(`Peer is already an intermediate peer.`))
+      }
+      // update list
+      else {
         selected.push(peerId)
+      }
 
-        if (selected.length >= MAX_HOPS - 1) {
-          done = true
-        }
+      // we selected all peers
+      if (selected.length >= MAX_HOPS - 1) {
+        done = true
       }
 
       // reattach prompt
