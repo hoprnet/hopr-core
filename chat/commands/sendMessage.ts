@@ -9,7 +9,7 @@ import type PeerInfo from 'peer-info'
 
 import { checkPeerIdInput, encodeMessage, isBootstrapNode, getOpenChannels } from '../utils'
 import { clearString } from '@hoprnet/hopr-utils'
-import { MAX_HOPS } from '@hoprnet/hopr-core/lib/src/constants'
+import { MAX_HOPS } from '@hoprnet/hopr-core/lib/constants'
 
 import readline from 'readline'
 

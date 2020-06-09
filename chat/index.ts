@@ -1,6 +1,7 @@
 import dotenv from 'dotenv'
 // @ts-ignore
 const dotenvExpand = require('dotenv-expand')
+const packageJSON = require('./package.json');
 
 const env = dotenv.config()
 dotenvExpand(env)
@@ -37,6 +38,7 @@ export const keywords: string[][] = [
   ['balance', 'shows our current balance'],
   ['listConnectors', 'lists all installed blockchain connectors'],
   ['ping', 'pings another node to check its availability'],
+  ['version', 'shows the versions for `hopr-chat` and `hopr-core`'],
   ['help', 'shows this help page'],
 ].sort((a, b) => a[0].localeCompare(b[0], 'en', { sensitivity: 'base' }))
 
@@ -93,10 +95,7 @@ function tabCompletion(commands: Commands) {
       return cb(undefined, [keywords.map(entry => entry[0]), line])
     }
 
-    const [command, query]: (string | undefined)[] = line
-      .trim()
-      .split(SPLIT_OPERAND_QUERY_REGEX)
-      .slice(1)
+    const [command, query]: (string | undefined)[] = line.trim().split(SPLIT_OPERAND_QUERY_REGEX).slice(1)
 
     if (command == null || command === '') {
       return cb(undefined, [keywords.map(entry => entry[0]), line])
@@ -165,10 +164,7 @@ async function runAsRegularNode() {
       return
     }
 
-    const [command, query]: (string | undefined)[] = input
-      .trim()
-      .split(SPLIT_OPERAND_QUERY_REGEX)
-      .slice(1)
+    const [command, query]: (string | undefined)[] = input.trim().split(SPLIT_OPERAND_QUERY_REGEX).slice(1)
 
     if (command == null) {
       console.log(chalk.red('Unknown command!'))
@@ -211,6 +207,9 @@ async function runAsRegularNode() {
       case 'ping':
         await commands.ping.execute(query)
         break
+      case 'version':
+        await commands.version.execute()
+        break
       default:
         console.log(chalk.red('Unknown command!'))
         break
@@ -244,6 +243,14 @@ async function main() {
   )
   console.log(`Welcome to ${chalk.bold('HOPR')}!\n`)
 
+  console.log(`Chat Version: ${chalk.bold(packageJSON.version)}`)
+  console.log(`Core Version: ${chalk.bold(packageJSON.dependencies['@hoprnet/hopr-core'])}`)
+  console.log(`Core Ethereum Version: ${chalk.bold(packageJSON.dependencies['@hoprnet/hopr-core-ethereum'])}`)
+  console.log(`Utils Version: ${chalk.bold(packageJSON.dependencies['@hoprnet/hopr-utils'])}`)
+  console.log(`Connector Version: ${chalk.bold(packageJSON.dependencies['@hoprnet/hopr-core-connector-interface'])}\n`)
+
+  console.log(`Bootstrap Servers: ${chalk.bold(process.env['BOOTSTRAP_SERVERS'])}\n`)
+
   let options: HoprOptions
   try {
     options = await parseOptions()
@@ -251,7 +258,7 @@ async function main() {
     console.log(err.message + '\n')
     return
   }
-  
+
   try {
     node = await Hopr.create(options)
   } catch (err) {
@@ -259,11 +266,7 @@ async function main() {
     process.exit(1)
   }
 
-  console.log(
-    `\nAvailable under the following addresses:\n ${node.peerInfo.multiaddrs
-      .toArray()
-      .join('\n ')}\n`
-  )
+  console.log(`\nAvailable under the following addresses:\n ${node.peerInfo.multiaddrs.toArray().join('\n ')}\n`)
 
   if (options.bootstrapNode) {
     runAsBootstrapNode()
