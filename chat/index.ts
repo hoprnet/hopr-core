@@ -110,10 +110,11 @@ function tabCompletion(commands: Commands) {
         await commands.openChannel.complete(line, cb, query)
         break
       case 'close':
-        await commands.closeChannel.complete(line, cb, query)
+        commands.closeChannel.complete(line, cb, query)
         break
       case 'ping': {
-        await commands.ping.complete(line, cb, query)
+        commands.ping.complete(line, cb, query)
+        break
       }
       case 'tickets': {
         await commands.tickets.complete(line, cb, query)
