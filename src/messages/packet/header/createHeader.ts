@@ -186,12 +186,7 @@ export async function createHeader<Chain extends HoprCoreConnector>(
           )
         } else if (i == secrets.length - 1) {
           header.beta.set(
-            await node.paymentChannels.utils.hash(
-              u8aConcat(
-                deriveTicketLastKey(secrets[i]),
-                await node.paymentChannels.utils.hash(deriveTicketLastKeyBlinding(secrets[i]))
-              )
-            ),
+            await node.paymentChannels.utils.hash(deriveTicketLastKey(secrets[i])),
             ADDRESS_SIZE + MAC_SIZE + KEY_LENGTH
           )
         }

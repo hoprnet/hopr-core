@@ -146,10 +146,10 @@
     "@ethersproject/rlp" "^5.0.0"
     "@ethersproject/signing-key" "^5.0.0"
 
-"@hoprnet/hopr-core-connector-interface@1.2.7-dev.c64a68d":
-  version "1.2.7-dev.c64a68d"
-  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-core-connector-interface/-/hopr-core-connector-interface-1.2.7-dev.c64a68d.tgz#80e9b55e7e0c009a3f494f441816178c4b7673ab"
-  integrity sha512-4kkY3/90nIOykXqqB95qmfBZEvvt0j4POjJFbQcKgezlDt7V61fcEun1VWrNINEGtXNso6lf1TwNWWjBjTNm3g==
+"@hoprnet/hopr-core-connector-interface@1.2.8-dev.2cc80b1":
+  version "1.2.8-dev.2cc80b1"
+  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-core-connector-interface/-/hopr-core-connector-interface-1.2.8-dev.2cc80b1.tgz#f420877d50520bd2f40b3d38feb9a7a5a7748ebf"
+  integrity sha512-/ihXGW4qCmnNMQG+rgq0mbvaOHnX3sT93LCw0mKuPeLMsekQF7KrRlabJ7ZTaEAqoMMZRLNmhhVk7c7LzkE+yg==
 
 "@hoprnet/hopr-core-connector-interface@~1.2.6-dev.8bff645":
   version "1.2.6-dev.8bff645"
@@ -9869,9 +9869,9 @@ web3-provider-engine@14.2.1:
     xhr "^2.2.0"
     xtend "^4.0.1"
 
-"web3-provider-engine@git+https://github.com/trufflesuite/provider-engine.git#web3-one":
+"web3-provider-engine@https://github.com/trufflesuite/provider-engine#web3-one":
   version "14.0.6"
-  resolved "git+https://github.com/trufflesuite/provider-engine.git#3538c60bc4836b73ccae1ac3f64c8fed8ef19c1a"
+  resolved "https://github.com/trufflesuite/provider-engine#3538c60bc4836b73ccae1ac3f64c8fed8ef19c1a"
   dependencies:
     async "^2.5.0"
     backoff "^2.5.0"

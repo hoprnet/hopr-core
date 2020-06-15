@@ -63,7 +63,7 @@ class Acknowledgement<Chain extends HoprCoreConnector> extends Uint8Array {
   }
 
   get key(): Uint8Array {
-    return new Uint8Array()
+    return new Uint8Array(this.buffer, this.keyOffset, KEY_LENGTH)
   }
 
   get hashedKey(): Promise<Uint8Array> {

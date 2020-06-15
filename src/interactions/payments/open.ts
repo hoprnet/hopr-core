@@ -46,9 +46,17 @@ class Opening<Chain extends HoprCoreConnector> implements AbstractInteraction<Ch
       )
     }
 
+    const channel = this.node.paymentChannels.types.Channel.createFunded(channelBalance)
+    const signedChannel = await this.node.paymentChannels.types.SignedChannel.create(undefined, { channel })
+
+    await channel.sign(this.node.paymentChannels.account.keys.onChain.privKey, undefined, {
+      bytes: signedChannel.buffer,
+      offset: signedChannel.signatureOffset,
+    })
+
     return await pipe(
       /* prettier-ignore */
-      [(await this.node.paymentChannels.types.SignedChannel.create(undefined, { channel: this.node.paymentChannels.types.Channel.createFunded(channelBalance) })).subarray()],
+      [signedChannel],
       struct.stream,
       this.collect.bind(this)
     )
