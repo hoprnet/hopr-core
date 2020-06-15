@@ -1,13 +1,9 @@
-// see https://github.com/trufflesuite/ganache-core/issues/465
-import '@hoprnet/hopr-core-ethereum/src/ganache-core'
-
 import Hopr from '../..'
 import HoprCoreConnector from '@hoprnet/hopr-core-connector-interface'
 
 import HoprEthereum from '@hoprnet/hopr-core-ethereum'
 
 // Ignore type-checking of dependencies for the moment
-// @ts-ignore
 const { Ganache, migrate, fund } = require('@hoprnet/hopr-ethereum')
 
 import assert from 'assert'
@@ -31,7 +27,7 @@ async function startTestnet() {
 
   await ganache.start()
   await migrate()
-  await fund()
+  await fund(4)
 
   return ganache
 }
@@ -60,12 +56,7 @@ describe('test packet composition and decomposition', function () {
 
     const GanacheTestnet = await startTestnet()
 
-    const nodes = [
-      await generateNode(0),
-      await generateNode(1),
-      await generateNode(2),
-      await generateNode(3),
-    ]
+    const nodes = [await generateNode(0), await generateNode(1), await generateNode(2), await generateNode(3)]
 
     connectionHelper(nodes)
 
@@ -75,33 +66,36 @@ describe('test packet composition and decomposition', function () {
       testMessages.push(new TextEncoder().encode(`test message #${i}`))
     }
 
-    const msgReceivedPromises = []
+    let msgReceivedPromises = []
 
-    // for (let i = 1; i <= MAX_HOPS; i++) {
-    //   msgReceivedPromises.push(receiveChecker(testMessages.slice(i - 1, i), nodes[i]))
-    //   await nodes[0].sendMessage(testMessages[i - 1], nodes[i].peerInfo, async () =>
-    //     nodes.slice(1, i).map(node => node.peerInfo.id)
-    //   )
-    // }
-
-    // await Promise.all(msgReceivedPromises)
-
-    msgReceivedPromises.push(receiveChecker(testMessages, nodes[nodes.length - 1]))
-
-    for (let i = 0; i < MAX_HOPS; i++) {
-      await nodes[i].sendMessage(testMessages[i], nodes[nodes.length - 1].peerInfo, async () =>
-        nodes.slice(i + 1, nodes.length - 1).map(node => node.peerInfo.id)
+    for (let i = 1; i <= MAX_HOPS; i++) {
+      msgReceivedPromises.push(receiveChecker(testMessages.slice(i - 1, i), nodes[i]))
+      await nodes[0].sendMessage(testMessages[i - 1], nodes[i].peerInfo, async () =>
+        nodes.slice(1, i).map((node) => node.peerInfo.id)
       )
     }
-
-    await Promise.all(msgReceivedPromises)
 
     const timeout = setTimeout(() => {
       assert.fail(`No message received`)
     }, TWO_SECONDS)
 
+    await Promise.all(msgReceivedPromises)
 
     clearTimeout(timeout)
+
+    cleanUpReceiveChecker(nodes)
+
+    msgReceivedPromises = []
+
+    // msgReceivedPromises.push(receiveChecker(testMessages.slice(0, 2), nodes[nodes.length - 1]))
+
+    for (let i = 1; i < MAX_HOPS - 3; i++) {
+      await nodes[i].sendMessage(testMessages[i], nodes[nodes.length - 1].peerInfo, async () =>
+        nodes.slice(i + 1, nodes.length - 1).map((node) => node.peerInfo.id)
+      )
+    }
+
+    await Promise.all(msgReceivedPromises)
   })
 })
 
@@ -118,9 +112,17 @@ function connectionHelper<Chain extends HoprCoreConnector>(nodes: Hopr<Chain>[])
   }
 }
 
+const NOOP = () => {}
+
+function cleanUpReceiveChecker<Chain extends HoprCoreConnector>(nodes: Hopr<Chain>[]) {
+  for (const node of nodes) {
+    node.output = NOOP
+  }
+}
+
 function receiveChecker<Chain extends HoprCoreConnector>(msgs: Uint8Array[], node: Hopr<Chain>) {
   const remainingMessages = msgs
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     node.output = (arr: Uint8Array) => {
       for (let i = 0; i < remainingMessages.length; i++) {
         if (u8aEquals(remainingMessages[i], arr)) {

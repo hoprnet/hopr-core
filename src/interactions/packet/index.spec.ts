@@ -182,12 +182,7 @@ describe('check packet forwarding & acknowledgement generation', function () {
   }
 
   it('should forward a packet and receive aknowledgements', async function () {
-    const nodes = await Promise.all([
-      generateNode(),
-      generateNode(),
-      generateNode(),
-      generateNode(),
-    ])
+    const nodes = await Promise.all([generateNode(), generateNode(), generateNode(), generateNode()])
 
     connectionHelper(nodes)
 
@@ -246,10 +241,7 @@ function connectionHelper<Chain extends HoprCoreConnector>(nodes: Hopr<Chain>[])
  * @param node our Hopr node
  * @param sender the sender of the packet
  */
-function emitCheckerHelper<Chain extends HoprCoreConnector>(
-  node: Hopr<Chain>,
-  sender: PeerId
-): Promise<any> {
+function emitCheckerHelper<Chain extends HoprCoreConnector>(node: Hopr<Chain>, sender: PeerId): Promise<any> {
   return new Promise<any>((resolve, reject) => {
     node.interactions.packet.acknowledgment.emit = (event: string) => {
       node.dbKeys.UnAcknowledgedTicketsParse(stringToU8a(event)).then(([counterparty]) => {

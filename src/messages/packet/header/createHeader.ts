@@ -129,11 +129,7 @@ export async function createHeader<Chain extends HoprCoreConnector>(
     return filler
   }
 
-  async function createBetaAndGamma(
-    secrets: Uint8Array[],
-    filler: Uint8Array,
-    identifier: Uint8Array
-  ) {
+  async function createBetaAndGamma(secrets: Uint8Array[], filler: Uint8Array, identifier: Uint8Array) {
     const tmp = new Uint8Array(BETA_LENGTH - PER_HOP_SIZE)
 
     for (let i = secrets.length; i > 0; i--) {
@@ -211,9 +207,7 @@ export async function createHeader<Chain extends HoprCoreConnector>(
     return peerIds.reduce((str, peerId, index) => {
       str += `\nsecret[${index}]: ${u8aToHex(
         secrets[index]
-      )}\npeerId[${index}]: ${peerId.toB58String()}\npeerId[${index}] pubkey: ${u8aToHex(
-        peerId.pubKey.marshal()
-      )}`
+      )}\npeerId[${index}]: ${peerId.toB58String()}\npeerId[${index}] pubkey: ${u8aToHex(peerId.pubKey.marshal())}`
       return str
     }, header.toString())
   }

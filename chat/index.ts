@@ -1,7 +1,7 @@
 import dotenv from 'dotenv'
 // @ts-ignore
 const dotenvExpand = require('dotenv-expand')
-const packageJSON = require('./package.json');
+const packageJSON = require('./package.json')
 
 const env = dotenv.config()
 dotenvExpand(env)
@@ -92,13 +92,13 @@ let node: Hopr<HoprCoreConnector>
 function tabCompletion(commands: Commands) {
   return async (line: string, cb: (err: Error | undefined, hits: [string[], string]) => void) => {
     if (line == null || line == '') {
-      return cb(undefined, [keywords.map(entry => entry[0]), line])
+      return cb(undefined, [keywords.map((entry) => entry[0]), line])
     }
 
     const [command, query]: (string | undefined)[] = line.trim().split(SPLIT_OPERAND_QUERY_REGEX).slice(1)
 
     if (command == null || command === '') {
-      return cb(undefined, [keywords.map(entry => entry[0]), line])
+      return cb(undefined, [keywords.map((entry) => entry[0]), line])
     }
 
     switch (command.trim()) {
@@ -123,7 +123,7 @@ function tabCompletion(commands: Commands) {
           return acc
         }, [])
 
-        return cb(undefined, [hits.length ? hits : keywords.map(keyword => keyword[0]), line])
+        return cb(undefined, [hits.length ? hits : keywords.map((keyword) => keyword[0]), line])
     }
   }
 }
@@ -140,7 +140,7 @@ async function runAsRegularNode() {
   rl.on('SIGINT', async () => {
     const question = `Are you sure you want to exit? (${chalk.green('y')}, ${chalk.red('N')}): `
 
-    const answer = await new Promise<string>(resolve => rl.question(question, resolve))
+    const answer = await new Promise<string>((resolve) => rl.question(question, resolve))
 
     if (answer.match(/^y(es)?$/i)) {
       clearString(question, rl)

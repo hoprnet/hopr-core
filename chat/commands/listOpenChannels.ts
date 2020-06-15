@@ -20,7 +20,7 @@ export default class ListOpenChannels implements AbstractCommand {
     try {
       await this.node.paymentChannels.channel.getAll(
         this.node.paymentChannels,
-        async (channel: ChannelInstance<HoprCoreConnector>) => {
+        async (channel: ChannelInstance) => {
           const channelId = await channel.channelId
           if (!channel.counterparty) {
             str += `${chalk.yellow(u8aToHex(channelId))} - ${chalk.gray('pre-opened')}`

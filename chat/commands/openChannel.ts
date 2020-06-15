@@ -54,14 +54,14 @@ export default class OpenChannel implements AbstractCommand {
     const exitQuestion = `Do you want to cancel (${chalk.green('Y')} / ${chalk.red('n')}) : `
 
     do {
-      tmpFunds = await new Promise<string>(resolve => rl.question(tokenQuestion, resolve))
+      tmpFunds = await new Promise<string>((resolve) => rl.question(tokenQuestion, resolve))
       try {
         funds = new BigNumber(tmpFunds)
       } catch {}
       clearString(tokenQuestion + tmpFunds, rl)
 
       if (tmpFunds.length == 0) {
-        let decision = await new Promise<string>(resolve => rl.question(exitQuestion, resolve))
+        let decision = await new Promise<string>((resolve) => rl.question(exitQuestion, resolve))
         if (decision.length == 0 || decision.match(/^y(es)?$/i)) {
           clearString(exitQuestion + decision, rl)
 
@@ -71,7 +71,9 @@ export default class OpenChannel implements AbstractCommand {
       }
     } while (funds == null || funds.lte(0) || funds.gt(tokens) || funds.isNaN())
 
-    const channelFunding = new BN(funds.times(new BigNumber(10).pow(this.node.paymentChannels.types.Balance.DECIMALS)).toString())
+    const channelFunding = new BN(
+      funds.times(new BigNumber(10).pow(this.node.paymentChannels.types.Balance.DECIMALS)).toString()
+    )
 
     const isPartyA = this.node.paymentChannels.utils.isPartyA(
       await this.node.paymentChannels.utils.pubKeyToAccountId(this.node.peerInfo.id.pubKey.marshal()),
@@ -97,7 +99,10 @@ export default class OpenChannel implements AbstractCommand {
       await this.node.paymentChannels.channel.create(
         this.node.paymentChannels,
         counterparty.pubKey.marshal(),
-        async () => this.node.paymentChannels.utils.pubKeyToAccountId(await this.node.interactions.payments.onChainKey.interact(counterparty)),
+        async () =>
+          this.node.paymentChannels.utils.pubKeyToAccountId(
+            await this.node.interactions.payments.onChainKey.interact(counterparty)
+          ),
         channelBalance,
         (balance: Types.ChannelBalance): Promise<Types.SignedChannel<Types.Channel, Types.Signature>> =>
           this.node.interactions.payments.open.interact(counterparty, balance)
@@ -114,7 +119,8 @@ export default class OpenChannel implements AbstractCommand {
   complete(line: string, cb: (err: Error | undefined, hits: [string[], string]) => void, query?: string) {
     this.node.paymentChannels.channel.getAll(
       this.node.paymentChannels,
-      async (channel: ChannelInstance<HoprCoreConnector>) => (await pubKeyToPeerId(await channel.offChainCounterparty)).toB58String(),
+      async (channel: ChannelInstance<HoprCoreConnector>) =>
+        (await pubKeyToPeerId(await channel.offChainCounterparty)).toB58String(),
       async (channelIds: Promise<string>[]) => {
         let peerIdStringSet: Set<string>
 

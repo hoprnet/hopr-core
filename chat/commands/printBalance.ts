@@ -16,10 +16,10 @@ export default class PrintBalance implements AbstractCommand {
     const { paymentChannels } = this.node
     const { Balance, NativeBalance } = paymentChannels.types
 
-    const balance = await paymentChannels.accountBalance.then(b => {
+    const balance = await paymentChannels.accountBalance.then((b) => {
       return moveDecimalPoint(b.toString(), Balance.DECIMALS * -1)
     })
-    const nativeBalance = await paymentChannels.accountNativeBalance.then(b => {
+    const nativeBalance = await paymentChannels.accountNativeBalance.then((b) => {
       return moveDecimalPoint(b.toString(), NativeBalance.DECIMALS * -1)
     })
 

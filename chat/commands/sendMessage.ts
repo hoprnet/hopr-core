@@ -69,15 +69,19 @@ export default class SendMessage implements AbstractCommand {
     // @ts-ignore
     rl.completer = undefined
 
-    const manualIntermediateNodesQuestion = `Do you want to manually set the intermediate nodes? (${chalk.green('y')}, ${chalk.red('N')}): `
-    const manualIntermediateNodesAnswer = await new Promise<string>(resolve => rl.question(manualIntermediateNodesQuestion, resolve))
+    const manualIntermediateNodesQuestion = `Do you want to manually set the intermediate nodes? (${chalk.green(
+      'y'
+    )}, ${chalk.red('N')}): `
+    const manualIntermediateNodesAnswer = await new Promise<string>((resolve) =>
+      rl.question(manualIntermediateNodesQuestion, resolve)
+    )
 
     clearString(manualIntermediateNodesQuestion + manualIntermediateNodesAnswer, rl)
 
     const manualPath = (manualIntermediateNodesAnswer.toLowerCase().match(/^y(es)?$/i) || '').length
 
     const messageQuestion = `${chalk.yellow(`Type in your message and press ENTER to send:`)}\n`
-    const message = await new Promise<string>(resolve => rl.question(messageQuestion, resolve))
+    const message = await new Promise<string>((resolve) => rl.question(messageQuestion, resolve))
 
     clearString(messageQuestion + message, rl)
 
@@ -94,7 +98,11 @@ export default class SendMessage implements AbstractCommand {
     }
   }
 
-  async complete(line: string, cb: (err: Error | undefined, hits: [string[], string]) => void, query?: string): Promise<void> {
+  async complete(
+    line: string,
+    cb: (err: Error | undefined, hits: [string[], string]) => void,
+    query?: string
+  ): Promise<void> {
     const peerInfos: PeerInfo[] = []
     for (const peerInfo of this.node.peerStore.peers.values()) {
       if ((!query || peerInfo.id.toB58String().startsWith(query)) && !isBootstrapNode(this.node, peerInfo.id)) {
@@ -103,7 +111,13 @@ export default class SendMessage implements AbstractCommand {
     }
 
     if (!peerInfos.length) {
-      console.log(chalk.red(`\nDoesn't know any other node except apart from bootstrap node${this.node.bootstrapServers.length == 1 ? '' : 's'}!`))
+      console.log(
+        chalk.red(
+          `\nDoesn't know any other node except apart from bootstrap node${
+            this.node.bootstrapServers.length == 1 ? '' : 's'
+          }!`
+        )
+      )
       return cb(undefined, [[''], line])
     }
 
@@ -137,13 +151,13 @@ export default class SendMessage implements AbstractCommand {
     rl.setPrompt('')
     // @ts-ignore
     rl.completer = (line: string, cb: (err: Error | undefined, hits: [string[], string]) => void) => {
-      return cb(undefined, [localPeers.filter(localPeer => localPeer.startsWith(line)), line])
+      return cb(undefined, [localPeers.filter((localPeer) => localPeer.startsWith(line)), line])
     }
 
     let selected: PeerId[] = []
 
-    await new Promise(resolve =>
-      rl.on('line', async query => {
+    await new Promise((resolve) =>
+      rl.on('line', async (query) => {
         if (query == null || query === '\n' || query === '' || query.length == 0) {
           rl.removeAllListeners('line')
           return resolve()
@@ -177,7 +191,7 @@ export default class SendMessage implements AbstractCommand {
     rl.completer = oldCompleter
 
     // @ts-ignore
-    oldListeners.forEach(oldListener => rl.on('line', oldListener))
+    oldListeners.forEach((oldListener) => rl.on('line', oldListener))
 
     return selected
   }

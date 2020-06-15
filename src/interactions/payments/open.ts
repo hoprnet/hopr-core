@@ -28,7 +28,7 @@ class Opening<Chain extends HoprCoreConnector> implements AbstractInteraction<Ch
     )
   }
 
-  async interact(counterparty: PeerInfo | PeerId, channelBalance: Types.ChannelBalance): Promise<Types.SignedChannel<Types.Channel, Types.Signature>> {
+  async interact(counterparty: PeerInfo | PeerId, channelBalance: Types.ChannelBalance): Promise<Types.SignedChannel> {
     let struct: Handler
 
     try {
@@ -48,7 +48,7 @@ class Opening<Chain extends HoprCoreConnector> implements AbstractInteraction<Ch
 
     return await pipe(
       /* prettier-ignore */
-      [(await this.node.paymentChannels.types.SignedChannel.create(this.node.paymentChannels, undefined, { channel: this.node.paymentChannels.types.Channel.createFunded(channelBalance) })).subarray()],
+      [(await this.node.paymentChannels.types.SignedChannel.create(undefined, { channel: this.node.paymentChannels.types.Channel.createFunded(channelBalance) })).subarray()],
       struct.stream,
       this.collect.bind(this)
     )
@@ -68,9 +68,9 @@ class Opening<Chain extends HoprCoreConnector> implements AbstractInteraction<Ch
       throw Error('Empty stream')
     }
 
-    return this.node.paymentChannels.types.SignedChannel.create(this.node.paymentChannels, {
+    return this.node.paymentChannels.types.SignedChannel.create({
       bytes: result.buffer,
-      offset: result.byteOffset
+      offset: result.byteOffset,
     })
   }
 }

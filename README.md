@@ -73,7 +73,7 @@ $ yarn install
 ```
 $ yarn hopr 0
 
-// Congratulations - your HOPR testnet node is ready to go! 
+// Congratulations - your HOPR testnet node is ready to go!
 // Please fund your Ethereum Kovan account 0xB0E66Ac9F4A6E04Af5cEF49040443eF8af484Ac4 with some Kovan ETH and Kovan HOPR test tokens
 // You can request Kovan ETH from https://faucet.kovan.network
 // For Kovan HOPR test tokens visit our Telegram channel at https://t.me/hoprnet
@@ -228,7 +228,7 @@ You can actively crawl the network which asks the bootstrap node for available c
 ```terminal
 > crawl
 Crawling results:
-    contacted nodes:: 
+    contacted nodes::
         16Uiu2HAmM8So1akXf5mp4Nkvmq3qgwC6f38oxEfmdrnnr4ichi1T
         16Uiu2HAkyFkiCv3dzd5DzHWn9rhFsc9nypwwuZaixGFwsUnPtfTy
         16Uiu2HAmELUVMRA8c6kpESeUUm5AtXFxgYZJppjtMNCbS2dbQCbr
@@ -269,7 +269,7 @@ Type `N` and hit `[enter]`:
 > Type in your message and press ENTER to send:
 ```
 
-Type the message you want to send  and hit `[enter]`:
+Type the message you want to send and hit `[enter]`:
 
 ```
 ---------- New Packet ----------
