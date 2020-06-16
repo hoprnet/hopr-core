@@ -51,7 +51,7 @@ describe('test packet composition and decomposition', function () {
   let testnet: Ganache
 
   before(async function () {
-    this.timeout(durations.seconds(10))
+    this.timeout(durations.seconds(30))
     testnet = await startTestnet()
   })
 
