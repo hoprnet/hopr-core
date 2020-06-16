@@ -2,15 +2,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@hoprnet/hopr-core": [
-        "src/"
-      ],
-      "@hoprnet/hopr-core/utils": [
-        "src/utils"
-      ],
-      "@hoprnet/hopr-core/constants": [
-        "src/constants"
-      ]
+      "@hoprnet/hopr-core": ["src/"],
+      "@hoprnet/hopr-core/utils": ["src/utils"],
+      "@hoprnet/hopr-core/constants": ["src/constants"]
     },
     "resolveJsonModule": true,
     "esModuleInterop": true,
