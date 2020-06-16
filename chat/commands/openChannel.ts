@@ -42,7 +42,7 @@ export default class OpenChannel implements AbstractCommand {
       await this.node.paymentChannels.utils.pubKeyToAccountId(counterparty.pubKey.marshal())
     )
 
-    const tokens = new BigNumber((await this.node.paymentChannels.accountBalance).toString()).div(
+    const tokens = new BigNumber((await this.node.paymentChannels.account.balance).toString()).div(
       new BigNumber(10).pow(this.node.paymentChannels.types.Balance.DECIMALS)
     )
     let funds: BigNumber, tmpFunds: string
@@ -95,7 +95,6 @@ export default class OpenChannel implements AbstractCommand {
 
     try {
       await this.node.paymentChannels.channel.create(
-        this.node.paymentChannels,
         counterparty.pubKey.marshal(),
         async () =>
           this.node.paymentChannels.utils.pubKeyToAccountId(

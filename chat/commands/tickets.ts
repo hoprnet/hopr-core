@@ -41,7 +41,6 @@ export default class Tickets implements AbstractCommand {
 
   complete(line: string, cb: (err: Error | undefined, hits: [string[], string]) => void, query?: string) {
     this.node.paymentChannels.channel.getAll(
-      this.node.paymentChannels,
       async (channel: ChannelInstance) => u8aToHex(await channel.channelId),
       async (channelIdsPromise: Promise<string>[]) => {
         let channelIds: string[] = []

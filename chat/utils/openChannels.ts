@@ -3,7 +3,7 @@ import type HoprCoreConnector from '@hoprnet/hopr-core-connector-interface'
 import type { Channel as ChannelInstance } from '@hoprnet/hopr-core-connector-interface'
 import type Hopr from '@hoprnet/hopr-core'
 import { u8aEquals } from '@hoprnet/hopr-utils'
-import { pubKeyToPeerId } from '@hoprnet/hopr-core/lib/utils'
+import { pubKeyToPeerId } from '@hoprnet/hopr-core/utils'
 import { isBootstrapNode } from './isBootstrapNode'
 
 /**
@@ -39,7 +39,6 @@ export function getMyOpenChannels(node: Hopr<HoprCoreConnector>): Promise<PeerId
       let peerIds: PeerId[] = []
 
       node.paymentChannels.channel.getAll(
-        node.paymentChannels,
         async (channel: ChannelInstance) => {
           const pubKey = await channel.offChainCounterparty
           const peerId = await pubKeyToPeerId(pubKey)
