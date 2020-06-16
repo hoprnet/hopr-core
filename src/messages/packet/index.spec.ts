@@ -1,11 +1,15 @@
-import '@hoprnet/hopr-core-ethereum/src/ganache-core'
+declare module 'web3' {
+  namespace providers {
+    type Web3Provider = any
+    type Provider = any
+  }
+}
 
 import Hopr from '../..'
 import HoprCoreConnector from '@hoprnet/hopr-core-connector-interface'
 
 import HoprEthereum from '@hoprnet/hopr-core-ethereum'
 
-// Ignore type-checking of dependencies for the moment
 import { Ganache, migrate, fund } from '@hoprnet/hopr-ethereum'
 
 import assert from 'assert'
