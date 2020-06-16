@@ -1,9 +1,4 @@
-declare module 'web3' {
-  namespace providers {
-    type Web3Provider = any
-    type Provider = any
-  }
-}
+import '../../types'
 
 import Hopr from '../..'
 import HoprCoreConnector from '@hoprnet/hopr-core-connector-interface'
