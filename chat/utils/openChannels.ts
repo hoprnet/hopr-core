@@ -18,10 +18,10 @@ export function getPeers(
     noBootstrapNodes: false,
   }
 ): PeerId[] {
-  let peers = Array.from(node.peerStore.peers.values()).map(peerInfo => peerInfo.id)
+  let peers = Array.from(node.peerStore.peers.values()).map((peerInfo) => peerInfo.id)
 
   if (ops.noBootstrapNodes) {
-    peers = peers.filter(peerId => {
+    peers = peers.filter((peerId) => {
       return !isBootstrapNode(node, peerId)
     })
   }
@@ -40,7 +40,7 @@ export function getMyOpenChannels(node: Hopr<HoprCoreConnector>): Promise<PeerId
 
       node.paymentChannels.channel.getAll(
         node.paymentChannels,
-        async (channel: ChannelInstance<HoprCoreConnector>) => {
+        async (channel: ChannelInstance) => {
           const pubKey = await channel.offChainCounterparty
           const peerId = await pubKeyToPeerId(pubKey)
 
@@ -72,7 +72,7 @@ export async function getPartyOpenChannels(node: Hopr<HoprCoreConnector>, party:
     partyA: partyAccountId,
   })
   // get the counterparty of each channel
-  const channelAccountIds = channels.map(channel => {
+  const channelAccountIds = channels.map((channel) => {
     return u8aEquals(channel.partyA, partyAccountId) ? channel.partyB : channel.partyA
   })
 
@@ -80,7 +80,7 @@ export async function getPartyOpenChannels(node: Hopr<HoprCoreConnector>, party:
   const peers = await Promise.all(
     getPeers(node, {
       noBootstrapNodes: true,
-    }).map(async peer => {
+    }).map(async (peer) => {
       return {
         peer,
         accountId: await utils.pubKeyToAccountId(peer.pubKey.marshal()),
@@ -88,13 +88,17 @@ export async function getPartyOpenChannels(node: Hopr<HoprCoreConnector>, party:
     })
   )
 
-  return peers
-    .filter(({ accountId }) => {
-      return channelAccountIds.find(channelAccountId => {
+  return peers.reduce((acc: PeerId[], { peer, accountId }) => {
+    if (
+      channelAccountIds.find((channelAccountId) => {
         return u8aEquals(accountId, channelAccountId)
       })
-    })
-    .map(peer => peer.peer)
+    ) {
+      acc.push(peer)
+    }
+
+    return acc
+  }, [])
 }
 
 /**

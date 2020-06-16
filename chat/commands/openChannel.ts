@@ -120,13 +120,12 @@ export default class OpenChannel implements AbstractCommand {
       noBootstrapNodes: true,
     })
 
-    const peers = allPeers
-      // filter peers that we already have an open channel with
-      .filter(peer => {
-        return !peersWithOpenChannel.find(p => p.id.equals(peer.id))
-      })
-      // return peerId string
-      .map(peer => peer.toB58String())
+    const peers = allPeers.reduce((acc: string[], peer: PeerId) => {
+      if (!peersWithOpenChannel.find((p: PeerId) => p.id.equals(peer.id))) {
+        acc.push(peer.toB58String())
+      }
+      return acc
+    }, [])
 
     if (peers.length < 1) {
       console.log(chalk.red(`\nDoesn't know any new node to open a payment channel with.`))
