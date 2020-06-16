@@ -1,3 +1,5 @@
+import '@hoprnet/hopr-core-ethereum/src/ganache-core'
+
 import Hopr from '../..'
 import HoprCoreConnector from '@hoprnet/hopr-core-connector-interface'
 
