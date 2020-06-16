@@ -1,5 +1,11 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@hoprnet/hopr-core": ["../src/"],
+      "@hoprnet/hopr-core/utils": ["../src/utils"],
+      "@hoprnet/hopr-core/constants": ["../src/constants"]
+    },
     "esModuleInterop": true,
     "outDir": "./lib",
     "lib": ["es2020", "dom"],
