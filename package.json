@@ -18,8 +18,8 @@
     "access": "public"
   },
   "engines": {
-    "node": "^12",
-    "yarn": "^1.22"
+    "node": "12.9.1",
+    "yarn": "1.19.2"
   },
   "homepage": "https://hoprnet.io",
   "repository": {
