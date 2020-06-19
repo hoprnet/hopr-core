@@ -42,6 +42,7 @@
     "@hoprnet/hopr-core-ethereum": "0.0.12-refactor.473415f",
     "@hoprnet/hopr-demo-seeds": "1.0.3-refactor.3ad82ff",
     "@hoprnet/hopr-utils": "0.1.6-refactor.61df948",
+    "@zeit/ncc": "^0.22.3",
     "bn.js": "~5.1.2",
     "chalk": "~4.1.0",
     "clear": "~0.1.0",
@@ -60,7 +61,6 @@
     "copyfiles": "^2.3.0",
     "cross-env": "^7.0.2",
     "mkdirp": "^1.0.4",
-    "ncc": "^0.3.6",
     "nexe": "^4.0.0-beta.6",
     "rimraf": "^3.0.2"
   }
