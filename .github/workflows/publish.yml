@@ -78,6 +78,8 @@ jobs:
       - name: Zip node binary for uploading
         working-directory: chat
         run: yarn zip:${{ matrix.displayName }}
+      - name: DEBBUGING - List contents and echo dir
+        run: ls
       - name: Upload to GitHub workflow artifacts store
         uses: actions/upload-artifact@v2-preview
         with:
