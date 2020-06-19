@@ -17,9 +17,9 @@
     "start": "node lib/index.js",
     "start:alice": "yarn util:create:alice && cd .alice && cross-env HOST_IPV4=0.0.0.0:9091 node lib/index.js -p alice",
     "start:bob": "yarn util:create:bob && cd .bob && cross-env HOST_IPV4=0.0.0.0:9092 node lib/index.js -p bob",
-    "zip:windows": "yarn compile && bestzip hopr-chat-nodebin-windows.zip dist",
-    "zip:macos": "yarn compile && bestzip hopr-chat-nodebin-macos.zip dist",
-    "zip:linux": "yarn compile && bestzip hopr-chat-nodebin-ubuntu.zip dist"
+    "zip:windows": "bestzip hopr-chat-nodebin-windows.zip dist",
+    "zip:macos": "bestzip hopr-chat-nodebin-macos.zip dist",
+    "zip:linux": "bestzip hopr-chat-nodebin-ubuntu.zip dist"
   },
   "engines": {
     "node": "12.9.1",

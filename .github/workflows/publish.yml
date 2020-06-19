@@ -66,12 +66,14 @@ jobs:
         run: |
           yarn policies set-version 1.19.2
           yarn install --frozen-lockfile
-      - name: Build project into nodejs app
-        working-directory: chat
-        run: yarn build
-      - name: Compile project into nodes bin
-        working-directory: chat
-        run: yarn compile
+      # - name: Build project into nodejs app
+      #   working-directory: chat
+      #   run: yarn build
+      # - name: Compile project into nodes bin
+      #   working-directory: chat
+      #   run: yarn compile
+      - name: DEBUGGING TASK
+        run: mkdir dist
       - name: Zip node binary for uploading
         working-directory: chat
         run: yarn zip:${{ matrix.displayName }}
@@ -79,7 +81,7 @@ jobs:
         uses: actions/upload-artifact@master
         with:
           name: hopr-chat-nodebin-${{ matrix.displayName }}.zip
-          path: build/distribution
+          path: chat
 
   publish_dist:
     name: Creates release with node binary per OS
@@ -90,17 +92,17 @@ jobs:
         uses: actions/download-artifact@master
         with:
           name: hopr-chat-nodebin-linux.zip
-          path: build/distribution
+          path: chat
       - name: Get HOPR Chat (windows)
         uses: actions/download-artifact@master
         with:
           name: hopr-chat-nodebin-windows.zip
-          path: build/distribution
+          path: chat
       - name: Get HOPR Chat (macos)
         uses: actions/download-artifact@master
         with:
           name: hopr-chat-nodebin-macos.zip
-          path: build/distribution
+          path: chat
       - name: Release compiled LaTeX file
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
