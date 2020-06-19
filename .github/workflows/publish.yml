@@ -82,7 +82,7 @@ jobs:
         uses: actions/upload-artifact@v2-preview
         with:
           name: hopr-chat-nodebin-${{ matrix.displayName }}.zip
-          path: chat/dist
+          path: dist
 
   publish_dist:
     name: Creates release with node binary per OS
