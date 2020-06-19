@@ -81,7 +81,8 @@ jobs:
       - name: Upload to GitHub workflow artifacts store
         uses: actions/upload-artifact@master
         with:
-          name: chat/hopr-chat-nodebin-${{ matrix.displayName }}.zip
+          name: hopr-chat-nodebin-${{ matrix.displayName }}.zip
+          path: chat/hopr-chat-nodebin-${{ matrix.displayName }}.zip
 
   publish_dist:
     name: Creates release with node binary per OS
