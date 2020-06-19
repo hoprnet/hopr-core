@@ -79,7 +79,7 @@ jobs:
         working-directory: chat
         run: yarn zip:${{ matrix.displayName }}
       - name: DEBBUGING - List contents and echo dir
-        run: ls
+        run: ls chat
       - name: Upload to GitHub workflow artifacts store
         uses: actions/upload-artifact@v2-preview
         with:
