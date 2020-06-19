@@ -82,7 +82,7 @@ jobs:
         uses: actions/upload-artifact@master
         with:
           name: hopr-chat-nodebin-${{ matrix.displayName }}.zip
-          path: chat
+          path: chat/hopr-chat-nodebin-${{ matrix.displayName }}.zip
 
   publish_dist:
     name: Creates release with node binary per OS
@@ -93,17 +93,14 @@ jobs:
         uses: actions/download-artifact@master
         with:
           name: hopr-chat-nodebin-linux.zip
-          path: chat
       - name: Get HOPR Chat (windows)
         uses: actions/download-artifact@master
         with:
           name: hopr-chat-nodebin-windows.zip
-          path: chat
       - name: Get HOPR Chat (macos)
         uses: actions/download-artifact@master
         with:
           name: hopr-chat-nodebin-macos.zip
-          path: chat
       - name: Release compiled LaTeX file
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
