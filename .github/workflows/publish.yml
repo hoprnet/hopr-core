@@ -52,6 +52,10 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: 12.9.1
+      - name: Setting yarn version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: yarn policies set-version 1.19.2
       - name: Cache node_modules
         id: cache-modules
         uses: actions/cache@v1
@@ -61,11 +65,7 @@ jobs:
       - name: Install node modules
         working-directory: chat
         if: steps.cache-modules.outputs.cache-hit != 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          yarn policies set-version 1.19.2
-          yarn install --frozen-lockfile
+        run: yarn install --frozen-lockfile
       # - name: Build project into nodejs app
       #   working-directory: chat
       #   run: yarn build
