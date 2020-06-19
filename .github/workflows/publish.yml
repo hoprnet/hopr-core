@@ -79,9 +79,9 @@ jobs:
         working-directory: chat
         run: yarn zip:${{ matrix.displayName }}
       - name: Upload to GitHub workflow artifacts store
-        uses: actions/upload-artifact@master
+        uses: actions/upload-artifact@v2
         with:
-          name: hopr-chat-nodebin-${{ matrix.displayName }}.zip
+          name: hopr-chat-nodebin-${{ matrix.displayName }}
           path: chat/hopr-chat-nodebin-${{ matrix.displayName }}.zip
 
   publish_dist:
