@@ -27,6 +27,8 @@ jobs:
       # Installing library requirements
       - name: Install node modules
         if: steps.cache-modules.outputs.cache-hit != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           yarn policies set-version 1.19.2
           yarn install --frozen-lockfile
@@ -59,6 +61,8 @@ jobs:
       - name: Install node modules
         working-directory: chat
         if: steps.cache-modules.outputs.cache-hit != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           yarn policies set-version 1.19.2
           yarn install --frozen-lockfile
@@ -129,12 +133,15 @@ jobs:
         run: npm config set //npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}
       - name: Install node modules
         if: steps.cache-modules.outputs.cache-hit != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           yarn policies set-version 1.19.2
           yarn install --frozen-lockfile
-      - env:
+      - name: Publish to GitHub Packages
+        env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        name: Publish to GitHub Packages
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           yarn policies set-version 1.19.2
           npm publish
@@ -159,12 +166,15 @@ jobs:
           key: ${{ runner.OS }}-build-${{ hashFiles('package.json') }}
       - name: Install node modules
         if: steps.cache-modules.outputs.cache-hit != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           yarn policies set-version 1.19.2
           yarn install --frozen-lockfile
-      - env:
+      - name: Publish to NPM Registry
+        env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        name: Publish to NPM Registry
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           yarn policies set-version 1.19.2
           npm publish --access public
