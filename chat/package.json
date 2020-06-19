@@ -11,7 +11,7 @@
     "clean:all": "yarn clean && yarn clean:dist && yarn util:clean:all",
     "compile": "yarn clean:dist && ncc build index.ts -o dist",
     "nexe:macos": "rimraf dist/macos-hopr-chat && cd dist && nexe -i index.js -o macos-hopr-chat -t darwin-12.9.1",
-    "package:macos": "yarn nexe:macos && copyfiles .env dist",
+    "package:macos": "yarn compile && copyfiles .env dist && bestzip node-macos.zip dist",
     "dist:macos": "",
     "test": "mocha --exit || echo '⚠️  Currently no tests available'",
     "util:clean:all": "rimraf .alice .bob",
