@@ -103,10 +103,6 @@ jobs:
       - name: Obtaining release from branch
         shell: bash
         run: echo "::set-env name=RELEASE_NAME::$(echo ${GITHUB_REF##*/})"
-      - name: DEBUGGING Listing files
-        shell: bash
-        run: |
-          ls -halt build
       - name: Release HOPR Chat binaries
         uses: softprops/action-gh-release@v1
         env:
