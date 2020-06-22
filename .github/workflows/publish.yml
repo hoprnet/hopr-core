@@ -99,13 +99,11 @@ jobs:
           name: hopr-chat-nodebin-macos.zip
       - name: Obtaining release from branch
         shell: bash
-        run: echo "::set-env name=RELEASE_NAME::$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//_/g')"
+        run: echo "::set-env name=RELEASE_NAME::$(echo ${GITHUB_REF##*/})"
       - name: DEBUGGING Listing files
         shell: bash
         run: |
-          ls -halt .
-          ls -halt ../
-          pwd
+          ls build
       - name: Release HOPR Chat binaries
         uses: softprops/action-gh-release@v1
         env:
