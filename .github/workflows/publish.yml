@@ -102,7 +102,6 @@ jobs:
           name: hopr-chat-nodebin-macos.zip
       - name: Release HOPR Chat binaries
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
             hopr-chat-nodebin-linux.zip
