@@ -89,17 +89,17 @@ jobs:
         uses: actions/download-artifact@master
         with:
           name: hopr-chat-nodebin-linux.zip
-          path: build
+          path: chat/dist
       - name: Get HOPR Chat (windows)
         uses: actions/download-artifact@master
         with:
           name: hopr-chat-nodebin-windows.zip
-          path: build
+          path: chat/dist
       - name: Get HOPR Chat (macos)
         uses: actions/download-artifact@master
         with:
           name: hopr-chat-nodebin-macos.zip
-          path: build
+          path: chat/dist
       - name: Obtaining release from branch
         shell: bash
         run: echo "::set-env name=RELEASE_NAME::$(echo ${GITHUB_REF##*/})"
