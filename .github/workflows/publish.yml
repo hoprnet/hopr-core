@@ -89,17 +89,19 @@ jobs:
         uses: actions/download-artifact@master
         with:
           name: hopr-chat-nodebin-linux.zip
-          path: chat/dist
+          path: .
       - name: Get HOPR Chat (windows)
         uses: actions/download-artifact@master
         with:
           name: hopr-chat-nodebin-windows.zip
-          path: chat/dist
+          path: .
       - name: Get HOPR Chat (macos)
         uses: actions/download-artifact@master
         with:
           name: hopr-chat-nodebin-macos.zip
-          path: chat/dist
+          path: .
+      - name: DEBUGGING
+        run: ls -halt .
       - name: Obtaining release from branch
         shell: bash
         run: echo "::set-env name=RELEASE_NAME::$(echo ${GITHUB_REF##*/})"
@@ -112,9 +114,9 @@ jobs:
           name: HOPR Chat - ${{ env.RELEASE_NAME }}
           draft: true
           files: |
-            chat/dist/hopr-chat-nodebin-linux.zip
-            chat/dist/hopr-chat-nodebin-windows.zip
-            chat/dist/hopr-chat-nodebin-macos.zip
+            hopr-chat-nodebin-linux.zip
+            hopr-chat-nodebin-windows.zip
+            hopr-chat-nodebin-macos.zip
 
   publish_gpr:
     name: Deploys to GPR
