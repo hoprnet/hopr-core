@@ -100,13 +100,19 @@ jobs:
       - name: Obtaining release from branch
         shell: bash
         run: echo "::set-env name=RELEASE_NAME::$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//_/g')"
+      - name: DEBUGGING Listing files
+        shell: bash
+        run: |
+          ls -halt .
+          ls -halt chat
+          ls -halt chat/dist
       - name: Release HOPR Chat binaries
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ env.RELEASE_NAME }}
-          release_name: HOPR Chat - ${{ env.RELEASE_NAME }}
+          name: HOPR Chat - ${{ env.RELEASE_NAME }}
           draft: true
           files: |
             hopr-chat-nodebin-linux.zip
