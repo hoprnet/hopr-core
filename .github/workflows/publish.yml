@@ -104,8 +104,8 @@ jobs:
         shell: bash
         run: |
           ls -halt .
-          ls -halt chat
-          ls -halt chat/dist
+          ls -halt ../
+          pwd
       - name: Release HOPR Chat binaries
         uses: softprops/action-gh-release@v1
         env:
