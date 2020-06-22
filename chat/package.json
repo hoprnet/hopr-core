@@ -9,17 +9,14 @@
     "clean:build": "rimraf ./build",
     "clean:dist": "rimraf ./dist",
     "clean:all": "yarn clean && yarn clean:dist && yarn util:clean:all",
-    "compile": "yarn clean:dist && yarn build && ncc build index.ts -o dist && copyfiles .env dist",
+    "compile": "yarn clean:dist && yarn build && ncc build index.ts -o dist && copyfiles .env hopr-chat.ps1 hopr-chat.sh dist",
     "test": "mocha --exit || echo '⚠️  Currently no tests available'",
     "util:clean:all": "rimraf .alice .bob",
     "util:create:alice": "mkdirp .alice && copyfiles -a lib/**/**/* .alice && copyfiles .env .alice/",
     "util:create:bob": "mkdirp .bob && copyfiles -a lib/**/**/* .bob && copyfiles .env .bob/",
     "start": "node lib/index.js",
     "start:alice": "yarn util:create:alice && cd .alice && cross-env HOST_IPV4=0.0.0.0:9091 node lib/index.js -p alice",
-    "start:bob": "yarn util:create:bob && cd .bob && cross-env HOST_IPV4=0.0.0.0:9092 node lib/index.js -p bob",
-    "zip:windows": "bestzip hopr-chat-nodebin-windows.zip dist",
-    "zip:macos": "bestzip hopr-chat-nodebin-macos.zip dist",
-    "zip:linux": "bestzip hopr-chat-nodebin-linux.zip dist"
+    "start:bob": "yarn util:create:bob && cd .bob && cross-env HOST_IPV4=0.0.0.0:9092 node lib/index.js -p bob"
   },
   "engines": {
     "node": "12.9.1",
@@ -49,7 +46,6 @@
   },
   "devDependencies": {
     "@types/node": ">=4.2.0 < 13",
-    "bestzip": "^2.1.5",
     "copyfiles": "^2.3.0",
     "cross-env": "^7.0.2",
     "mkdirp": "^1.0.4",

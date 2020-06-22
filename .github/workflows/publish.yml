@@ -73,14 +73,11 @@ jobs:
       - name: Compile project into nodes bin
         working-directory: chat
         run: yarn compile
-      - name: Zip node binary for uploading
-        working-directory: chat
-        run: yarn zip:${{ matrix.displayName }}
       - name: Upload to GitHub workflow artifacts store
         uses: actions/upload-artifact@v2-preview
         with:
           name: hopr-chat-nodebin-${{ matrix.displayName }}.zip
-          path: chat/hopr-chat-nodebin-${{ matrix.displayName }}.zip
+          path: chat/dist
 
   publish_dist:
     name: Creates release with node binary per OS
