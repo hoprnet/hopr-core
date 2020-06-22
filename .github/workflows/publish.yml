@@ -97,12 +97,16 @@ jobs:
         uses: actions/download-artifact@master
         with:
           name: hopr-chat-nodebin-macos.zip
+      - name: Obtaining release from branch
+        shell: bash
+        run: echo "::set-env name=RELEASE_NAME::$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//_/g')"
       - name: Release HOPR Chat binaries
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${GITHUB_REF##*/}
+          tag_name: "${RELEASE_NAME}"
+          draft: true
           files: |
             hopr-chat-nodebin-linux.zip
             hopr-chat-nodebin-windows.zip
