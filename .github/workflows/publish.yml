@@ -105,7 +105,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: "${RELEASE_NAME}"
+          tag_name: ${{ RELEASE_NAME }}
+          release_name: HOPR Chat - ${{ RELEASE_NAME }}
           draft: true
           files: |
             hopr-chat-nodebin-linux.zip
