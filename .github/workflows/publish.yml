@@ -73,11 +73,14 @@ jobs:
       - name: Compile project into nodes bin
         working-directory: chat
         run: yarn compile
+      - name: Zip node binary for uploading
+        working-directory: chat
+        run: yarn zip:${{ matrix.displayName }}
       - name: Upload to GitHub workflow artifacts store
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v2-preview
         with:
           name: hopr-chat-nodebin-${{ matrix.displayName }}.zip
-          path: chat/dist
+          path: chat/hopr-chat-nodebin-${{ matrix.displayName }}.zip
 
   publish_dist:
     name: Creates release with node binary per OS
@@ -89,19 +92,14 @@ jobs:
         uses: actions/download-artifact@master
         with:
           name: hopr-chat-nodebin-linux.zip
-          path: .
       - name: Get HOPR Chat (windows)
         uses: actions/download-artifact@master
         with:
           name: hopr-chat-nodebin-windows.zip
-          path: .
       - name: Get HOPR Chat (macos)
         uses: actions/download-artifact@master
         with:
           name: hopr-chat-nodebin-macos.zip
-          path: .
-      - name: DEBUGGING
-        run: ls -halt .
       - name: Obtaining release from branch
         shell: bash
         run: echo "::set-env name=RELEASE_NAME::$(echo ${GITHUB_REF##*/})"
