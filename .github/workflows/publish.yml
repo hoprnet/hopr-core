@@ -66,20 +66,15 @@ jobs:
         working-directory: chat
         if: steps.cache-modules.outputs.cache-hit != 'true'
         run: yarn install --frozen-lockfile
-      # - name: Build project into nodejs app
-      #   working-directory: chat
-      #   run: yarn build
-      # - name: Compile project into nodes bin
-      #   working-directory: chat
-      #   run: yarn compile
-      - name: DEBUGGING TASK
+      - name: Build project into nodejs app
         working-directory: chat
-        run: mkdir dist
+        run: yarn build
+      - name: Compile project into nodes bin
+        working-directory: chat
+        run: yarn compile
       - name: Zip node binary for uploading
         working-directory: chat
         run: yarn zip:${{ matrix.displayName }}
-      - name: DEBBUGING - List contents and echo dir
-        run: ls chat
       - name: Upload to GitHub workflow artifacts store
         uses: actions/upload-artifact@v2-preview
         with:
