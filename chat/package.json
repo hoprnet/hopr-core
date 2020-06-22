@@ -1,6 +1,6 @@
 {
   "name": "@hoprnet/hopr-chat",
-  "version": "1.0.1-refactor.974dafd",
+  "version": "1.1.0-testnet.690b97b",
   "description": "",
   "main": "src/index.ts",
   "scripts": {
