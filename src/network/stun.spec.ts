@@ -67,8 +67,6 @@ describe('test the STUN functionalities', function () {
 
     assert(externalMulti.address === external2.address, `Address must be the same`)
 
-    console.log(externalMulti)
-
     await bootstrap.stopServer()
   })
 })
