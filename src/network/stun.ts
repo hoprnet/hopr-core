@@ -46,10 +46,12 @@ class Stun {
       const onMessage = async (msg: Buffer) => {
         const res = stun.createBlank()
 
+        const logBackup = console.log
+        console.log = () => {}
         if (res.loadBuffer(msg)) {
           if (
             tids.some((tid, index, array) => {
-              if (res.isBindingResponseSuccess({ transactionId: tid })) {
+              if (res.isBindingResponseSuccess({ transactionId: tid, fingerprint: true })) {
                 array.splice(index, 1)
                 return true
               }
@@ -74,6 +76,7 @@ class Stun {
             }
           }
         }
+        console.log = logBackup
       }
 
       socket.on('message', onMessage)
