@@ -5,7 +5,7 @@ import * as server from '../server'
 
 describe('version', function () {
   // @ts-ignore
-  const client = new services.version.definition.version.Version('localhost:50051', credentials.createInsecure())
+  const client = new services.version.service('localhost:50051', credentials.createInsecure())
 
   beforeEach(async function () {
     await server.start()
@@ -15,7 +15,7 @@ describe('version', function () {
     await server.stop()
   })
 
-  it.skip('should get latency', function (done) {
+  it('should get latency', function (done) {
     client.getVersion({}, (err, response) => {
       if (err) throw err
 

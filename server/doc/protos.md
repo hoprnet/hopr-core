@@ -3,6 +3,36 @@
 
 ## Table of Contents
 
+- [address.proto](#address.proto)
+    - [GetHoprAddressRequest](#address.GetHoprAddressRequest)
+    - [GetHoprAddressResponse](#address.GetHoprAddressResponse)
+    - [GetNativeAddressRequest](#address.GetNativeAddressRequest)
+    - [GetNativeAddressResponse](#address.GetNativeAddressResponse)
+  
+    - [Address](#address.Address)
+  
+- [balance.proto](#balance.proto)
+    - [GetHoprBalanceRequest](#balance.GetHoprBalanceRequest)
+    - [GetHoprBalanceResponse](#balance.GetHoprBalanceResponse)
+    - [GetNativeBalanceRequest](#balance.GetNativeBalanceRequest)
+    - [GetNativeBalanceResponse](#balance.GetNativeBalanceResponse)
+  
+    - [Balance](#balance.Balance)
+  
+- [channels.proto](#channels.proto)
+    - [CloseChannelRequest](#channels.CloseChannelRequest)
+    - [CloseChannelResponse](#channels.CloseChannelResponse)
+    - [GetChannelInfoRequest](#channels.GetChannelInfoRequest)
+    - [GetChannelInfoResponse](#channels.GetChannelInfoResponse)
+    - [GetChannelsRequest](#channels.GetChannelsRequest)
+    - [GetChannelsResponse](#channels.GetChannelsResponse)
+    - [OpenChannelRequest](#channels.OpenChannelRequest)
+    - [OpenChannelResponse](#channels.OpenChannelResponse)
+  
+    - [GetChannelInfoResponse.State](#channels.GetChannelInfoResponse.State)
+  
+    - [Channels](#channels.Channels)
+  
 - [ping.proto](#ping.proto)
     - [PingRequest](#ping.PingRequest)
     - [PingResponse](#ping.PingResponse)
@@ -35,6 +65,320 @@
     - [Version](#version.Version)
   
 - [Scalar Value Types](#scalar-value-types)
+
+
+
+<a name="address.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## address.proto
+
+
+
+<a name="address.GetHoprAddressRequest"></a>
+
+### GetHoprAddressRequest
+
+
+
+
+
+
+
+<a name="address.GetHoprAddressResponse"></a>
+
+### GetHoprAddressResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| address | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="address.GetNativeAddressRequest"></a>
+
+### GetNativeAddressRequest
+
+
+
+
+
+
+
+<a name="address.GetNativeAddressResponse"></a>
+
+### GetNativeAddressResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| address | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="address.Address"></a>
+
+### Address
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetNativeAddress | [GetNativeAddressRequest](#address.GetNativeAddressRequest) | [GetNativeAddressResponse](#address.GetNativeAddressResponse) | ex: ethereum address |
+| GetHoprAddress | [GetHoprAddressRequest](#address.GetHoprAddressRequest) | [GetHoprAddressResponse](#address.GetHoprAddressResponse) |  |
+
+ 
+
+
+
+<a name="balance.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## balance.proto
+
+
+
+<a name="balance.GetHoprBalanceRequest"></a>
+
+### GetHoprBalanceRequest
+
+
+
+
+
+
+
+<a name="balance.GetHoprBalanceResponse"></a>
+
+### GetHoprBalanceResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| amount | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="balance.GetNativeBalanceRequest"></a>
+
+### GetNativeBalanceRequest
+
+
+
+
+
+
+
+<a name="balance.GetNativeBalanceResponse"></a>
+
+### GetNativeBalanceResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| amount | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="balance.Balance"></a>
+
+### Balance
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetNativeBalance | [GetNativeBalanceRequest](#balance.GetNativeBalanceRequest) | [GetNativeBalanceResponse](#balance.GetNativeBalanceResponse) | ex: ether |
+| GetHoprBalance | [GetHoprBalanceRequest](#balance.GetHoprBalanceRequest) | [GetHoprBalanceResponse](#balance.GetHoprBalanceResponse) |  |
+
+ 
+
+
+
+<a name="channels.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## channels.proto
+
+
+
+<a name="channels.CloseChannelRequest"></a>
+
+### CloseChannelRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| channelId | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="channels.CloseChannelResponse"></a>
+
+### CloseChannelResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| channelId | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="channels.GetChannelInfoRequest"></a>
+
+### GetChannelInfoRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| channelId | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="channels.GetChannelInfoResponse"></a>
+
+### GetChannelInfoResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| state | [GetChannelInfoResponse.State](#channels.GetChannelInfoResponse.State) |  |  |
+| balance | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="channels.GetChannelsRequest"></a>
+
+### GetChannelsRequest
+
+
+
+
+
+
+
+<a name="channels.GetChannelsResponse"></a>
+
+### GetChannelsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| channels | [string](#string) | repeated |  |
+
+
+
+
+
+
+<a name="channels.OpenChannelRequest"></a>
+
+### OpenChannelRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| peerId | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="channels.OpenChannelResponse"></a>
+
+### OpenChannelResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| channelId | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="channels.GetChannelInfoResponse.State"></a>
+
+### GetChannelInfoResponse.State
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| UNKNOWN | 0 |  |
+| UNINITIALISED | 1 |  |
+| FUNDED | 2 |  |
+| OPEN | 3 |  |
+| PENDING | 4 |  |
+
+
+ 
+
+ 
+
+
+<a name="channels.Channels"></a>
+
+### Channels
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetChannels | [GetChannelsRequest](#channels.GetChannelsRequest) | [GetChannelsResponse](#channels.GetChannelsResponse) |  |
+| GetChannelInfo | [GetChannelInfoRequest](#channels.GetChannelInfoRequest) | [GetChannelInfoResponse](#channels.GetChannelInfoResponse) |  |
+| OpenChannel | [OpenChannelRequest](#channels.OpenChannelRequest) | [OpenChannelResponse](#channels.OpenChannelResponse) |  |
+| CloseChannel | [CloseChannelRequest](#channels.CloseChannelRequest) | [CloseChannelResponse](#channels.CloseChannelResponse) |  |
+
+ 
 
 
 
@@ -230,7 +574,7 @@
 | ip | [string](#string) |  |  |
 | load | [float](#float) |  |  |
 | cpu_usage | [float](#float) |  |  |
-| connectoed_notes | [int32](#int32) |  |  |
+| connected_notes | [int32](#int32) |  | number of connected notes |
 
 
 

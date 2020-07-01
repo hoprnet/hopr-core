@@ -3,7 +3,7 @@ import { Service } from '../utils'
 export default Service(
   'version.proto',
   (definition) => {
-    return definition.version.Version.service
+    return definition.version.Version
   },
   {
     getVersion: (call, callback) => {

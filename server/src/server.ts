@@ -8,8 +8,9 @@ export function start() {
     server = new Server()
 
     for (const service of Object.values(services)) {
+      // serviception
       // @ts-ignore
-      server.addService(service.service, service.implementation)
+      server.addService(service.service.service, service.implementation)
     }
 
     server.bindAsync('localhost:50051', ServerCredentials.createInsecure(), (err, port) => {

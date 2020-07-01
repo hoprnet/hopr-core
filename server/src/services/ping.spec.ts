@@ -5,7 +5,7 @@ import * as server from '../server'
 
 describe('ping', function () {
   // @ts-ignore
-  const client = new services.ping.definition.ping.Ping('localhost:50051', credentials.createInsecure())
+  const client = new services.ping.service('localhost:50051', credentials.createInsecure())
 
   beforeEach(async function () {
     await server.start()

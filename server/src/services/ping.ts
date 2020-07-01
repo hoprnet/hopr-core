@@ -3,7 +3,7 @@ import { Service } from '../utils'
 export default Service(
   'ping.proto',
   (definition) => {
-    return definition.ping.Ping.service
+    return definition.ping.Ping
   },
   {
     ping: (call, callback) => {
