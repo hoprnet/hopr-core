@@ -13,7 +13,6 @@
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
-    "rootDir": "src",
-    "incremental": true
+    "rootDir": "src"
   }
 }

@@ -45,10 +45,14 @@ export class ParserService {
     const bootstrapMultiAddress = multiaddr(bootstrapServer.trim());
     const peerId = bootstrapMultiAddress.getPeerId();
     const translatedPeerId = PeerId.createFromB58String(peerId);
-    return PeerInfo.create(translatedPeerId).catch(err => { 
+    const peerInfoCreationResponse = await PeerInfo.create(translatedPeerId).catch(err => { 
       console.log('Parse Bootstrap Err', err); 
       return({ message: err }) 
     });
+    if (peerInfoCreationResponse instanceof PeerInfo) {
+      peerInfoCreationResponse.multiaddrs.add(bootstrapMultiAddress)
+    }
+    return peerInfoCreationResponse;
   }
 
   parseHost(host: string): Promise<ParserError | HoprOptions['hosts']> {

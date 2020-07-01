@@ -5,6 +5,6 @@ import { CoreController } from './core.controller';
 
 @Module({
   providers: [ParserService, CoreService],
-  controllers: [CoreController]
+  controllers: [CoreController],
 })
 export class CoreModule {}

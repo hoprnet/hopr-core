@@ -7,15 +7,17 @@ export class CoreController {
 
   @Post('start')
   async start(): Promise<string> {
-    return this.coreService.start()
-      .then((msg) => msg)
-      .catch((err) => err)
+    return this.coreService
+      .start()
+      .then(msg => msg)
+      .catch(err => err);
   }
 
   @Post('stop')
   async stop(): Promise<string> {
-    return this.coreService.stop()
-      .then((msg) => msg)
-      .catch((err) => err)
+    return this.coreService
+      .stop()
+      .then(msg => msg)
+      .catch(err => err);
   }
 }
