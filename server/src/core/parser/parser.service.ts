@@ -4,7 +4,7 @@ import PeerId from 'peer-id';
 import PeerInfo from 'peer-info';
 import type { HoprOptions } from '@hoprnet/hopr-core'
 import { IsPort, IsIP } from 'class-validator';
-import { parseIpPort } from 'parse-ip-port';
+import { default as parseIpPort } from 'parse-ip-port';
 import { isIPv4 } from 'net';
 import { decode } from 'rlp'
 
@@ -27,11 +27,12 @@ class Host {
   @IsPort()
   port: number;
 
-  private _hosts: HoprOptions['hosts']
+  private _hosts: HoprOptions['hosts'] = {}
 
   get hosts(): HoprOptions['hosts'] {
     this._hosts.ip4 = { ip: this.ipv4, port: this.port }
-    this._hosts.ip6 = { ip: this.ipv6, port: this.port }
+    // @TODO: Restore ipv6 support and/or condition it
+    // this._hosts.ip6 = { ip: this.ipv6, port: this.port } 
     return this._hosts;
   }
 }
@@ -44,7 +45,10 @@ export class ParserService {
     const bootstrapMultiAddress = multiaddr(bootstrapServer.trim());
     const peerId = bootstrapMultiAddress.getPeerId();
     const translatedPeerId = PeerId.createFromB58String(peerId);
-    return PeerInfo.create(translatedPeerId).catch(err => ({ message: err }));
+    return PeerInfo.create(translatedPeerId).catch(err => { 
+      console.log('Parse Bootstrap Err', err); 
+      return({ message: err }) 
+    });
   }
 
   parseHost(host: string): Promise<ParserError | HoprOptions['hosts']> {
@@ -59,6 +63,7 @@ export class ParserService {
         hostObject.port = port;
         resolve(hostObject.hosts);
       } catch (err) {
+        console.log('Parse Host Err', err)
         return reject({ message: err });
       }
     });

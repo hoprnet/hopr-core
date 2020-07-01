@@ -8,11 +8,12 @@ import PeerInfo from 'peer-info';
 
 @Injectable()
 export class CoreService {
-    node: Hopr<HoprCoreConnector>
+    private node: Hopr<HoprCoreConnector>
 
     constructor(private parserService: ParserService) {}
     
     async start() {
+        try {
         const options: HoprOptions = {
             debug: true,
             bootstrapNode: false,
@@ -24,14 +25,27 @@ export class CoreService {
             password: 'switzerland',
             output: this.parserService.outputFunctor()
         }
+        console.log(':: HOPR Options ::', options);
         console.log(':: Starting HOPR Core Node ::')
         this.node = await Hopr.create(options);
         console.log(':: HOPR Core Node Started ::')
+        return { status: 'ok' }
+        } catch (err) {
+            console.log('Error when starting node', err)
+            return { error: err }
+        }
     }
 
     async stop() {
-        console.log(':: Stopping HOPR Core Node ::')
-        await this.node.stop()
-        console.log(':: HOPR Core Node Stopped ::')
+        try {
+            console.log(':: Stopping HOPR Core Node ::')
+            await this.node.stop()
+            console.log(':: HOPR Core Node Stopped ::')
+            return { status: 'ok' }
+        } catch (err) {
+            console.log('Error when stopping node', err);
+            return { error: err }
+        }
+        
     }
 }
