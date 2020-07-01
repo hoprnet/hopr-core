@@ -1,0 +1,40 @@
+{
+  "name": "@hoprnet/hopr-server",
+  "version": "0.0.1",
+  "main": "lib/index.js",
+  "license": "GPL-3.0-only",
+  "scripts": {
+    "start": "node ./lib/index.js",
+    "build": "tsc",
+    "test": "mocha"
+  },
+  "engines": {
+    "node": "12.9.1",
+    "yarn": "1.19.2"
+  },
+  "mocha": {
+    "extension": [
+      "ts"
+    ],
+    "spec": "src/**/*.spec.ts",
+    "require": "ts-node/register"
+  },
+  "prettier": {
+    "tabWidth": 2,
+    "semi": false,
+    "singleQuote": true,
+    "printWidth": 120
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.1.1",
+    "@grpc/proto-loader": "^0.5.4"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.2.11",
+    "@types/mocha": "^7.0.2",
+    "@types/node": "^12.11.0",
+    "chai": "^4.2.0",
+    "mocha": "^8.0.1",
+    "rimraf": "^3.0.2"
+  }
+}

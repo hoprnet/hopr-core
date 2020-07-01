@@ -1,2 +1,5 @@
 # build
 lib
+
+# generated markdown
+server/doc/protos.md
