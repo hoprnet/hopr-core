@@ -45,8 +45,7 @@ export class ParserService {
     const bootstrapMultiAddress = multiaddr(bootstrapServer.trim());
     const peerId = bootstrapMultiAddress.getPeerId();
     const translatedPeerId = PeerId.createFromB58String(peerId);
-    const peerInfoCreationResponse = await PeerInfo.create(translatedPeerId).catch(err => { 
-      console.log('Parse Bootstrap Err', err); 
+    const peerInfoCreationResponse = await PeerInfo.create(translatedPeerId).catch(err => {
       return({ message: err }) 
     });
     if (peerInfoCreationResponse instanceof PeerInfo) {
@@ -67,7 +66,6 @@ export class ParserService {
         hostObject.port = port;
         resolve(hostObject.hosts);
       } catch (err) {
-        console.log('Parse Host Err', err)
         return reject({ message: err });
       }
     });

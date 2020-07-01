@@ -31,8 +31,7 @@ export class CoreService {
         console.log(':: HOPR Core Node Started ::')
         return { status: 'ok' }
         } catch (err) {
-            console.log('Error when starting node', err)
-            return { error: err }
+        return { error: err }
         }
     }
 
@@ -43,7 +42,6 @@ export class CoreService {
             console.log(':: HOPR Core Node Stopped ::')
             return { status: 'ok' }
         } catch (err) {
-            console.log('Error when stopping node', err);
             return { error: err }
         }
         
