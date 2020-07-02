@@ -1,11 +1,12 @@
 {
-  "name": "@hoprnet/hopr-server",
-  "version": "0.0.1",
+  "name": "@hoprnet/hopr-protos",
+  "version": "0.0.0",
   "main": "lib/index.js",
   "license": "GPL-3.0-only",
   "scripts": {
     "start": "node ./lib/index.js",
     "build": "tsc",
+    "build:protos": "rimraf .proto && mkdirp .proto && ./node_modules/protoc/protoc/bin/protoc --plugin=node_modules/ts-proto/protoc-gen-ts_proto --ts_proto_out=.proto src/protos/*.proto",
     "test": "mocha"
   },
   "engines": {
@@ -34,7 +35,11 @@
     "@types/mocha": "^7.0.2",
     "@types/node": "^12.11.0",
     "chai": "^4.2.0",
+    "mkdirp": "^1.0.4",
     "mocha": "^8.0.1",
-    "rimraf": "^3.0.2"
+    "protoc": "^1.0.4",
+    "rimraf": "^3.0.2",
+    "ts-proto": "^1.25.0",
+    "typescript": "^3.9.6"
   }
 }
