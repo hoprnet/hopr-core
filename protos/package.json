@@ -31,5 +31,8 @@
     "rimraf": "^3.0.2",
     "ts-proto": "^1.25.0",
     "typescript": "^3.9.6"
+  },
+  "dependencies": {
+    "protobufjs": "^6.9.0"
   }
 }
