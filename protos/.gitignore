@@ -15,8 +15,9 @@ yarn-error.log
 # Exclude db dir
 db*
 
-# Exclude built files
-lib/
+# Exclude build files
+protos/**/*.ts
+node/
 
 # Exclude vim swap files
 *.swp
