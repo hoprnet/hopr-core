@@ -4,7 +4,8 @@
   "main": "lib/index.js",
   "files": [
     "lib/",
-    "src/**/*.proto"
+    "src/**/*.proto",
+    "README.md"
   ],
   "license": "GPL-3.0-only",
   "scripts": {

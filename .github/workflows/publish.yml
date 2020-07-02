@@ -257,7 +257,7 @@ jobs:
         run: npm config set //npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}
       - name: Install node modules
         working-directory: protos
-        if: steps.cache-modules.outputs.cache-hit != 'true'
+        # if: steps.cache-modules.outputs.cache-hit != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -292,7 +292,7 @@ jobs:
           key: ${{ runner.OS }}-build-${{ hashFiles('protos/package.json') }}
       - name: Install node modules
         working-directory: protos
-        if: steps.cache-modules.outputs.cache-hit != 'true'
+        # if: steps.cache-modules.outputs.cache-hit != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
