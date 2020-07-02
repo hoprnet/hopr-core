@@ -1,6 +1,6 @@
 {
   "name": "@hoprnet/hopr-protos",
-  "version": "0.0.2-780c86c",
+  "version": "0.0.3-436a869",
   "main": "lib/index.js",
   "files": [
     "lib/",
