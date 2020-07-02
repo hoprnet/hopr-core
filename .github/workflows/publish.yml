@@ -227,6 +227,7 @@ jobs:
           key: ${{ runner.OS }}-build-${{ hashFiles('protos/package.json') }}
       # Installing library requirements
       - name: Install node modules
+        working-directory: protos
         if: steps.cache-modules.outputs.cache-hit != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -255,6 +256,7 @@ jobs:
       - name: Setup NPM Registry
         run: npm config set //npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}
       - name: Install node modules
+        working-directory: protos
         if: steps.cache-modules.outputs.cache-hit != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -262,6 +264,7 @@ jobs:
           yarn policies set-version 1.19.2
           yarn install --frozen-lockfile
       - name: Publish to GitHub Packages
+        working-directory: protos
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -288,6 +291,7 @@ jobs:
           path: node_modules
           key: ${{ runner.OS }}-build-${{ hashFiles('protos/package.json') }}
       - name: Install node modules
+        working-directory: protos
         if: steps.cache-modules.outputs.cache-hit != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -295,6 +299,7 @@ jobs:
           yarn policies set-version 1.19.2
           yarn install --frozen-lockfile
       - name: Publish to NPM Registry
+        working-directory: protos
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
