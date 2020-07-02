@@ -2,23 +2,21 @@
   "name": "@hoprnet/hopr-protos",
   "version": "0.0.0",
   "main": "lib/index.js",
+  "files": [
+    "lib/",
+    "src/**/*.proto"
+  ],
   "license": "GPL-3.0-only",
   "scripts": {
-    "start": "node ./lib/index.js",
-    "build": "tsc",
-    "build:protos": "rimraf .proto && mkdirp .proto && ./node_modules/protoc/protoc/bin/protoc --plugin=node_modules/ts-proto/protoc-gen-ts_proto --ts_proto_out=.proto src/protos/*.proto",
-    "test": "mocha"
+    "build": "yarn clean && yarn build:protos && tsc",
+    "build:protos": "./node_modules/protoc/protoc/bin/protoc --plugin=node_modules/ts-proto/protoc-gen-ts_proto --ts_proto_out=./ src/*.proto",
+    "clean": "rimraf lib",
+    "test": "echo '⚠️ No tests implemented'",
+    "prepublishOnly": "yarn build"
   },
   "engines": {
     "node": "12.9.1",
     "yarn": "1.19.2"
-  },
-  "mocha": {
-    "extension": [
-      "ts"
-    ],
-    "spec": "src/**/*.spec.ts",
-    "require": "ts-node/register"
   },
   "prettier": {
     "tabWidth": 2,
@@ -26,17 +24,8 @@
     "singleQuote": true,
     "printWidth": 120
   },
-  "dependencies": {
-    "@grpc/grpc-js": "^1.1.1",
-    "@grpc/proto-loader": "^0.5.4"
-  },
   "devDependencies": {
-    "@types/chai": "^4.2.11",
-    "@types/mocha": "^7.0.2",
     "@types/node": "^12.11.0",
-    "chai": "^4.2.0",
-    "mkdirp": "^1.0.4",
-    "mocha": "^8.0.1",
     "protoc": "^1.0.4",
     "rimraf": "^3.0.2",
     "ts-proto": "^1.25.0",

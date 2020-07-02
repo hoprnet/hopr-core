@@ -4,7 +4,7 @@ HOPR is a privacy-preserving messaging **protocol** which enables the creation o
 
 ## Protos
 
-See proto files [here](./doc/protos.md)
+See an overview of the protos [here](./doc/protos.md)
 
 ## Notes
 

@@ -8,5 +8,5 @@
     "declaration": true,
     "sourceMap": true
   },
-  "include": ["src/**/*.ts", ".proto/**/*.ts"]
+  "include": ["src/**/*.ts"]
 }
