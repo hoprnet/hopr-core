@@ -1,6 +1,6 @@
 # compiled output
 /dist
-/node_modules
+node_modules
 
 # Logs
 logs
@@ -35,3 +35,15 @@ lerna-debug.log*
 
 # Ts
 *.tsbuildinfo
+
+# Exclude db dir
+db*
+
+# Exclude built files
+lib/
+
+# Exclude vim swap files
+*.swp
+
+# Exclude .env
+.env

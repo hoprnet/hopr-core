@@ -1,10 +1,10 @@
 {
-  "name": "server",
+  "name": "@hoprnet/hopr-server",
   "version": "0.0.1",
   "description": "",
   "author": "",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "GPL-3.0-only",
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "nest build",
@@ -20,6 +20,10 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
+  "engines": {
+    "node": "12.9.1",
+    "yarn": "1.19.2"
+  },
   "dependencies": {
     "@hoprnet/hopr-core": "0.6.16",
     "@hoprnet/hopr-core-connector-interface": "1.2.10-98e08f8",
@@ -27,6 +31,8 @@
     "@nestjs/common": "^7.0.0",
     "@nestjs/core": "^7.0.0",
     "@nestjs/platform-express": "^7.0.0",
+    "@grpc/grpc-js": "^1.1.1",
+    "@grpc/proto-loader": "^0.5.4",
     "class-validator": "^0.12.2",
     "multiaddr": "^7.5.0",
     "parse-ip-port": "^1.0.0",
