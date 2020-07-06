@@ -72,7 +72,6 @@ export default function upgradetoWebRTC(
     timeout = setTimeout(() => onTimeout(), WEBRTC_TIMEOUT)
 
     const done = async (err?: Error) => {
-      console.log(`done called`, err)
       clearTimeout(timeout)
 
       channel.removeListener('iceTimeout', onTimeout)
@@ -86,7 +85,7 @@ export default function upgradetoWebRTC(
 
       options?.signal?.removeEventListener('abort', onAbort)
 
-      if (err || this._failIntentionallyOnWebRTC) {
+      if (err || options?._failIntentionallyOnWebRTC) {
         reject(err)
       } else {
         resolve((channel as unknown) as Socket)
@@ -105,7 +104,7 @@ export default function upgradetoWebRTC(
         return
       }
 
-      if (options._answerIntentionallyWithIncorrectMessages) {
+      if (options?._answerIntentionallyWithIncorrectMessages) {
         sinkBuffer.push(randomBytes(31))
       } else {
         sinkBuffer.push(_encoder.encode(JSON.stringify(data)))
