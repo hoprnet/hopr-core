@@ -3,3 +3,6 @@ lib
 
 # generated markdown
 server/doc/protos.md
+
+# server uses different prettier config
+server
