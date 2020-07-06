@@ -22,7 +22,7 @@
   },
   "engines": {
     "node": "12.9.1",
-    "yarn": "1.19.2"
+    "yarn": "1"
   },
   "dependencies": {
     "@hoprnet/hopr-core": "0.6.16",

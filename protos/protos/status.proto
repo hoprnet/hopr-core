@@ -1,0 +1,16 @@
+syntax = "proto3";
+package status;
+
+service Status {
+  rpc GetStatus (StatusRequest) returns (StatusResponse);
+}
+
+message StatusRequest {}
+
+message StatusResponse {
+  string ip = 1;
+  float load = 2;
+  float cpu_usage = 3;
+  // number of connected notes
+  int32 connected_notes = 4;
+}
