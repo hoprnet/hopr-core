@@ -4,16 +4,18 @@
   "files": [
     "node/",
     "web/",
-    "protos/**/*.proto",
+    "web-src/",
+    "protos/",
     "README.md"
   ],
   "license": "GPL-3.0-only",
   "scripts": {
-    "build": "yarn build:protos && yarn build:web",
+    "build": "yarn build:protos && yarn build:web && yarn fix:types",
     "build:web": "rimraf web && microbundle --entry web-src/**/*.js --output web --target web --compress --external none",
     "build:protos": "yarn build:protos:node && yarn build:protos:web",
     "build:protos:node": "rimraf node && mkdirp node && node ./scripts/generateNode.js",
     "build:protos:web": "rimraf web-src && mkdirp web-src && node ./scripts/generateWeb.js",
+    "fix:types": "replace 'from \"grpc\"' 'from \"@grpc/grpc-js\"' . -r --include=\"*.d.ts\"",
     "test": "echo '⚠️ No tests implemented'",
     "prepublishOnly": "yarn build"
   },
@@ -37,13 +39,19 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@types/google-protobuf": "^3.7.2",
     "@types/node": "^12.11.0",
     "glob": "^7.1.6",
     "grpc-tools": "^1.9.0",
     "microbundle": "^0.12.2",
     "mkdirp": "^1.0.4",
+    "replace": "^1.2.0",
     "rimraf": "^3.0.2",
     "ts-protoc-gen": "^0.12.0",
     "typescript": "^3.9.6"
+  },
+  "peerDependencies": {
+    "@grpc/grpc-js": "^1.1.1",
+    "google-protobuf": "^3.12.2"
   }
 }

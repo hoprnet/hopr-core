@@ -10,7 +10,7 @@ const args = [
   `--plugin=protoc-gen-grpc=${PROTOC_GEN_GRPC}`,
   `--plugin=protoc-gen-ts=${PROTOC_GEN_TS}`,
   `--js_out=import_style=commonjs,binary:${OUTPUT_DIR}`,
-  `--grpc_out=${OUTPUT_DIR}`,
+  `--grpc_out=grpc_js:${OUTPUT_DIR}`,
   `--ts_out=service=grpc-node:${OUTPUT_DIR}`,
   ...protos,
 ]
