@@ -8,5 +8,5 @@
     "declaration": true,
     "sourceMap": true
   },
-  "include": ["protos/**/*.ts"]
+  "include": ["web/**/*.ts"]
 }

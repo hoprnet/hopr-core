@@ -3,14 +3,17 @@
   "version": "0.0.4-77dea00",
   "files": [
     "node/",
+    "web/",
     "protos/**/*.proto",
     "README.md"
   ],
   "license": "GPL-3.0-only",
   "scripts": {
-    "build": "yarn clean && yarn build:protos && microbundle --entry protos/**/*.ts --output node --compress",
-    "build:protos": "./node_modules/protoc/protoc/bin/protoc --plugin=node_modules/ts-proto/protoc-gen-ts_proto --ts_proto_opt=outputClientImpl=false --ts_proto_out=. ./protos/*.proto",
-    "clean": "rimraf node",
+    "build": "yarn build:protos && yarn build:web",
+    "build:web": "rimraf web && microbundle --entry web-src/**/*.js --output web --target web --compress --external none",
+    "build:protos": "yarn build:protos:node && yarn build:protos:web",
+    "build:protos:node": "rimraf node && mkdirp node && node ./scripts/generateNode.js",
+    "build:protos:web": "rimraf web-src && mkdirp web-src && node ./scripts/generateWeb.js",
     "test": "echo '⚠️ No tests implemented'",
     "prepublishOnly": "yarn build"
   },
@@ -32,15 +35,15 @@
     "singleQuote": true,
     "printWidth": 120
   },
-  "dependencies": {
-    "protobufjs": "^6.9.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/node": "^12.11.0",
+    "glob": "^7.1.6",
+    "grpc-tools": "^1.9.0",
     "microbundle": "^0.12.2",
-    "protoc": "^1.0.4",
+    "mkdirp": "^1.0.4",
     "rimraf": "^3.0.2",
-    "ts-proto": "^1.25.0",
+    "ts-protoc-gen": "^0.12.0",
     "typescript": "^3.9.6"
   }
 }
