@@ -1,14 +1,8 @@
 import abortable, { AbortError } from 'abortable-iterator'
 
-import type { Socket } from 'net'
-import mafmt from 'mafmt'
-import errCode from 'err-code'
-
 import debug from 'debug'
 const log = debug('hopr-core:transport')
 const error = debug('hopr-core:transport:error')
-
-import { socketToConn } from './socket-to-conn'
 
 import AbortController from 'abort-controller'
 
@@ -16,8 +10,6 @@ import AbortController from 'abort-controller'
 import handshake = require('it-handshake')
 
 import type Multiaddr from 'multiaddr'
-
-import myHandshake from './handshake'
 
 // @ts-ignore
 import libp2p = require('libp2p')
@@ -27,15 +19,21 @@ import { RELAY_CIRCUIT_TIMEOUT, RELAY_REGISTER, OK, FAIL, DELIVERY_REGISTER } fr
 import PeerInfo from 'peer-info'
 import PeerId from 'peer-id'
 
-import pipe from 'it-pipe'
-
 import { pubKeyToPeerId } from '../../utils'
 import { u8aEquals } from '@hoprnet/hopr-utils'
 
 import type { Connection, DialOptions, Registrar, Dialer, Handler, Stream } from './types'
 
 import chalk from 'chalk'
-import pushable from 'it-pushable'
+
+import defer from 'p-defer'
+
+type AbortObj = {
+  deferredPromise: defer.DeferredPromise<AsyncIterable<Uint8Array>>
+  abort: AbortController
+  aborted: boolean
+  cache: Uint8Array
+}
 
 class Relay {
   private _dialer: Dialer
@@ -59,7 +57,6 @@ class Relay {
   }
 
   async handleRelayConnection(conn: Handler): Promise<{ stream: Stream; counterparty: PeerId; conn: Connection }> {
-    console.log(`handling relay`)
     let shaker = handshake(conn.stream)
 
     let sender: PeerId
@@ -196,47 +193,12 @@ class Relay {
       return
     }
 
-    const abort = new AbortController()
+    const deliveryStream = await this.establishForwarding(counterparty)
 
-    const timeout = setTimeout(() => abort.abort(), RELAY_CIRCUIT_TIMEOUT)
-
-    let conn: Connection
-    try {
-      conn = this._registrar.getConnection(new PeerInfo(counterparty))
-
-      if (!conn) {
-        conn = await this._dialer.connectToPeer(new PeerInfo(counterparty), { signal: abort.signal })
-      }
-    } catch (err) {
-      error(`Could not establish connection to ${counterparty.toB58String()}. Error was: ${err.message}`)
-      clearTimeout(timeout)
-      shaker.write(FAIL)
-      shaker.rest()
-      return
-    }
-
-    const { stream: deliveryStream } = await conn.newStream([DELIVERY_REGISTER])
-
-    clearTimeout(timeout)
-
-    const relayShaker = handshake(deliveryStream)
-
-    relayShaker.write(connection.remotePeer.pubKey.marshal())
-
-    let answer: Buffer | undefined
-    try {
-      answer = (await relayShaker.read())?.slice()
-    } catch (err) {
-      error(err)
-    }
-
-    if (answer == null || !u8aEquals(answer, OK)) {
-      error(`Could not relay to peer ${counterparty.toB58String()} because we are unable to deliver packets.`)
-
+    if (!deliveryStream) {
       shaker.write(FAIL)
 
       shaker.rest()
-      relayShaker.rest()
 
       return
     }
@@ -244,87 +206,90 @@ class Relay {
     shaker.write(OK)
 
     shaker.rest()
-    relayShaker.rest()
-
-    let sender = connection.remotePeer
-
-    // this.on('peer:connect', (peer: PeerInfo) => {
-    //     if (peer.id.isEqual(sender))
-    // })
-
-    let cache: Uint8Array
 
     const toSender = shaker.stream
-    const toCounterparty = relayShaker.stream
+    const toCounterparty = deliveryStream
 
-    console.log(`sender`, counterparty)
-
-    type AbortObj = {
-      abort: AbortController
-      aborted: boolean
-    }
-
-    const senderObj: AbortObj = {
+    const toCounterpartyObj: AbortObj = {
+      deferredPromise: defer<AsyncIterable<Uint8Array>>(),
       aborted: false,
       abort: new AbortController(),
-    }
-
-    function foo(obj: AbortObj, streamSource: AsyncIterable<Uint8Array>) {
-      return async function* (this: Relay) {
-        if (cache != null) {
-          yield cache
-        }
-
-        obj.aborted = false
-        obj.abort = new AbortController()
-
-        let source = abortable<Uint8Array>(streamSource, obj.abort.signal)
-
-        console.log(`before for await`)
-
-        for await (const msg of source) {
-
-          if (obj.aborted) {
-            cache = msg.slice()
-            console.log(`broken`)
-            break
-          } else {
-            yield msg
-          }
-        }
-      }.call(this)
+      cache: undefined,
     }
 
     this.on('peer:connect', async (peer: PeerInfo) => {
       if (peer.id.isEqual(counterparty)) {
-        senderObj.aborted = true
-        ;(await this.establishForwarding(counterparty))?.sink(foo(senderObj, toSender.source))
+        toCounterpartyObj.aborted = true
 
-        senderObj.abort.abort()
+        const newStream = await this.establishForwarding(counterparty)
+
+        newStream.sink(this.getSink(toCounterpartyObj, toSender.source))
+
+        toCounterpartyObj.abort.abort()
+
+        toCounterpartyObj.deferredPromise.resolve(newStream.source)
       }
     })
 
-    toCounterparty.sink(foo(senderObj, toSender.source))
+    toCounterparty.sink(this.getSink(toCounterpartyObj, toSender.source))
 
     toSender.sink(
       (async function* () {
-        yield* toCounterparty.source
+        let source = toCounterparty.source
+        while (true) {
+          yield* source
+
+          source = await toCounterpartyObj.deferredPromise.promise
+          toCounterpartyObj.deferredPromise = defer<AsyncIterable<Uint8Array>>()
+        }
       })()
     )
   }
 
+  getSink(obj: AbortObj, streamSource: AsyncIterable<Uint8Array>) {
+    return async function* (this: Relay) {
+      if (obj.cache != null) {
+        yield obj.cache
+      }
+
+      obj.cache = undefined
+      obj.aborted = false
+      obj.abort = new AbortController()
+
+      for await (const msg of abortable<Uint8Array>(streamSource, obj.abort.signal)) {
+        if (obj.aborted) {
+          console.log(`aborted`)
+          obj.cache = msg
+          break
+        } else {
+          yield msg
+        }
+      }
+    }.call(this)
+  }
+
   async establishForwarding(counterparty: PeerId) {
+    let timeout: any
+
     let newConn = this._registrar.getConnection(new PeerInfo(counterparty))
 
     if (!newConn) {
+      const abort = new AbortController()
+
+      timeout = setTimeout(() => abort.abort(), RELAY_CIRCUIT_TIMEOUT)
+
       try {
-        newConn = await this._dialer.connectToPeer(new PeerInfo(counterparty))
+        newConn = await this._dialer.connectToPeer(new PeerInfo(counterparty), { signal: abort.signal })
       } catch (err) {
+        clearTimeout(timeout)
         error(err)
+        return
       }
     }
 
     const { stream: newStream } = await newConn.newStream([DELIVERY_REGISTER])
+
+    timeout && clearTimeout(timeout)
 
     const toCounterparty = handshake(newStream)
 
@@ -335,6 +300,7 @@ class Relay {
       answer = (await toCounterparty.read())?.slice()
     } catch (err) {
       error(err)
+      return
     }
 
     toCounterparty.rest()

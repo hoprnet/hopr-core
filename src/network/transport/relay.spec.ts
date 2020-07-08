@@ -12,7 +12,7 @@ import TCP from 'libp2p-tcp'
 
 import PeerId from 'peer-id'
 
-import { Handler, Stream } from './types'
+import { Handler } from './types'
 
 import Multiaddr from 'multiaddr'
 import PeerInfo from 'peer-info'
@@ -25,11 +25,7 @@ import { privKeyToPeerId } from '../../utils'
 
 const TEST_PROTOCOL = `/test/0.0.1`
 
-const privKeys = [
-    randomBytes(32),
-    randomBytes(32),
-    randomBytes(32)
-]
+const privKeys = [randomBytes(32), randomBytes(32), randomBytes(32)]
 
 describe('should create a socket and connect to it', function () {
   async function generateNode(options: {
@@ -115,39 +111,57 @@ describe('should create a socket and connect to it', function () {
 
     const pipePromise = pipe(
       // prettier-ignore
-      (async function * () {
-          yield new Uint8Array([1])
+      (async function* () {
+        yield new Uint8Array([1])
 
-          await new Promise(resolve => setTimeout(resolve, 500))
+        await new Promise(resolve => setTimeout(resolve, 500))
 
-          await counterparty.stop()
+        await counterparty.stop()
 
-          counterparty = await generateNode({
-            id: 2,
-            ipv4: true,
-            connHandler: (handler: Handler & { counterparty: PeerId }) => {
-                console.log(`inside new handler`)
-              pipe(
-                /* prettier-ignore */
-                handler.stream,
-                async (source: AsyncIterable<Uint8Array>) => {
-                    for await (const msg of source) {
-                      console.log(`receiving new`, msg)
-                    }
-                  }
-              )
-            },
-          })
-      
-          await counterparty.dial(relay.peerInfo)
+        counterparty = await generateNode({
+          id: 2,
+          ipv4: true,
+          connHandler: (handler: Handler & { counterparty: PeerId }) => {
+            console.log(`inside new handler`)
+            pipe(
+              /* prettier-ignore */
+              handler.stream,
+              handler.stream
+            )
+          },
+        })
 
-          yield new Uint8Array([2])
+        await counterparty.dial(relay.peerInfo)
 
-          await new Promise(resolve => setTimeout(resolve, 500))
+        yield new Uint8Array([2])
 
-          yield new Uint8Array([3])
-          yield new Uint8Array([4])
+        await new Promise(resolve => setTimeout(resolve, 500))
 
+        yield new Uint8Array([3])
+        yield new Uint8Array([4])
+
+        await counterparty.stop()
+
+        counterparty = await generateNode({
+          id: 2,
+          ipv4: true,
+          connHandler: (handler: Handler & { counterparty: PeerId }) => {
+            console.log(`inside new handler`)
+            pipe(
+              /* prettier-ignore */
+              handler.stream,
+              handler.stream
+            )
+          },
+        })
+
+        await counterparty.dial(relay.peerInfo)
+
+        yield new Uint8Array([3])
+
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        yield new Uint8Array([4])
       })(),
       stream,
       async (source: AsyncIterable<Uint8Array>) => {
@@ -156,7 +170,6 @@ describe('should create a socket and connect to it', function () {
         }
       }
     )
-
 
     // relay.emit('peer:connect', '1234')
 
