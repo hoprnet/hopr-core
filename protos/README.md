@@ -11,7 +11,7 @@ See an overview of the protos [here](./doc/protos.md)
 ### Libraries
 
 - [grpc-js](https://github.com/grpc/grpc-node/tree/master/packages/grpc-js)
-  - we are using the JS implementantion since the native one is [deprecated](https://grpc.io/blog/grpc-js-1.0/#should-i-use-grpcgrpc-js-or-grpc), see [comparison](https://github.com/grpc/grpc-node/blob/master/PACKAGE-COMPARISON.md)
+  - our is it to use JS implementantion since the native one is [deprecated](https://grpc.io/blog/grpc-js-1.0/#should-i-use-grpcgrpc-js-or-grpc), see [comparison](https://github.com/grpc/grpc-node/blob/master/PACKAGE-COMPARISON.md). Unfortunately at the moment we use grpc-native since nestjs doesn't support grpc-js
 - [protoc-gen-doc](https://github.com/pseudomuto/protoc-gen-doc)
 
 ### General Guidelines
