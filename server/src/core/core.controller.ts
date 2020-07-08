@@ -1,5 +1,5 @@
-import { Controller, Post } from '@nestjs/common';
-import { CoreService } from './core.service';
+import { Controller, Post } from '@nestjs/common'
+import { CoreService } from './core.service'
 
 @Controller('core')
 export class CoreController {
@@ -9,15 +9,15 @@ export class CoreController {
   async start(): Promise<string> {
     return this.coreService
       .start()
-      .then(msg => msg)
-      .catch(err => err);
+      .then((msg) => msg)
+      .catch((err) => err)
   }
 
   @Post('stop')
   async stop(): Promise<string> {
     return this.coreService
       .stop()
-      .then(msg => msg)
-      .catch(err => err);
+      .then((msg) => msg)
+      .catch((err) => err)
   }
 }

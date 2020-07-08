@@ -11,8 +11,9 @@
     "allowSyntheticDefaultImports": true,
     "target": "es2019",
     "sourceMap": true,
-    "outDir": "./dist",
-    "baseUrl": "./",
+    "outDir": "dist",
+    "baseUrl": ".",
     "rootDir": "src"
-  }
+  },
+  "exclude": ["test", "dist", "node_modules"]
 }

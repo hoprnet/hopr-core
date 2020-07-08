@@ -1,7 +1,7 @@
-import { Module } from '@nestjs/common';
-import { ParserService } from './parser/parser.service';
-import { CoreService } from './core.service';
-import { CoreController } from './core.controller';
+import { Module } from '@nestjs/common'
+import { ParserService } from './parser/parser.service'
+import { CoreService } from './core.service'
+import { CoreController } from './core.controller'
 
 @Module({
   providers: [ParserService, CoreService],
