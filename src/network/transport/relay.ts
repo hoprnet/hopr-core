@@ -223,30 +223,40 @@ class Relay {
 
         const newStream = await this.establishForwarding(counterparty)
 
+        if (newStream == null) {
+          return
+        }
         newStream.sink(this.getSink(toCounterpartyObj, toSender.source))
 
         toCounterpartyObj.abort.abort()
 
         toCounterpartyObj.deferredPromise.resolve(newStream.source)
+      } else if (peer.id.isEqual(connection.remotePeer)) {
+        // @TODO
       }
     })
 
     toCounterparty.sink(this.getSink(toCounterpartyObj, toSender.source))
 
-    toSender.sink(
-      (async function* () {
-        let source = toCounterparty.source
-        while (true) {
-          yield* source
-
-          source = await toCounterpartyObj.deferredPromise.promise
-          toCounterpartyObj.deferredPromise = defer<AsyncIterable<Uint8Array>>()
-        }
-      })()
-    )
+    toSender.sink(this.getSource(toCounterpartyObj, toCounterparty.source))
   }
 
-  getSink(obj: AbortObj, streamSource: AsyncIterable<Uint8Array>) {
+  getSource(obj: AbortObj, source: AsyncIterable<Uint8Array>): AsyncIterable<Uint8Array> {
+    return (async function* () {
+      let _source = source
+      while (true) {
+        for await (const msg of _source) {
+          // console.log(`sending: `, msg)
+          yield msg
+        }
+
+        _source = await obj.deferredPromise.promise
+        obj.deferredPromise = defer<AsyncIterable<Uint8Array>>()
+      }
+    })()
+  }
+
+  getSink(obj: AbortObj, streamSource: AsyncIterable<Uint8Array>): AsyncIterable<Uint8Array> {
     return async function* (this: Relay) {
       if (obj.cache != null) {
         yield obj.cache
@@ -257,8 +267,9 @@ class Relay {
       obj.abort = new AbortController()
 
       for await (const msg of abortable<Uint8Array>(streamSource, obj.abort.signal)) {
+        // console.log(`receiving: `, msg)
         if (obj.aborted) {
-          console.log(`aborted`)
+          // console.log(`aborted`)
           obj.cache = msg
           break
         } else {

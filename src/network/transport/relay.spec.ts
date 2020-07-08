@@ -22,6 +22,8 @@ import Relay from './relay'
 import { randomBytes } from 'crypto'
 
 import { privKeyToPeerId } from '../../utils'
+import { durations, u8aEquals } from '@hoprnet/hopr-utils'
+import { assert } from 'console'
 
 const TEST_PROTOCOL = `/test/0.0.1`
 
@@ -86,6 +88,16 @@ describe('should create a socket and connect to it', function () {
   }
 
   it('should create a node and exchange messages', async function () {
+    this.timeout(durations.seconds(5))
+
+    let i = 1
+
+    let firstBatchEchoed = false
+    let secondBatchEchoed = false
+    let thirdBatchEchoed = false
+
+    let messagesReceived = false
+
     let [sender, relay, counterparty] = await Promise.all([
       generateNode({ id: 0, ipv4: true }),
       generateNode({ id: 1, ipv4: true }),
@@ -96,6 +108,21 @@ describe('should create a socket and connect to it', function () {
           pipe(
             /* prettier-ignore */
             handler.stream,
+            (source: AsyncIterable<Uint8Array>) => {
+              return (async function* () {
+                let i = 1
+                for await (const msg of source) {
+                  // console.log(`echoing 0`, msg)
+                  if (u8aEquals(msg.slice(), new Uint8Array([1]))) {
+                    i++
+                  } else if (i == 2 && u8aEquals(msg.slice(), new Uint8Array([2]))) {
+                    firstBatchEchoed = true
+                  }
+
+                  yield msg
+                }
+              })()
+            },
             handler.stream
           )
         },
@@ -112,9 +139,15 @@ describe('should create a socket and connect to it', function () {
     const pipePromise = pipe(
       // prettier-ignore
       (async function* () {
-        yield new Uint8Array([1])
+        yield new Uint8Array([i++])
 
         await new Promise(resolve => setTimeout(resolve, 500))
+
+        yield new Uint8Array([i++])
+
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        // yield new Uint8Array([i++])
 
         await counterparty.stop()
 
@@ -122,10 +155,24 @@ describe('should create a socket and connect to it', function () {
           id: 2,
           ipv4: true,
           connHandler: (handler: Handler & { counterparty: PeerId }) => {
-            console.log(`inside new handler`)
             pipe(
               /* prettier-ignore */
               handler.stream,
+              (source: AsyncIterable<Uint8Array>) => {
+                return (async function * () {
+                  let i = 1
+                  for await (const msg of source) {
+                    console.log(`echoing 1st`, msg)
+                    if (u8aEquals(msg.slice(), new Uint8Array([3]))) {
+                      i++
+                    } else if (i == 2 && u8aEquals(msg.slice(), new Uint8Array([4]))) {
+                      secondBatchEchoed = true
+                    }
+                    
+                    yield msg
+                  }
+                })()
+              },
               handler.stream
             )
           },
@@ -133,12 +180,12 @@ describe('should create a socket and connect to it', function () {
 
         await counterparty.dial(relay.peerInfo)
 
-        yield new Uint8Array([2])
+        yield new Uint8Array([i++])
+        yield new Uint8Array([i++])
 
         await new Promise(resolve => setTimeout(resolve, 500))
 
-        yield new Uint8Array([3])
-        yield new Uint8Array([4])
+        // yield new Uint8Array([i++])
 
         await counterparty.stop()
 
@@ -146,10 +193,23 @@ describe('should create a socket and connect to it', function () {
           id: 2,
           ipv4: true,
           connHandler: (handler: Handler & { counterparty: PeerId }) => {
-            console.log(`inside new handler`)
             pipe(
               /* prettier-ignore */
               handler.stream,
+              (source: AsyncIterable<Uint8Array>) => {
+                return (async function * () {
+                  let i = 1
+                  for await (const msg of source) {
+                    if (u8aEquals(msg.slice(), new Uint8Array([5]))) {
+                      i++
+                    } else if (i == 2 && u8aEquals(msg.slice(), new Uint8Array([6]))) {
+                      thirdBatchEchoed = true
+                    }
+                    console.log(`echoing 2nd`, msg)
+                    yield msg
+                  }
+                })()
+              },
               handler.stream
             )
           },
@@ -157,23 +217,44 @@ describe('should create a socket and connect to it', function () {
 
         await counterparty.dial(relay.peerInfo)
 
-        yield new Uint8Array([3])
+        yield new Uint8Array([i++])
 
         await new Promise(resolve => setTimeout(resolve, 500))
 
-        yield new Uint8Array([4])
+        yield new Uint8Array([i++])
+        return
       })(),
       stream,
       async (source: AsyncIterable<Uint8Array>) => {
+        let i = 1
         for await (const msg of source) {
-          console.log(msg)
+          if (u8aEquals(msg.slice(), new Uint8Array([1]))) {
+            i++
+          } else if (i == 2 && u8aEquals(msg.slice(), new Uint8Array([2]))) {
+            i++
+          } else if (i == 3 && u8aEquals(msg.slice(), new Uint8Array([3]))) {
+            i++
+          } else if (i == 4 && u8aEquals(msg.slice(), new Uint8Array([4]))) {
+            i++
+          } else if (i == 5 && u8aEquals(msg.slice(), new Uint8Array([5]))) {
+            i++
+          } else if (i == 6 && u8aEquals(msg.slice(), new Uint8Array([6]))) {
+            messagesReceived = true
+          }
         }
       }
     )
 
-    // relay.emit('peer:connect', '1234')
+    await new Promise((resolve) => setTimeout(resolve, durations.seconds(4)))
 
-    await pipePromise
+    assert(
+      firstBatchEchoed && secondBatchEchoed && thirdBatchEchoed,
+      'restarted counterparty must echo all messages that are sent to it.'
+    )
+
+    assert(messagesReceived, 'senders must receive all echoed messages - even if the counterparty went offline')
+
+    await Promise.all([sender.stop(), relay.stop(), counterparty.stop()])
   })
 })
 
