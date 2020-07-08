@@ -6,15 +6,15 @@ import type HoprCoreConnector from '@hoprnet/hopr-core-connector-interface'
 import { ParserService } from './parser/parser.service'
 import PeerInfo from 'peer-info'
 
-// @TODO: move this into a common file
-type StatusResponse = {
-  status: 'ok'
-}
-
-// @TODO: move this into a common file
-type ErrorResponse = {
-  error: any
-}
+// @TODO: move this into a common file, discuss with Jose
+type GenericReponse<T> =
+  | {
+      status: 'ok'
+      data?: T
+    }
+  | {
+      error: any
+    }
 
 @Injectable()
 export class CoreService {
@@ -22,20 +22,29 @@ export class CoreService {
 
   constructor(private parserService: ParserService) {}
 
-  async start(): Promise<StatusResponse | ErrorResponse> {
+  // @TODO: expose other necessary options
+  async start(customOptions?: {
+    debug?: boolean
+    id?: number
+    bootstrapNode?: boolean
+    host?: string
+    bootstrapServers?: string[]
+  }): Promise<GenericReponse<string>> {
     try {
       const options: HoprOptions = {
-        debug: true,
-        bootstrapNode: false,
+        debug: customOptions.debug ?? true,
+        bootstrapNode: customOptions.bootstrapNode ?? false,
         network: 'ethereum',
         connector,
-        bootstrapServers: [
-          (await this.parserService.parseBootstrap(
-            '/ip4/34.65.114.152/tcp/9091/p2p/16Uiu2HAmQrtY26aYgLBUMjhw9qvZABKYTdncHR5VD4MDrMLVSpkp',
-          )) as PeerInfo,
-        ],
+        bootstrapServers: await Promise.all<PeerInfo>(
+          (
+            customOptions.bootstrapServers ?? [
+              '/ip4/34.65.114.152/tcp/9091/p2p/16Uiu2HAmQrtY26aYgLBUMjhw9qvZABKYTdncHR5VD4MDrMLVSpkp',
+            ]
+          ).map((multiaddr) => this.parserService.parseBootstrap(multiaddr) as Promise<PeerInfo>),
+        ),
         provider: 'wss://kovan.infura.io/ws/v3/f7240372c1b442a6885ce9bb825ebc36',
-        hosts: (await this.parserService.parseHost('0.0.0.0:9091')) as HoprOptions['hosts'],
+        hosts: (await this.parserService.parseHost(customOptions.host ?? '0.0.0.0:9091')) as HoprOptions['hosts'],
         password: 'switzerland',
         output: this.parserService.outputFunctor(),
       }
@@ -49,7 +58,7 @@ export class CoreService {
     }
   }
 
-  async stop(): Promise<StatusResponse | ErrorResponse> {
+  async stop(): Promise<GenericReponse<string>> {
     try {
       console.log(':: Stopping HOPR Core Node ::')
       await this.node.stop()
@@ -57,6 +66,48 @@ export class CoreService {
       return { status: 'ok' }
     } catch (err) {
       return { error: err }
+    }
+  }
+
+  async status(): Promise<
+    GenericReponse<{
+      ip: string
+      multiaddrs: string[]
+      load: number
+      cpuUsage: number
+      connectedNotes: number
+    }>
+  > {
+    try {
+      if (typeof this.node === 'undefined') {
+        return {
+          error: 'HOPR node is not started',
+        }
+      }
+
+      const id = this.node.peerInfo.id.toB58String()
+      const multiaddrs = this.node.peerInfo.multiaddrs.toArray().map((multiaddr) => multiaddr.toString())
+
+      // @TODO: maybe do a crawl before getting length
+      const connectedNodes = this.node.network.peerStore.peers.length
+
+      return {
+        status: 'ok',
+        data: {
+          ip: id,
+          multiaddrs,
+          // @TODO: remove load / rename it
+          load: 100,
+          // @TODO: get true cpu usage
+          cpuUsage: 100,
+          // @TODO: fix typo
+          connectedNotes: connectedNodes,
+        },
+      }
+    } catch (err) {
+      return {
+        error: err,
+      }
     }
   }
 }

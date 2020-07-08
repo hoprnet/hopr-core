@@ -1,5 +1,7 @@
 import { Controller, Post } from '@nestjs/common'
+import { GrpcMethod } from '@nestjs/microservices'
 import { CoreService } from './core.service'
+import { StatusResponse } from '@hoprnet/hopr-protos/node/status_pb'
 
 @Controller('core')
 export class CoreController {
@@ -18,6 +20,16 @@ export class CoreController {
     return this.coreService
       .stop()
       .then((msg) => msg)
+      .catch((err) => err)
+  }
+
+  @GrpcMethod('Status')
+  async getStatus(): Promise<StatusResponse.AsObject> {
+    return this.coreService
+      .status()
+      .then((msg) => {
+        return msg['data']
+      })
       .catch((err) => err)
   }
 }
