@@ -10,7 +10,7 @@
   ],
   "license": "GPL-3.0-only",
   "scripts": {
-    "build": "yarn build:protos && yarn build:web && yarn fix:types",
+    "build": "yarn build:protos && yarn build:web",
     "build:web": "rimraf web && microbundle --entry web-src/**/*.js --output web --target web --compress --external none",
     "build:protos": "yarn build:protos:node && yarn build:protos:web",
     "build:protos:node": "rimraf node && mkdirp node && node ./scripts/generateNode.js",
@@ -51,7 +51,7 @@
     "typescript": "^3.9.6"
   },
   "peerDependencies": {
-    "@grpc/grpc-js": "^1.1.1",
-    "google-protobuf": "^3.12.2"
+    "google-protobuf": "^3.12.2",
+    "grpc": "^1.24.3"
   }
 }
