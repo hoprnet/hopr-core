@@ -1,23 +1,26 @@
-import { join } from 'path'
 import { Test } from '@nestjs/testing'
 import { INestApplication } from '@nestjs/common'
 import { Transport } from '@nestjs/microservices'
 import * as grpc from 'grpc'
-import { AppModule } from './../src/app.module'
-import { CoreService } from './../src/core/core.service'
 import { StatusRequest } from '@hoprnet/hopr-protos/node/status_pb'
 import { StatusClient } from '@hoprnet/hopr-protos/node/status_grpc_pb'
+import { AppModule } from '../src/app.module'
+import { CoreService } from '../src/core/core.service'
+import { HOPR_PROTOS_DIR, PROTO_PACKAGES, PROTO_FILES } from "../src/constants"
 
-const packages = ['status', 'version']
-const HOPR_PROTOS_DIR = join(__dirname, '..', 'node_modules', '@hoprnet/hopr-protos', 'protos')
-
+// @TODO: fix open handles
 describe('GRPC transport', () => {
-  let bootstrapApp: INestApplication
-  let bootstrapCoreService: CoreService
+  // if you change this, you need to update 'bootstrapMultiaddrs'
+  const bootstrapId = 1
   const bootstrapMultiaddrs: string[] = [
     '/ip4/127.0.0.1/tcp/9090/p2p/16Uiu2HAmNqLm83bwMq9KQEZEWHcbsHQfBkbpZx4eVSoDG4Mp6yfX',
   ]
+  let bootstrapApp: INestApplication
+  let bootstrapCoreService: CoreService
 
+  // if you change this, you need to update 'bootstrapMultiaddrs'
+  const appId = 2
+  const appPeerId = "16Uiu2HAmVDrWin9HmCc4sjx1zYzc8fGgTvXSvQS5sYb133mjrohb"
   let app: INestApplication
   let coreService: CoreService
   let statusClient: StatusClient
@@ -34,8 +37,7 @@ describe('GRPC transport', () => {
 
     await bootstrapCoreService.start({
       debug: true,
-      // if you change this, you need to update bootstrapMultiaddrs
-      id: 1,
+      id: bootstrapId,
       bootstrapNode: true,
       host: '0.0.0.0:9090',
     })
@@ -53,8 +55,8 @@ describe('GRPC transport', () => {
       transport: Transport.GRPC,
       options: {
         url: '0.0.0.0:50051',
-        package: packages,
-        protoPath: packages.map((pkg) => `${pkg}.proto`),
+        package: PROTO_PACKAGES,
+        protoPath: PROTO_FILES,
         loader: {
           includeDirs: [HOPR_PROTOS_DIR],
         },
@@ -72,6 +74,8 @@ describe('GRPC transport', () => {
   it('getStatus', async (done) => {
     await expect(
       coreService.start({
+        debug: true,
+        id: appId,
         bootstrapServers: bootstrapMultiaddrs,
       }),
     ).resolves.toEqual({
@@ -80,7 +84,11 @@ describe('GRPC transport', () => {
 
     statusClient.getStatus(new StatusRequest(), (err, res) => {
       expect(err).toBeFalsy()
-      expect(res).toBeTruthy()
+
+      const data = res.toObject()
+      expect(data.id).toBe(appPeerId)
+      expect(data.connectedNodes).toBe(1)
+
       done()
     })
   })
@@ -88,5 +96,9 @@ describe('GRPC transport', () => {
   afterEach(async () => {
     await app.close()
     statusClient.close()
+  })
+
+  afterAll(async () => {
+    await bootstrapApp.close()
   })
 })

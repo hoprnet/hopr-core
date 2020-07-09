@@ -9,18 +9,18 @@ import PeerInfo from 'peer-info'
 // @TODO: move this into a common file, discuss with Jose
 type GenericReponse<T> =
   | {
-      status: 'ok'
-      data?: T
-    }
+    status: 'ok'
+    data?: T
+  }
   | {
-      error: any
-    }
+    error: any
+  }
 
 @Injectable()
 export class CoreService {
   private node: Hopr<HoprCoreConnector>
 
-  constructor(private parserService: ParserService) {}
+  constructor(private parserService: ParserService) { }
 
   // @TODO: expose other necessary options
   async start(customOptions?: {
@@ -69,13 +69,13 @@ export class CoreService {
     }
   }
 
+  // @TODO: move this into a new service
   async status(): Promise<
     GenericReponse<{
-      ip: string
-      multiaddrs: string[]
-      load: number
+      id: string
+      multiAddrs: string[]
       cpuUsage: number
-      connectedNotes: number
+      connectedNodes: number
     }>
   > {
     try {
@@ -86,7 +86,7 @@ export class CoreService {
       }
 
       const id = this.node.peerInfo.id.toB58String()
-      const multiaddrs = this.node.peerInfo.multiaddrs.toArray().map((multiaddr) => multiaddr.toString())
+      const multiAddrs = this.node.peerInfo.multiaddrs.toArray().map((multiaddr) => multiaddr.toString())
 
       // @TODO: maybe do a crawl before getting length
       const connectedNodes = this.node.network.peerStore.peers.length
@@ -94,14 +94,11 @@ export class CoreService {
       return {
         status: 'ok',
         data: {
-          ip: id,
-          multiaddrs,
-          // @TODO: remove load / rename it
-          load: 100,
+          id,
+          multiAddrs,
           // @TODO: get true cpu usage
-          cpuUsage: 100,
-          // @TODO: fix typo
-          connectedNotes: connectedNodes,
+          cpuUsage: 0,
+          connectedNodes,
         },
       }
     } catch (err) {

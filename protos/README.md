@@ -6,6 +6,11 @@ HOPR is a privacy-preserving messaging **protocol** which enables the creation o
 
 See an overview of the protos [here](./doc/protos.md)
 
+## Testing
+
+Testing is done by trying to generate proto stubs for node and web, if building fails then it means something is wrong with our protos.
+Ideally, we can improve this to also include linting, etc.
+
 ## Notes
 
 ### Libraries

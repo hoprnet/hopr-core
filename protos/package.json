@@ -16,7 +16,7 @@
     "build:protos:node": "rimraf node && mkdirp node && node ./scripts/generateNode.js",
     "build:protos:web": "rimraf web-src && mkdirp web-src && node ./scripts/generateWeb.js",
     "fix:types": "replace 'from \"grpc\"' 'from \"@grpc/grpc-js\"' . -r --include=\"*.d.ts\"",
-    "test": "echo '⚠️ No tests implemented'",
+    "test": "yarn build:protos",
     "prepublishOnly": "yarn build"
   },
   "publishConfig": {

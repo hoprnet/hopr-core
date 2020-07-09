@@ -7,4 +7,10 @@ import { CoreController } from './core.controller'
   providers: [ParserService, CoreService],
   controllers: [CoreController],
 })
-export class CoreModule {}
+export class CoreModule {
+  constructor(private coreService: CoreService) { }
+
+  async onModuleDestroy() {
+    await this.coreService.stop()
+  }
+}
