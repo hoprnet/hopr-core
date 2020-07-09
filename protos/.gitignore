@@ -25,6 +25,3 @@ web-src/
 
 # Exclude .env
 .env
-
-# Exclude generated proto files
-src/**/*.ts

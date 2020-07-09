@@ -2,7 +2,7 @@ syntax = "proto3";
 package address;
 
 service Address {
-  // ex: ethereum address
+  // example: ethereum address
   rpc GetNativeAddress (GetNativeAddressRequest) returns (GetNativeAddressResponse);
   rpc GetHoprAddress (GetHoprAddressRequest) returns (GetHoprAddressResponse);
 }

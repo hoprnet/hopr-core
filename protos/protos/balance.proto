@@ -2,7 +2,7 @@ syntax = "proto3";
 package balance;
 
 service Balance {
-  // ex: ether
+  // example: ETHER
   rpc GetNativeBalance (GetNativeBalanceRequest) returns (GetNativeBalanceResponse);
   rpc GetHoprBalance (GetHoprBalanceRequest) returns (GetHoprBalanceResponse);
 }
