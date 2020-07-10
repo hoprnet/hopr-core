@@ -6,7 +6,7 @@ import type HoprCoreConnector from '@hoprnet/hopr-core-connector-interface'
 import { ParserService } from './parser/parser.service'
 import PeerInfo from 'peer-info'
 
-// @TODO: move this into a common file, discuss with Jose
+// @TODO: move this into a common file
 type GenericReponse<T> =
   | {
     status: 'ok'
@@ -18,11 +18,14 @@ type GenericReponse<T> =
 
 @Injectable()
 export class CoreService {
-  private node: Hopr<HoprCoreConnector>
+  public node: Hopr<HoprCoreConnector>
 
   constructor(private parserService: ParserService) { }
 
-  // @TODO: expose other necessary options
+  get started(): boolean {
+    return typeof this.node !== "undefined"
+  }
+
   async start(customOptions?: {
     debug?: boolean
     id?: number
@@ -62,49 +65,11 @@ export class CoreService {
     try {
       console.log(':: Stopping HOPR Core Node ::')
       await this.node.stop()
+      this.node = undefined
       console.log(':: HOPR Core Node Stopped ::')
       return { status: 'ok' }
     } catch (err) {
       return { error: err }
-    }
-  }
-
-  // @TODO: move this into a new service
-  async status(): Promise<
-    GenericReponse<{
-      id: string
-      multiAddrs: string[]
-      cpuUsage: number
-      connectedNodes: number
-    }>
-  > {
-    try {
-      if (typeof this.node === 'undefined') {
-        return {
-          error: 'HOPR node is not started',
-        }
-      }
-
-      const id = this.node.peerInfo.id.toB58String()
-      const multiAddrs = this.node.peerInfo.multiaddrs.toArray().map((multiaddr) => multiaddr.toString())
-
-      // @TODO: maybe do a crawl before getting length
-      const connectedNodes = this.node.network.peerStore.peers.length
-
-      return {
-        status: 'ok',
-        data: {
-          id,
-          multiAddrs,
-          // @TODO: get true cpu usage
-          cpuUsage: 0,
-          connectedNodes,
-        },
-      }
-    } catch (err) {
-      return {
-        error: err,
-      }
     }
   }
 }
