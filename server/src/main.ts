@@ -4,6 +4,8 @@ import { AppModule } from './app.module'
 import { HOPR_PROTOS_DIR, PROTO_PACKAGES, PROTO_FILES } from "./constants"
 
 async function bootstrap() {
+  console.log(':: HOPR Server Starting ::')
+
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {
     transport: Transport.GRPC,
     options: {
@@ -17,7 +19,8 @@ async function bootstrap() {
     },
   })
 
-  app.listen(() => 'GRPC Service is listening')
+  await app.listenAsync()
+  console.log(':: HOPR Server Started ::')
 }
 
 bootstrap()

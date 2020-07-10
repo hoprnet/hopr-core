@@ -16,6 +16,14 @@ type GenericReponse<T> =
     error: any
   }
 
+export type StartOptions = {
+  debug?: boolean
+  id?: number
+  bootstrapNode?: boolean
+  host?: string
+  bootstrapServers?: string[]
+}
+
 @Injectable()
 export class CoreService {
   public node: Hopr<HoprCoreConnector>
@@ -26,15 +34,10 @@ export class CoreService {
     return typeof this.node !== "undefined"
   }
 
-  async start(customOptions?: {
-    debug?: boolean
-    id?: number
-    bootstrapNode?: boolean
-    host?: string
-    bootstrapServers?: string[]
-  }): Promise<GenericReponse<string>> {
+  async start(customOptions?: StartOptions): Promise<GenericReponse<string>> {
     try {
       const options: HoprOptions = {
+        id: customOptions.id,
         debug: customOptions.debug ?? true,
         bootstrapNode: customOptions.bootstrapNode ?? false,
         network: 'ethereum',
@@ -70,6 +73,32 @@ export class CoreService {
       return { status: 'ok' }
     } catch (err) {
       return { error: err }
+    }
+  }
+
+  // @TODO: catch error?
+  async getStatus(): Promise<
+    {
+      id: string
+      multiAddresses: string[]
+      connectedNodes: number
+    }
+  > {
+    // @TODO: turn this into a decorator
+    if (!this.started) {
+      throw Error('HOPR node is not started')
+    }
+
+    const id = this.node.peerInfo.id.toB58String()
+    const multiAddresses = this.node.peerInfo.multiaddrs.toArray().map((multiaddr) => multiaddr.toString())
+
+    // @TODO: maybe do a crawl before getting length
+    const connectedNodes = this.node.network.peerStore.peers.length
+
+    return {
+      id,
+      multiAddresses,
+      connectedNodes,
     }
   }
 }

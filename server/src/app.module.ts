@@ -1,7 +1,13 @@
 import { Module } from '@nestjs/common'
-import { CoreModule } from './core/core.module'
+import { ConfigModule } from "@nestjs/config"
+import { GrpcModule } from './grpc/grpc.module'
 
 @Module({
-  imports: [CoreModule],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true
+    }),
+    GrpcModule
+  ],
 })
 export class AppModule { }

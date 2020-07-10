@@ -18,7 +18,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json --forceExit"
   },
   "engines": {
     "node": "12.9.1",
@@ -31,10 +31,12 @@
     "@hoprnet/hopr-core-ethereum": "0.0.12-refactor.473415f",
     "@hoprnet/hopr-protos": "^0.0.7-381e08e",
     "@nestjs/common": "^7.0.0",
+    "@nestjs/config": "^0.5.0",
     "@nestjs/core": "^7.0.0",
     "@nestjs/microservices": "^7.3.1",
     "@nestjs/platform-express": "^7.0.0",
     "class-validator": "^0.12.2",
+    "dotenv-parse-variables": "^0.3.0",
     "google-protobuf": "^3.12.2",
     "grpc": "^1.24.3",
     "multiaddr": "^7.5.0",
@@ -50,6 +52,7 @@
     "@nestjs/cli": "^7.0.0",
     "@nestjs/schematics": "^7.0.0",
     "@nestjs/testing": "^7.0.0",
+    "@types/dotenv-parse-variables": "^0.2.0",
     "@types/express": "^4.17.3",
     "@types/jest": "26.0.3",
     "@types/node": "~12",
