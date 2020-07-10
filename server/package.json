@@ -43,6 +43,7 @@
     "parse-ip-port": "^1.0.0",
     "peer-id": "^0.13.13",
     "peer-info": "^0.17.5",
+    "read-pkg-up": "^7.0.1",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rlp": "^2.2.5",
