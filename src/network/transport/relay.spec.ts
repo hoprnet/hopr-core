@@ -218,16 +218,17 @@ describe('should create a socket and connect to it', function () {
         await counterparty.dial(relay.peerInfo)
 
         yield new Uint8Array([i++])
+        yield new Uint8Array([i++])
 
         await new Promise(resolve => setTimeout(resolve, 500))
 
-        yield new Uint8Array([i++])
         return
       })(),
       stream,
       async (source: AsyncIterable<Uint8Array>) => {
         let i = 1
         for await (const msg of source) {
+          console.log(`finally receiving:`, msg)
           if (u8aEquals(msg.slice(), new Uint8Array([1]))) {
             i++
           } else if (i == 2 && u8aEquals(msg.slice(), new Uint8Array([2]))) {

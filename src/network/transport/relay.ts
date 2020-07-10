@@ -33,6 +33,8 @@ type AbortObj = {
   abort: AbortController
   aborted: boolean
   cache: Uint8Array
+  id: PeerId
+  source: Stream['source']
 }
 
 class Relay {
@@ -215,68 +217,100 @@ class Relay {
       aborted: false,
       abort: new AbortController(),
       cache: undefined,
+      source: (async function* () {
+        yield* deliveryStream.source
+        console.log(`after first counterparty source`)
+
+        while (true) {
+          yield* await toCounterpartyObj.deferredPromise.promise
+          console.log(`from counterparty after it`)
+
+          toCounterpartyObj.deferredPromise = defer<AsyncIterable<Uint8Array>>()
+        }
+      })(),
+      id: counterparty,
+    }
+
+    const toSenderObj: AbortObj = {
+      deferredPromise: defer<AsyncIterable<Uint8Array>>(),
+      aborted: false,
+      abort: new AbortController(),
+      cache: undefined,
+      source: (async function* () {
+        yield* shaker.stream.source
+
+        console.log(`after first sender source`)
+
+        while (true) {
+          yield* await toSenderObj.deferredPromise.promise
+
+          toSenderObj.deferredPromise = defer<AsyncIterable<Uint8Array>>()
+        }
+      })(),
+      id: counterparty,
     }
 
     this.on('peer:connect', async (peer: PeerInfo) => {
       if (peer.id.isEqual(counterparty)) {
-        toCounterpartyObj.aborted = true
-
-        const newStream = await this.establishForwarding(counterparty)
-
-        if (newStream == null) {
-          return
-        }
-        newStream.sink(this.getSink(toCounterpartyObj, toSender.source))
-
-        toCounterpartyObj.abort.abort()
-
-        toCounterpartyObj.deferredPromise.resolve(newStream.source)
+        await this.updateConnection(toCounterpartyObj, toSenderObj)
       } else if (peer.id.isEqual(connection.remotePeer)) {
-        // @TODO
+        console.log('sender restarted')
+        await this.updateConnection(toSenderObj, toCounterpartyObj)
       }
     })
 
-    toCounterparty.sink(this.getSink(toCounterpartyObj, toSender.source))
+    toCounterparty.sink(this.getSink(toCounterpartyObj, toSenderObj.source))
 
-    toSender.sink(this.getSource(toCounterpartyObj, toCounterparty.source))
+    toSender.sink(this.getSink(toSenderObj, toCounterpartyObj.source))
   }
 
-  getSource(obj: AbortObj, source: AsyncIterable<Uint8Array>): AsyncIterable<Uint8Array> {
-    return (async function* () {
-      let _source = source
-      while (true) {
-        for await (const msg of _source) {
-          // console.log(`sending: `, msg)
-          yield msg
-        }
+  async updateConnection(reconnected: AbortObj, existing: AbortObj) {
+    reconnected.aborted = true
 
-        _source = await obj.deferredPromise.promise
-        obj.deferredPromise = defer<AsyncIterable<Uint8Array>>()
-      }
-    })()
+    const newStream = await this.establishForwarding(reconnected.id)
+
+    console.log(`established deliver stream`)
+    if (newStream == null) {
+      return
+    }
+
+    newStream.sink(this.getSink(reconnected, existing.source))
+
+    reconnected.deferredPromise.resolve(newStream.source)
   }
 
   getSink(obj: AbortObj, streamSource: AsyncIterable<Uint8Array>): AsyncIterable<Uint8Array> {
-    return async function* (this: Relay) {
+    return (async function* () {
       if (obj.cache != null) {
         yield obj.cache
       }
 
       obj.cache = undefined
-      obj.aborted = false
+      // obj.abort.abort()
+
       obj.abort = new AbortController()
 
+      // console.log(`stream-source`, abortable<Uint8Array>(streamSource, obj.abort.signal))
+
       for await (const msg of abortable<Uint8Array>(streamSource, obj.abort.signal)) {
-        // console.log(`receiving: `, msg)
+        console.log(`receiving inside sink: `, msg)
         if (obj.aborted) {
-          // console.log(`aborted`)
+          console.log(obj.aborted)
           obj.cache = msg
-          break
-        } else {
-          yield msg
+          obj.aborted = false
+          return
+        }
+
+        yield msg
+
+        if (obj.aborted) {
+          obj.aborted = false
+          return
         }
       }
-    }.call(this)
+
+      obj.aborted = false
+    })()
   }
 
   async establishForwarding(counterparty: PeerId) {
