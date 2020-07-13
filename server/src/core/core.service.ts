@@ -67,7 +67,6 @@ export class CoreService {
     }
   }
 
-  // @TODO: catch error?
   async getStatus(): Promise<{
     id: string
     multiAddresses: string[]
@@ -99,8 +98,6 @@ export class CoreService {
     hoprCoreEthereum: string
     hoprUtils: string
   }> {
-    console.log(this.pkg.version)
-
     const hoprServer = this.pkg.version
     const hoprCore = this.nodePkg.version
     const hoprCoreConnectorInterface = this.nodePkg.dependencies['@hoprnet/hopr-core-connector-interface']

@@ -10,7 +10,7 @@ import { CoreService } from './core.service'
 export class CoreModule implements OnModuleInit, OnModuleDestroy {
   constructor(private configService: ConfigService, private coreService: CoreService) {}
 
-  async onModuleInit() {
+  async onModuleInit(): Promise<void> {
     await this.coreService.start({
       debug: this.configService.get('debug'),
       id: this.configService.get('id'),
@@ -20,7 +20,7 @@ export class CoreModule implements OnModuleInit, OnModuleDestroy {
     })
   }
 
-  async onModuleDestroy() {
+  async onModuleDestroy(): Promise<void> {
     await this.coreService.stop()
   }
 }

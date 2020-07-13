@@ -12,6 +12,10 @@ import { StatusClient } from '@hoprnet/hopr-protos/node/status_grpc_pb'
 import { ShutdownRequest } from '@hoprnet/hopr-protos/node/shutdown_pb'
 import { ShutdownClient } from '@hoprnet/hopr-protos/node/shutdown_grpc_pb'
 
+const SetupClient = <T extends typeof grpc.Client>(Client: T): InstanceType<T> => {
+  return (new Client('localhost:50051', grpc.credentials.createInsecure()) as unknown) as InstanceType<T>
+}
+
 // @TODO: fix open handles
 describe('GRPC transport', () => {
   const appPeerId = '16Uiu2HAm5mELjrpXgq7oBSgdHsFYK3d1M2argd2d2KS5WHfzmDuW'
@@ -57,13 +61,14 @@ describe('GRPC transport', () => {
   })
 
   it('should get status', async (done) => {
-    const client = new StatusClient('localhost:50051', grpc.credentials.createInsecure())
+    const client = SetupClient(StatusClient)
 
     client.getStatus(new StatusRequest(), (err, res) => {
       expect(err).toBeFalsy()
 
       const data = res.toObject()
       expect(data.id).toBe(appPeerId)
+      expect(data.multiAddressesList.length).toBeGreaterThan(0)
       expect(data.connectedNodes).toBe(0)
 
       client.close()
@@ -71,14 +76,14 @@ describe('GRPC transport', () => {
     })
   })
 
-  it.skip('should get version', async (done) => {
-    const client = new VersionClient('localhost:50051', grpc.credentials.createInsecure())
+  it('should get version', async (done) => {
+    const client = SetupClient(VersionClient)
 
     client.getVersion(new VersionRequest(), (err, res) => {
       expect(err).toBeFalsy()
 
       const data = res.toObject()
-      expect(data.version).toBeInstanceOf(String)
+      expect(typeof data.version).toBe('string')
       expect(data.componentsVersionMap).toHaveLength(5)
 
       client.close()
@@ -87,7 +92,7 @@ describe('GRPC transport', () => {
   })
 
   it('should shutdown', async (done) => {
-    const client = new ShutdownClient('localhost:50051', grpc.credentials.createInsecure())
+    const client = SetupClient(ShutdownClient)
 
     client.shutdown(new ShutdownRequest(), (err, res) => {
       expect(err).toBeFalsy()
