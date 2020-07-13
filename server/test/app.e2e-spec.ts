@@ -11,6 +11,8 @@ import { StatusRequest } from '@hoprnet/hopr-protos/node/status_pb'
 import { StatusClient } from '@hoprnet/hopr-protos/node/status_grpc_pb'
 import { ShutdownRequest } from '@hoprnet/hopr-protos/node/shutdown_pb'
 import { ShutdownClient } from '@hoprnet/hopr-protos/node/shutdown_grpc_pb'
+import { GetNativeAddressRequest, GetHoprAddressRequest } from '@hoprnet/hopr-protos/node/address_pb'
+import { AddressClient } from '@hoprnet/hopr-protos/node/address_grpc_pb'
 
 const SetupClient = <T extends typeof grpc.Client>(Client: T): InstanceType<T> => {
   return (new Client('localhost:50051', grpc.credentials.createInsecure()) as unknown) as InstanceType<T>
@@ -18,7 +20,9 @@ const SetupClient = <T extends typeof grpc.Client>(Client: T): InstanceType<T> =
 
 // @TODO: fix open handles
 describe('GRPC transport', () => {
-  const appPeerId = '16Uiu2HAm5mELjrpXgq7oBSgdHsFYK3d1M2argd2d2KS5WHfzmDuW'
+  const appId = 0 // if you this, you need to update 'appNativeAddress' and 'appHoprAddress'
+  const appNativeAddress = '0x92f84e4963dd31551927664007835b1908ac9020'
+  const appHoprAddress = '16Uiu2HAmNqLm83bwMq9KQEZEWHcbsHQfBkbpZx4eVSoDG4Mp6yfX'
   let app: INestApplication
 
   beforeAll(async () => {
@@ -29,7 +33,7 @@ describe('GRPC transport', () => {
           load: [
             () => ({
               debug: true,
-              id: 1, // if you this, you need to update 'appPeerId'
+              id: appId,
               bootstrapNode: true,
               host: '0.0.0.0:9091',
             }),
@@ -67,7 +71,7 @@ describe('GRPC transport', () => {
       expect(err).toBeFalsy()
 
       const data = res.toObject()
-      expect(data.id).toBe(appPeerId)
+      expect(data.id).toBe(appHoprAddress)
       expect(data.multiAddressesList.length).toBeGreaterThan(0)
       expect(data.connectedNodes).toBe(0)
 
@@ -91,6 +95,35 @@ describe('GRPC transport', () => {
     })
   })
 
+  it('should get native address', async (done) => {
+    const client = SetupClient(AddressClient)
+
+    client.getNativeAddress(new GetNativeAddressRequest(), (err, res) => {
+      expect(err).toBeFalsy()
+
+      const data = res.toObject()
+      expect(data.address).toBe(appNativeAddress)
+
+      client.close()
+      done()
+    })
+  })
+
+  it('should get HOPR address', async (done) => {
+    const client = SetupClient(AddressClient)
+
+    client.getHoprAddress(new GetHoprAddressRequest(), (err, res) => {
+      expect(err).toBeFalsy()
+
+      const data = res.toObject()
+      expect(data.address).toBe(appHoprAddress)
+
+      client.close()
+      done()
+    })
+  })
+
+  // keep this last as it shutdowns the server
   it('should shutdown', async (done) => {
     const client = SetupClient(ShutdownClient)
 

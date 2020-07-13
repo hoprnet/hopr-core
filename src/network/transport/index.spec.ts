@@ -424,7 +424,7 @@ describe('should create a socket and connect to it', function () {
   })
 
   it('should set up a relayed connection and fail while upgrading to WebRTC due to falsy messages', async function () {
-    this.timeout(durations.seconds(20))
+    jest.setTimeout(durations.seconds(20))
     const relay = await generateNode({ id: 2, ipv4: true, ipv6: true })
 
     const [sender, counterparty] = await Promise.all([

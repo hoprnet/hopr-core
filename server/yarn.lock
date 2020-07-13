@@ -589,6 +589,15 @@
     chalk "^4.1.0"
     strip-ansi "^6.0.0"
 
+"@hoprnet/hopr-utils@^0.1.7-c598e77":
+  version "0.1.7-c598e77"
+  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-utils/-/hopr-utils-0.1.7-c598e77.tgz#9f78b0131fd548b93e8e7f13aef23e5ee2ccb3e1"
+  integrity sha512-B1iMxj6ycMzdhFQrqrAe5JuADVy/hBv0QrUAAx7cluZWkl1K1/tVnjZ7UBlyCE8J5NGzSlVtdAhrU3aPcksdqw==
+  dependencies:
+    bignumber.js "^9.0.0"
+    chalk "^4.1.0"
+    strip-ansi "^6.0.0"
+
 "@istanbuljs/load-nyc-config@^1.0.0":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@istanbuljs/load-nyc-config/-/load-nyc-config-1.1.0.tgz#fd3db1d59ecf7cf121e80650bb86712f9b55eced"

@@ -3,8 +3,10 @@ import { default as connector } from '@hoprnet/hopr-core-ethereum'
 import Hopr from '@hoprnet/hopr-core'
 import type { HoprOptions } from '@hoprnet/hopr-core'
 import type HoprCoreConnector from '@hoprnet/hopr-core-connector-interface'
+import { u8aToHex, moveDecimalPoint } from '@hoprnet/hopr-utils'
 import { ParserService } from './parser/parser.service'
 import PeerInfo from 'peer-info'
+import PeerId from 'peer-id'
 
 export type StartOptions = {
   debug?: boolean
@@ -89,6 +91,56 @@ export class CoreService {
       id,
       multiAddresses,
       connectedNodes,
+    }
+  }
+
+  async getPing(
+    peerId: string,
+  ): Promise<{
+    latency: number
+  }> {
+    // @TODO: turn this into a decorator
+    if (!this.started) {
+      throw Error('HOPR node is not started')
+    }
+
+    console.log('peerId', peerId)
+
+    const latency = await this.node.ping(new PeerId(peerId))
+
+    return {
+      latency,
+    }
+  }
+
+  async getBalance(type: 'native' | 'hopr'): Promise<string> {
+    if (!this.started) {
+      throw Error('HOPR node is not started')
+    }
+
+    const { paymentChannels } = this.node
+    const { Balance, NativeBalance } = paymentChannels.types
+
+    if (type === 'native') {
+      return paymentChannels.account.nativeBalance.then((b) => {
+        return moveDecimalPoint(b.toString(), NativeBalance.DECIMALS * -1)
+      })
+    } else {
+      return paymentChannels.account.balance.then((b) => {
+        return moveDecimalPoint(b.toString(), Balance.DECIMALS * -1)
+      })
+    }
+  }
+
+  async getAddress(type: 'native' | 'hopr'): Promise<string> {
+    if (!this.started) {
+      throw Error('HOPR node is not started')
+    }
+
+    if (type === 'native') {
+      return this.node.paymentChannels.utils.pubKeyToAccountId(this.node.peerInfo.id.pubKey.marshal()).then(u8aToHex)
+    } else {
+      return this.node.peerInfo.id.toB58String()
     }
   }
 }
