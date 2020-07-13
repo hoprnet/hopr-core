@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common'
 import { GrpcMethod, RpcException } from '@nestjs/microservices'
-import { status as STATUS } from "grpc"
+import { status as STATUS } from 'grpc'
 import { GrpcService } from './grpc.service'
 import { StatusResponse } from '@hoprnet/hopr-protos/node/status_pb'
 import { VersionResponse } from '@hoprnet/hopr-protos/node/version_pb'
@@ -9,7 +9,7 @@ import { ShutdownResponse } from '@hoprnet/hopr-protos/node/shutdown_pb'
 // @TODO: capture errors and turn them into GRPC errors
 @Controller('grpc')
 export class GrpcController {
-  constructor(private grpcService: GrpcService) { }
+  constructor(private grpcService: GrpcService) {}
 
   @GrpcMethod('Status')
   async getStatus(): Promise<StatusResponse.AsObject> {
@@ -18,7 +18,7 @@ export class GrpcController {
     } catch (err) {
       throw new RpcException({
         code: STATUS.INTERNAL,
-        message: err
+        message: err,
       })
     }
   }
@@ -30,7 +30,7 @@ export class GrpcController {
     } catch (err) {
       throw new RpcException({
         code: STATUS.INTERNAL,
-        message: err
+        message: err,
       })
     }
   }
@@ -42,7 +42,7 @@ export class GrpcController {
     } catch (err) {
       throw new RpcException({
         code: STATUS.INTERNAL,
-        message: err
+        message: err,
       })
     }
   }

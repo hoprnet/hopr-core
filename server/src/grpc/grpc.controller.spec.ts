@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing'
-import { ConfigModule } from "@nestjs/config"
-import { CoreModule } from "../core/core.module"
+import { ConfigModule } from '@nestjs/config'
+import { CoreModule } from '../core/core.module'
 import { GrpcController } from './grpc.controller'
 import { GrpcService } from './grpc.service'
 
@@ -11,9 +11,9 @@ describe('Grpc Controller', () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({
-          isGlobal: true
+          isGlobal: true,
         }),
-        CoreModule
+        CoreModule,
       ],
       providers: [GrpcService],
       controllers: [GrpcController],
