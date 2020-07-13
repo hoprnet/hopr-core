@@ -1,4 +1,3 @@
-import * as path from 'path'
 import { Injectable } from '@nestjs/common'
 import { default as connector } from '@hoprnet/hopr-core-ethereum'
 import Hopr from '@hoprnet/hopr-core'
@@ -6,7 +5,6 @@ import type { HoprOptions } from '@hoprnet/hopr-core'
 import type HoprCoreConnector from '@hoprnet/hopr-core-connector-interface'
 import { ParserService } from './parser/parser.service'
 import PeerInfo from 'peer-info'
-import readPkg from 'read-pkg-up'
 
 export type StartOptions = {
   debug?: boolean
@@ -19,10 +17,6 @@ export type StartOptions = {
 @Injectable()
 export class CoreService {
   private node: Hopr<HoprCoreConnector>
-  private readonly pkg = readPkg.sync().packageJson
-  private readonly nodePkg = readPkg.sync({
-    cwd: path.join(__dirname, '..', '..', 'node_modules', '@hoprnet/hopr-core'),
-  }).packageJson
 
   constructor(private parserService: ParserService) {}
 
@@ -87,29 +81,6 @@ export class CoreService {
       id,
       multiAddresses,
       connectedNodes,
-    }
-  }
-
-  // @TODO: version should be put into a different service
-  async getVersions(): Promise<{
-    hoprServer: string
-    hoprCore: string
-    hoprCoreConnectorInterface: string
-    hoprCoreEthereum: string
-    hoprUtils: string
-  }> {
-    const hoprServer = this.pkg.version
-    const hoprCore = this.nodePkg.version
-    const hoprCoreConnectorInterface = this.nodePkg.dependencies['@hoprnet/hopr-core-connector-interface']
-    const hoprCoreEthereum = this.nodePkg.dependencies['@hoprnet/hopr-core-ethereum']
-    const hoprUtils = this.nodePkg.dependencies['@hoprnet/hopr-utils']
-
-    return {
-      hoprServer,
-      hoprCore,
-      hoprCoreConnectorInterface,
-      hoprCoreEthereum,
-      hoprUtils,
     }
   }
 }

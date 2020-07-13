@@ -1,11 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { ConfigModule } from '@nestjs/config'
-import { CoreModule } from '../core/core.module'
-import { SystemModule } from '../system/system.module'
-import { GrpcService } from './grpc.service'
+import { SystemService } from './system.service'
 
-describe('GrpcService', () => {
-  let service: GrpcService
+describe('SystemService', () => {
+  let service: SystemService
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -13,13 +11,11 @@ describe('GrpcService', () => {
         ConfigModule.forRoot({
           isGlobal: true,
         }),
-        CoreModule,
-        SystemModule,
       ],
-      providers: [GrpcService],
+      providers: [SystemService],
     }).compile()
 
-    service = module.get<GrpcService>(GrpcService)
+    service = module.get<SystemService>(SystemService)
   })
 
   it('should be defined', () => {

@@ -4,7 +4,7 @@ import { INestApplication } from '@nestjs/common'
 import { Transport } from '@nestjs/microservices'
 import * as grpc from 'grpc'
 import { AppModule } from '../src/app.module'
-import { HOPR_PROTOS_DIR, PROTO_PACKAGES, PROTO_FILES } from '../src/constants'
+import { HOPR_PROTOS_FOLDER_DIR, PROTO_PACKAGES, PROTO_FILES } from '../src/constants'
 import { VersionRequest } from '@hoprnet/hopr-protos/node/version_pb'
 import { VersionClient } from '@hoprnet/hopr-protos/node/version_grpc_pb'
 import { StatusRequest } from '@hoprnet/hopr-protos/node/status_pb'
@@ -47,7 +47,7 @@ describe('GRPC transport', () => {
         package: PROTO_PACKAGES,
         protoPath: PROTO_FILES,
         loader: {
-          includeDirs: [HOPR_PROTOS_DIR],
+          includeDirs: [HOPR_PROTOS_FOLDER_DIR],
         },
       },
     })

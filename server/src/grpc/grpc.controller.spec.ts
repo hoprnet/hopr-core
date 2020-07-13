@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { ConfigModule } from '@nestjs/config'
 import { CoreModule } from '../core/core.module'
+import { SystemModule } from '../system/system.module'
 import { GrpcController } from './grpc.controller'
 import { GrpcService } from './grpc.service'
 
@@ -14,6 +15,7 @@ describe('Grpc Controller', () => {
           isGlobal: true,
         }),
         CoreModule,
+        SystemModule,
       ],
       providers: [GrpcService],
       controllers: [GrpcController],
