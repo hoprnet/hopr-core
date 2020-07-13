@@ -37,7 +37,7 @@ export class CoreService {
       bootstrapServers: await Promise.all<PeerInfo>(
         (
           customOptions.bootstrapServers ?? [
-            '/ip4/34.65.114.152/tcp/9091/p2p/16Uiu2HAmQrtY26aYgLBUMjhw9qvZABKYTdncHR5VD4MDrMLVSpkp',
+            '/ip4/34.65.177.154/tcp/9091/p2p/16Uiu2HAm4FcroWGzc9yhDAsKSGC8W9yoDKiQBnAGK5aQdqJWmior',
           ]
         ).map((multiaddr) => this.parserService.parseBootstrap(multiaddr) as Promise<PeerInfo>),
       ),
