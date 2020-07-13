@@ -21,11 +21,13 @@ export class CoreService {
   constructor(private parserService: ParserService) {}
 
   get started(): boolean {
-    return typeof this.node !== 'undefined'
+    return !!this.node
   }
 
-  // @TODO: handle if already started
+  // @TODO: handle if already starting
   async start(customOptions?: StartOptions): Promise<void> {
+    if (this.started) return
+
     const options: HoprOptions = {
       id: customOptions.id,
       debug: customOptions.debug ?? true,
@@ -50,8 +52,10 @@ export class CoreService {
     console.log(':: HOPR Core Node Started ::')
   }
 
-  // @TODO: handle if already stopped
+  // @TODO: handle if already stopping
   async stop(): Promise<{ timestamp: number }> {
+    if (!this.started) return
+
     console.log(':: Stopping HOPR Core Node ::')
     await this.node.stop()
     this.node = undefined
@@ -71,10 +75,14 @@ export class CoreService {
       throw Error('HOPR node is not started')
     }
 
+    try {
+      // @TODO: cache this result
+      await this.node.network.crawler.crawl()
+    } catch {}
+
     const id = this.node.peerInfo.id.toB58String()
     const multiAddresses = this.node.peerInfo.multiaddrs.toArray().map((multiaddr) => multiaddr.toString())
 
-    // @TODO: maybe do a crawl before getting length
     const connectedNodes = this.node.network.peerStore.peers.length
 
     return {

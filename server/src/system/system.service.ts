@@ -9,6 +9,15 @@ export class SystemService {
     cwd: HOPR_PROTOS_DIR,
   }).packageJson
 
+  // @TODO: discuss: is this actually needed?
+  async getSystemInfo(): Promise<{
+    cpuUsage: number
+  }> {
+    return {
+      cpuUsage: 0,
+    }
+  }
+
   async getVersions(): Promise<{
     hoprServer: string
     hoprCore: string
