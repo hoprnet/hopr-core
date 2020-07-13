@@ -1,6 +1,6 @@
 {
   "name": "@hoprnet/hopr-core",
-  "version": "0.6.18",
+  "version": "0.6.20",
   "description": "Privacy-preserving messaging protocol with incentivations for relay operators",
   "license": "GPL-3.0-only",
   "keywords": [
@@ -99,6 +99,7 @@
     "@types/simple-peer": "^9.6.0",
     "husky": "^4.2.5",
     "jest": "^26.1.0",
+    "libp2p-tcp": "^0.14.5",
     "memdown": "^5.1.0",
     "prettier": "^2.0.5",
     "ts-jest": "^26.1.1",
@@ -115,6 +116,7 @@
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
+    "coverageDirectory": "../coverage",
     "testEnvironment": "node"
   },
   "prettier": {
