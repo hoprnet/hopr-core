@@ -12,8 +12,9 @@ jobs:
       matrix:
         node-version: [12.9.1]
         yarn-version: [1.19.2]
-        # if you update this list, update "steps.filter" too
-        repository: ['core', 'chat', 'protos', 'server']
+        # if you add items into this list, update "steps.filter" too
+        # repository: ['core', 'chat', 'protos', 'server']
+        repository: ['chat', 'protos', 'server']
 
     steps:
       # Checkout, Cache, Filter, Setup Envs and Steps
