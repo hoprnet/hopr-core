@@ -12,10 +12,10 @@ jobs:
       matrix:
         node-version: [12.9.1]
         yarn-version: [1.19.2]
-        working-enviroments: ['', 'chat', 'protos', 'server']
+        repository: ['', 'chat', 'protos', 'server']
 
     steps:
-      # Checkout, Cache and Setup Steps
+      # Checkout, Cache, Setup Filter and Steps
       - name: Checkout repository
         uses: actions/checkout@v2
       - uses: dorny/paths-filter@v2.2.0
@@ -38,23 +38,25 @@ jobs:
         uses: actions/cache@v1
         with:
           path: node_modules
-          key: ${{ runner.OS }}-build-${{ hashFiles('${{ matrix.working-enviroments }}/package.json') }}
+          key: ${{ runner.OS }}-build-${{ hashFiles('${{ matrix.repository }}/package.json') }}
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
-
       # Building and testing library
       - name: Install node modules
+        working-directory: ${{ matrix.repository }}
         if: steps.cache-modules.outputs.cache-hit != 'true'
         run: |
           yarn policies set-version ${{ matrix.yarn-version }}
           yarn install --frozen-lockfile
       - name: Build library
+        working-directory: ${{ matrix.repository }}
         run: |
           yarn policies set-version ${{ matrix.yarn-version }}
           yarn build
       - name: Test library
+        working-directory: ${{ matrix.repository }}
         run: |
           yarn policies set-version ${{ matrix.yarn-version }}
           yarn test
