@@ -34,3 +34,5 @@ process.on('uncaughtException', (error: Error) => {
   console.error(error)
   process.exit(1)
 })
+
+// @TODO: remove this
