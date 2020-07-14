@@ -12,17 +12,33 @@ jobs:
       matrix:
         node-version: [12.9.1]
         yarn-version: [1.19.2]
+        working-enviroments: ['', 'chat', 'protos', 'server']
 
     steps:
       # Checkout, Cache and Setup Steps
       - name: Checkout repository
         uses: actions/checkout@v2
+      - uses: dorny/paths-filter@v2.2.0
+        id: filter
+        with:
+          filters: |
+            core:
+              - '**/*'
+              - '!chat'
+              - '!protos'
+              - '!server'
+            chat:
+              - 'chat/**/*'
+            protos:
+              - 'protos/**/*'
+            server:
+              - 'server/**/*'
       - name: Cache node_modules
         id: cache-modules
         uses: actions/cache@v1
         with:
           path: node_modules
-          key: ${{ runner.OS }}-build-${{ hashFiles('package.json') }}
+          key: ${{ runner.OS }}-build-${{ hashFiles(${{ matrix.working-enviroments }}'package.json') }}
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v1
         with:
