@@ -12,10 +12,10 @@ jobs:
       matrix:
         node-version: [12.9.1]
         yarn-version: [1.19.2]
-        repository: ['', 'chat', 'protos', 'server']
+        repository: ['core', 'chat', 'protos', 'server']
 
     steps:
-      # Checkout, Cache, Setup Filter and Steps
+      # Checkout, Cache, Filter, Setup Envs and Steps
       - name: Checkout repository
         uses: actions/checkout@v2
       - uses: dorny/paths-filter@v2.2.0
@@ -33,30 +33,43 @@ jobs:
               - 'protos/**/*'
             server:
               - 'server/**/*'
+      - id: set-pkgPath
+        run: |
+          echo "::set-output name=pkgPath::${{ matrix.repository }}/package.json"
+      - id: set-workDir
+        if: steps.filter.outputs.core == 'true'
+        run: |
+          echo "::set-output name=workDir::/"
+      - id: set-workDir
+        if: steps.filter.outputs.core != 'true'
+        run: |
+          echo "::set-output name=workDir::${{ matrix.repository }}"
       - name: Cache node_modules
         id: cache-modules
         uses: actions/cache@v1
         with:
           path: node_modules
-          key: ${{ runner.OS }}-build-${{ hashFiles(format('{0}/{1}', matrix.repository, 'package.json')) }}
+          key: ${{ runner.OS }}-build-${{ hashFiles(steps.set-pkgPath.pkgPath) }}
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
       # Building and testing library
       - name: Install node modules
-        working-directory: ${{ matrix.repository }}
-        if: steps.cache-modules.outputs.cache-hit != 'true'
+        working-directory: ${{ steps.set-workDir.workDir }}
+        if: steps.cache-modules.outputs.cache-hit != 'true' && steps.filter.outputs.${{ matrix.repository }} == 'true'
         run: |
           yarn policies set-version ${{ matrix.yarn-version }}
           yarn install --frozen-lockfile
       - name: Build library
-        working-directory: ${{ matrix.repository }}
+        working-directory: ${{ steps.set-workDir.workDir }}
+        if: steps.filter.outputs.${{ matrix.repository }} == 'true'
         run: |
           yarn policies set-version ${{ matrix.yarn-version }}
           yarn build
       - name: Test library
-        working-directory: ${{ matrix.repository }}
+        working-directory: ${{ steps.set-workDir.workDir }}
+        if: steps.filter.outputs.${{ matrix.repository }} == 'true'
         run: |
           yarn policies set-version ${{ matrix.yarn-version }}
           yarn test
