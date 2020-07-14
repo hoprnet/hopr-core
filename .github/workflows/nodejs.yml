@@ -38,7 +38,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: node_modules
-          key: ${{ runner.OS }}-build-${{ hashFiles(${{ matrix.working-enviroments }}'package.json') }}
+          key: ${{ runner.OS }}-build-${{ hashFiles('${{ matrix.working-enviroments }}/package.json') }}
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v1
         with:
