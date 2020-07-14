@@ -35,12 +35,12 @@ jobs:
             server:
               - 'server/**/*'
       - id: set-core-env
-        if: steps.filter.outputs.core == 'true'
+        if: matrix.repository == 'core'
         run: |
           echo "::set-env name=pkgPath::package.json"
-          echo "::set-env name=workDir::/"
+          echo "::set-env name=workDir::"
       - id: set-subrepo-env
-        if: steps.filter.outputs.core != 'true'
+        if: matrix.repository != 'core'
         run: |
           echo "::set-env name=pkgPath::${{ matrix.repository }}/package.json"
           echo "::set-env name=workDir::${{ matrix.repository }}"
