@@ -20,16 +20,16 @@ const BOOTSTRAP = {
   id: 0,
   nativeAddress: '0x92f84e4963dd31551927664007835b1908ac9020',
   hoprAddress: '16Uiu2HAmNqLm83bwMq9KQEZEWHcbsHQfBkbpZx4eVSoDG4Mp6yfX',
-  serverHost: '0.0.0.0:50051',
-  coreHost: '0.0.0.0:9091',
+  serverHost: '127.0.0.1:50051',
+  coreHost: '127.0.0.1:9091',
 }
 
 const NODE = {
   id: 1,
   nativeAddress: '0x32c160a5008e517ce06df4f7d4a39ffc52e049cf',
   hoprAddress: '16Uiu2HAkzuoWfxBgsgBCr8xqpkjs1RAmtDPxafCUAcbBEonnVQ65',
-  serverHost: '0.0.0.0:50052',
-  coreHost: '0.0.0.0:9092',
+  serverHost: '127.0.0.1:50052',
+  coreHost: '127.0.0.1:9092',
 }
 
 const SetupServer = async (serverOps: Record<string, any>, env: Record<string, any>): Promise<INestApplication> => {
@@ -99,6 +99,8 @@ describe('GRPC transport', () => {
         ID: NODE.id,
         BOOTSTRAP_NODE: false,
         CORE_HOST: NODE.coreHost,
+        // @TODO: here we are using port 9093 because we use demo accounts
+        // see https://github.com/hoprnet/hopr-core/blob/0f455e27c8d117880eb0fcc91bf31ae3584f96c9/src/utils/libp2p/getPeerInfo.ts#L28
         BOOTSTRAP_SERVERS: ['/ip4/127.0.0.1/tcp/9093/p2p/16Uiu2HAmNqLm83bwMq9KQEZEWHcbsHQfBkbpZx4eVSoDG4Mp6yfX'],
       },
     )
