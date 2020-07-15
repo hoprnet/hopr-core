@@ -7,6 +7,7 @@ import { u8aToHex, moveDecimalPoint } from '@hoprnet/hopr-utils'
 import { ParserService } from './parser/parser.service'
 import PeerInfo from 'peer-info'
 import PeerId from 'peer-id'
+import { mustBeStarted } from './core.utils'
 
 export type StartOptions = {
   debug?: boolean
@@ -67,18 +68,13 @@ export class CoreService {
     }
   }
 
+  @mustBeStarted()
   async getStatus(): Promise<{
     id: string
     multiAddresses: string[]
     connectedNodes: number
   }> {
-    // @TODO: turn this into a decorator
-    if (!this.started) {
-      throw Error('HOPR node is not started')
-    }
-
     try {
-      // @TODO: cache this result
       await this.node.network.crawler.crawl()
     } catch {}
 
@@ -94,16 +90,12 @@ export class CoreService {
     }
   }
 
+  @mustBeStarted()
   async getPing(
     peerId: string,
   ): Promise<{
     latency: number
   }> {
-    // @TODO: turn this into a decorator
-    if (!this.started) {
-      throw Error('HOPR node is not started')
-    }
-
     console.log('peerId', peerId)
 
     const latency = await this.node.ping(new PeerId(peerId))
@@ -113,11 +105,8 @@ export class CoreService {
     }
   }
 
+  @mustBeStarted()
   async getBalance(type: 'native' | 'hopr'): Promise<string> {
-    if (!this.started) {
-      throw Error('HOPR node is not started')
-    }
-
     const { paymentChannels } = this.node
     const { Balance, NativeBalance } = paymentChannels.types
 
@@ -132,11 +121,8 @@ export class CoreService {
     }
   }
 
+  @mustBeStarted()
   async getAddress(type: 'native' | 'hopr'): Promise<string> {
-    if (!this.started) {
-      throw Error('HOPR node is not started')
-    }
-
     if (type === 'native') {
       return this.node.paymentChannels.utils.pubKeyToAccountId(this.node.peerInfo.id.pubKey.marshal()).then(u8aToHex)
     } else {
