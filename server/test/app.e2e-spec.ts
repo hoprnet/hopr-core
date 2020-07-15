@@ -99,7 +99,7 @@ describe('GRPC transport', () => {
         ID: NODE.id,
         BOOTSTRAP_NODE: false,
         CORE_HOST: NODE.coreHost,
-        // @TODO: here we are using port 9093 because we use demo accounts
+        // here we are using port 9093 because we use demo accounts
         // see https://github.com/hoprnet/hopr-core/blob/0f455e27c8d117880eb0fcc91bf31ae3584f96c9/src/utils/libp2p/getPeerInfo.ts#L28
         BOOTSTRAP_SERVERS: ['/ip4/127.0.0.1/tcp/9093/p2p/16Uiu2HAmNqLm83bwMq9KQEZEWHcbsHQfBkbpZx4eVSoDG4Mp6yfX'],
       },

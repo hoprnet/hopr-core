@@ -9,7 +9,7 @@ Testing is done by trying to generate proto stubs for node and web, if building 
 ## Protos Architecture
 
 ```
-Stage 0 - describe        GET   /status ({} => { id, multi_addresses, cpu_usage, connected_nodes })
+Stage 0 - describe        GET   /status ({} => { id, multi_addresses, connected_nodes })
 Stage 0 - describe        GET   /version ({} => { version, components_version })
 Stage 0 - quit            POST  /shutdown ({} => { timestamp })
 Stage 0 - ping            POST  /ping ({peerId} => { pingReceipt:latency })
@@ -24,7 +24,6 @@ Stage 2.a - listChannel   GET   /channels ({} => { open_channel[] })
 Stage 2.a - openChannel   POST  /channels ({peerId} => channelTxReceipt:{channelId,...})
 Stage 2.a - listChannel   GET   /channels/:channelId ({channelId} => { state, balance, ... })
 Stage 2.a - closeChannel  POST  /channels/:channelId/close ({channelId} => channelTxReceipt)
-Stage 2.b - crawl         POST  /crawl ({} => connected_nodes[])
 Stage 2.b - listen*       POST  /listen ({} => EventHandler) // e.g. on.message(..., fn)
 Stage 2.b - send          POST  /send ({peerID, payload, [intermediatePeerIds[], timeout]} => txReceipt)
 
