@@ -1,1 +1,1 @@
-node index.js 2>log.txt
+node index.js -p switzerland 2>log.txt
