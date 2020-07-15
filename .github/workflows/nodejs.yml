@@ -24,17 +24,17 @@ jobs:
         id: filter
         with:
           filters: |
-            core:
-              - '**/*'
-              - '!chat'
-              - '!protos'
-              - '!server'
             chat:
               - 'chat/**/*'
             protos:
               - 'protos/**/*'
             server:
               - 'server/**/*'
+            core:
+              - '**/*'
+              - '!chat'
+              - '!protos'
+              - '!server'
       - id: set-core-env
         if: matrix.repository == 'core'
         run: |
