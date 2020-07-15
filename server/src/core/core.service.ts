@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+import { default as dotenvParseVariables } from 'dotenv-parse-variables'
 import { default as connector } from '@hoprnet/hopr-core-ethereum'
 import Hopr from '@hoprnet/hopr-core'
 import type { HoprOptions } from '@hoprnet/hopr-core'
@@ -21,31 +23,39 @@ export type StartOptions = {
 export class CoreService {
   private node: Hopr<HoprCoreConnector>
 
-  constructor(private parserService: ParserService) {}
+  constructor(private configService: ConfigService, private parserService: ParserService) {}
 
   get started(): boolean {
     return !!this.node
   }
 
   // @TODO: handle if already starting
-  async start(customOptions?: StartOptions): Promise<void> {
+  async start(): Promise<void> {
     if (this.started) return
 
+    const envOptions = dotenvParseVariables({
+      debug: this.configService.get('DEBUG'),
+      id: this.configService.get('ID'),
+      bootstrapNode: this.configService.get('BOOTSTRAP_NODE'),
+      host: this.configService.get('CORE_HOST'),
+      bootstrapServers: this.configService.get('BOOTSTRAP_SERVERS'),
+    }) as StartOptions
+
     const options: HoprOptions = {
-      id: customOptions.id,
-      debug: customOptions.debug ?? true,
-      bootstrapNode: customOptions.bootstrapNode ?? false,
+      id: envOptions.id,
+      debug: envOptions.debug ?? true,
+      bootstrapNode: envOptions.bootstrapNode ?? false,
       network: 'ethereum',
       connector,
       bootstrapServers: await Promise.all<PeerInfo>(
         (
-          customOptions.bootstrapServers ?? [
+          envOptions.bootstrapServers ?? [
             '/ip4/34.65.177.154/tcp/9091/p2p/16Uiu2HAm4FcroWGzc9yhDAsKSGC8W9yoDKiQBnAGK5aQdqJWmior',
           ]
         ).map((multiaddr) => this.parserService.parseBootstrap(multiaddr) as Promise<PeerInfo>),
       ),
       provider: 'wss://kovan.infura.io/ws/v3/f7240372c1b442a6885ce9bb825ebc36',
-      hosts: (await this.parserService.parseHost(customOptions.host ?? '0.0.0.0:9091')) as HoprOptions['hosts'],
+      hosts: (await this.parserService.parseHost(envOptions.host ?? '0.0.0.0:9091')) as HoprOptions['hosts'],
       password: 'switzerland',
       output: this.parserService.outputFunctor(),
     }
