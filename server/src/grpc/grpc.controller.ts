@@ -50,9 +50,7 @@ export class GrpcController {
     }
   }
 
-  // @TODO: rename proto method from 'ping' to 'getPing'
-  @GrpcMethod('Ping', 'ping')
-  // @ts-ignore @TODO: protoc types do not match nestjs
+  @GrpcMethod('Ping')
   async getPing({ peerId }: PingRequest.AsObject): Promise<PingResponse.AsObject> {
     try {
       return this.grpcService.getPing(peerId)

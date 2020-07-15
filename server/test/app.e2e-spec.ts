@@ -146,9 +146,9 @@ describe('GRPC transport', () => {
     const client = SetupClient(PingClient, 'node')
 
     const req = new PingRequest()
-    req.setPeerid(BOOTSTRAP.hoprAddress)
+    req.setPeerId(BOOTSTRAP.hoprAddress)
 
-    client.ping(req, (err, res) => {
+    client.getPing(req, (err, res) => {
       expect(err).toBeFalsy()
 
       const data = res.toObject()
