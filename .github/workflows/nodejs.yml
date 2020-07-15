@@ -24,17 +24,17 @@ jobs:
         id: filter
         with:
           filters: |
+            core:
+              - '**/*'
+              - '!chat'
+              - '!protos'
+              - '!server'
             chat:
               - 'chat/**/*'
             protos:
               - 'protos/**/*'
             server:
               - 'server/**/*'
-            core:
-              - '**/*'
-              - '!chat'
-              - '!protos'
-              - '!server'
       - id: set-core-env
         if: matrix.repository == 'core'
         run: |
@@ -58,7 +58,7 @@ jobs:
       # Build and Test
       - name: Install node modules
         working-directory: ${{ env.workDir }}
-        if: steps.cache-modules.outputs.cache-hit != true && steps.filter.outputs[matrix.repository] == 'true'
+        if: steps.cache-modules.outputs.cache-hit != 'true' && steps.filter.outputs[matrix.repository] == 'true'
         run: |
           yarn policies set-version ${{ matrix.yarn-version }}
           yarn install --frozen-lockfile
