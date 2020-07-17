@@ -51,6 +51,8 @@
     "rxjs": "^6.5.4"
   },
   "devDependencies": {
+    "@hoprnet/hopr-ethereum": "^0.3.9-120748b",
+    "@hoprnet/hopr-testing": "^0.1.2",
     "@nestjs/cli": "^7.0.0",
     "@nestjs/schematics": "^7.0.0",
     "@nestjs/testing": "^7.0.0",
