@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { default as dotenvParseVariables } from 'dotenv-parse-variables'
@@ -10,6 +11,7 @@ import type { Channel } from '@hoprnet/hopr-core-connector-interface'
 import { u8aToHex, moveDecimalPoint } from '@hoprnet/hopr-utils'
 import PeerInfo from 'peer-info'
 import PeerId from 'peer-id'
+import * as rlp from 'rlp'
 import { ParserService } from './parser/parser.service'
 import { mustBeStarted, getMyOpenChannels } from './core.utils'
 import { pubKeyToPeerId } from '@hoprnet/hopr-core/lib/utils' // @TODO: expose unofficial API
@@ -26,6 +28,7 @@ export type StartOptions = {
 @Injectable()
 export class CoreService {
   private node: Hopr<HoprCoreConnector>
+  private events = new EventEmitter()
 
   constructor(private configService: ConfigService, private parserService: ParserService) {}
 
@@ -76,7 +79,8 @@ export class CoreService {
       provider: envOptions.provider ?? 'wss://kovan.infura.io/ws/v3/f7240372c1b442a6885ce9bb825ebc36',
       hosts: (await this.parserService.parseHost(envOptions.host ?? '0.0.0.0:9091')) as HoprOptions['hosts'],
       password: 'switzerland',
-      output: this.parserService.outputFunctor(),
+      // @TODO: deprecate this, refactor hopr-core to not expect an output function
+      output: this.parserService.outputFunctor(this.events),
     }
     console.log(':: HOPR Options ::', options)
     console.log(':: Starting HOPR Core Node ::')
@@ -202,7 +206,7 @@ export class CoreService {
     }
   }
 
-  // @TODO: improve proto; should return txHash
+  // @TODO: improve proto: should return txHash
   @mustBeStarted()
   async openChannel(peerId: string): Promise<string> {
     const connector = this.node.paymentChannels
@@ -248,7 +252,7 @@ export class CoreService {
     return channelId
   }
 
-  // @TODO: improve proto; should return txHash
+  // @TODO: improve proto: should return txHash
   @mustBeStarted()
   async closeChannel(channelId: string): Promise<string> {
     const channel = await this.getChannel(channelId)
@@ -256,5 +260,32 @@ export class CoreService {
     await channel.instance.initiateSettlement()
 
     return channelId
+  }
+
+  // @TODO: improve proto: implement manual intermediate peer ids
+  @mustBeStarted()
+  async send({
+    peerId,
+    payload,
+  }: {
+    peerId: string
+    payload: Uint8Array
+  }): Promise<{
+    intermediatePeerIds: string[]
+  }> {
+    // @TODO: this should be done by hopr-core
+    const message = rlp.encode([payload, Date.now()])
+
+    await this.node.sendMessage(message, PeerId.createFromB58String(peerId), async () => [])
+
+    return {
+      intermediatePeerIds: [],
+    }
+  }
+
+  // @TODO: support filter by peerId, hopr-core needs refactor
+  @mustBeStarted()
+  async listen({ peerId }: { peerId?: string }): Promise<EventEmitter> {
+    return this.events
   }
 }

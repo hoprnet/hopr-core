@@ -1,3 +1,4 @@
+import { TextEncoder } from 'util'
 import { Test } from '@nestjs/testing'
 import { ConfigModule } from '@nestjs/config'
 import { INestApplication } from '@nestjs/common'
@@ -24,6 +25,10 @@ import {
   GetChannelInfoRequest,
   CloseChannelRequest,
 } from '@hoprnet/hopr-protos/node/channels_pb'
+import { SendClient } from '@hoprnet/hopr-protos/node/send_grpc_pb'
+import { SendRequest } from '@hoprnet/hopr-protos/node/send_pb'
+import { ListenClient } from '@hoprnet/hopr-protos/node/listen_grpc_pb'
+import { ListenRequest, ListenResponse } from '@hoprnet/hopr-protos/node/listen_pb'
 
 // configuration for each node we are going to boot
 const NODES: {
@@ -95,6 +100,9 @@ const SetupClient = <T extends typeof grpc.Client>(Client: T, server: keyof type
 // @TODO: fix open handles
 describe('GRPC transport', () => {
   const aliceAndBobChannelId = '0x9a94c47dc86a1f724faaad7fd01532307f13855b2659144ea47d137e281f6f57'
+  const aliceToBobMessage = new TextEncoder().encode('Hello Bob! this is Alice.')
+  const bobToAliceMessage = new TextEncoder().encode('Hey Alice, do you like HOPR?')
+
   const ganache = new Ganache()
   let bootstrap: INestApplication
   let alice: INestApplication
@@ -307,6 +315,56 @@ describe('GRPC transport', () => {
 
       client.close()
       done()
+    })
+  })
+
+  it('alice should send a message to bob', async (done) => {
+    const client = SetupClient(SendClient, 'alice')
+
+    const req = new SendRequest()
+    req.setPeerId(NODES.bob.hoprAddress)
+    req.setPayload(aliceToBobMessage)
+
+    client.send(req, (err, res) => {
+      expect(err).toBeFalsy()
+
+      const data = res.toObject()
+      expect(data.intermediatePeerIdsList).toHaveLength(0)
+
+      client.close()
+      done()
+    })
+  })
+
+  it('alice should receive message from bob', async (done) => {
+    const alice = SetupClient(ListenClient, 'alice')
+    const bob = SetupClient(SendClient, 'bob')
+
+    const listenReq = new ListenRequest()
+    listenReq.setPeerId(NODES.bob.hoprAddress)
+
+    const stream = alice.listen(listenReq)
+
+    stream.on('data', (data) => {
+      const [payload] = data.array
+
+      const res = new ListenResponse()
+      res.setPayload(payload)
+
+      expect(res.getPayload_asU8()).toStrictEqual(bobToAliceMessage)
+
+      alice.close()
+      done()
+    })
+
+    const sendReq = new SendRequest()
+    sendReq.setPeerId(NODES.alice.hoprAddress)
+    sendReq.setPayload(bobToAliceMessage)
+
+    bob.send(sendReq, (err) => {
+      expect(err).toBeFalsy()
+
+      bob.close()
     })
   })
 
