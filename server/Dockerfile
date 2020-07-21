@@ -9,27 +9,30 @@ ENV YARN_VERSION 1.19.2
 RUN yarn policies set-version $YARN_VERSION
 
 COPY package*.json ./
-COPY yarn.lock .
+COPY yarn.lock ./
 
 # Install OS libs necessary by some packages during `npm i` (e.g.: node-canvas)
 RUN apk add --update \
-&& apk add --no-cache git python make g++ alsa-lib ffmpeg opus pixman cairo pango giflib ca-certificates \
+&& apk add --no-cache alsa-lib ffmpeg opus pixman cairo pango giflib ca-certificates \
 && apk add --no-cache --virtual .build-deps git curl build-base jpeg-dev pixman-dev \
 cairo-dev pango-dev pangomm-dev gcompat libjpeg-turbo-dev giflib-dev freetype-dev python g++ make \
 \
 && yarn install --build-from-source --frozen-lockfile \
 \
-&& apk del .build-dep
+&& apk del .build-deps
+
+RUN apk add libc6-compat
+RUN ln -s /lib/libc.musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2
 
 # -- CHECK STAGE --------------------------------
 
-FROM base AS check
+# FROM base AS check
 
-ARG CI
-ENV CI $CI
+# ARG CI
+# ENV CI $CI
 
-COPY . .
-RUN yarn test
+# COPY . .
+# RUN yarn test
 
 # -- BUILD STAGE --------------------------------
 
@@ -57,8 +60,8 @@ EXPOSE 50051
 
 VOLUME ["/app/db"]
 
-# Needed by HOPR Core
+# Needed by HOPR
 RUN apk add libc6-compat
-RUN ln -s /lib/libc.musl-x86_64.so.1 /lib/ld-linux-x86-64.so.
+RUN ln -s /lib/libc.musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2
 
 ENTRYPOINT ["node", "./dist/index.js"]
