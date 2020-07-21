@@ -235,6 +235,15 @@ jobs:
           yarn policies set-version 1.19.2
           yarn install --frozen-lockfile
 
+  generate_protos_docs:
+    name: Generate docs using protoc-gen-doc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run protoc-gen-doc
+        working-directory: protos
+        run: bash ./scripts/generateDocs.sh
+
   publish_protos_gpr:
     name: Deploys to GPR
     if: startsWith(github.ref, 'refs/heads/releases/protos')
