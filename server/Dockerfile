@@ -1,3 +1,4 @@
+
 # -- BASE STAGE --------------------------------
 
 FROM node:12.9.1-alpine AS base
@@ -12,9 +13,13 @@ COPY yarn.lock .
 
 # Install OS libs necessary by some packages during `npm i` (e.g.: node-canvas)
 RUN apk add --update \
-&& apk --no-cache add git python make g++ \
+&& apk add --no-cache git python make g++ alsa-lib ffmpeg opus pixman cairo pango giflib ca-certificates \
+&& apk add --no-cache --virtual .build-deps git curl build-base jpeg-dev pixman-dev \
+cairo-dev pango-dev pangomm-dev gcompat libjpeg-turbo-dev giflib-dev freetype-dev python g++ make \
 \
-&& yarn install --build-from-source --frozen-lockfile
+&& yarn install --build-from-source --frozen-lockfile \
+\
+&& apk del .build-dep
 
 # -- CHECK STAGE --------------------------------
 
@@ -51,5 +56,9 @@ EXPOSE 9091
 EXPOSE 50051
 
 VOLUME ["/app/db"]
+
+# Needed by HOPR Core
+RUN apk add libc6-compat
+RUN ln -s /lib/libc.musl-x86_64.so.1 /lib/ld-linux-x86-64.so.
 
 ENTRYPOINT ["node", "./dist/index.js"]
