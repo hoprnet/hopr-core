@@ -284,7 +284,6 @@ export class CoreService {
     }
   }
 
-  // @TODO: support filter by peerId, hopr-core needs refactor
   @mustBeStarted()
   async listen({ peerId }: { peerId?: string }): Promise<EventEmitter> {
     return this.events
