@@ -23,6 +23,7 @@ async function bootstrap() {
   })
 
   app.enableShutdownHooks()
+
   await app.listenAsync()
   console.log(`:: HOPR Server Started at ${host} ::`)
 }
