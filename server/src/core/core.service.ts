@@ -33,7 +33,7 @@ export class CoreService {
   constructor(private configService: ConfigService, private parserService: ParserService) {}
 
   @mustBeStarted()
-  private async getChannel(channelId: string) {
+  private async findChannel(channelId: string) {
     const channels = await this.getChannels()
     const channel = channels.find((channel) => {
       return channel.channelId === channelId
@@ -63,29 +63,42 @@ export class CoreService {
       provider: this.configService.get('PROVIDER'),
     }) as StartOptions
 
-    const options: HoprOptions = {
+    // if only one server is provided, parser will parse it into a string
+    if (typeof envOptions.bootstrapServers === 'string') {
+      envOptions.bootstrapServers = [envOptions.bootstrapServers]
+    }
+
+    const options = {
       id: envOptions.id,
-      debug: envOptions.debug ?? true,
+      debug: envOptions.debug ?? false,
       bootstrapNode: envOptions.bootstrapNode ?? false,
       network: 'ethereum',
-      connector,
-      bootstrapServers: await Promise.all<PeerInfo>(
-        (
-          envOptions.bootstrapServers ?? [
-            '/ip4/34.65.139.63/tcp/9091/p2p/16Uiu2HAmR2va1xavPsYRrpCVnjvcUr1Jqjf9UjywdyPxeZ5Z3eLZ',
-            '/ip4/34.65.237.196/tcp/9091/p2p/16Uiu2HAm1pyd27aNRqx7icG5uDBKNFDwvwaEg2vuAUEtLN1pRa5X'
-          ]
-        ).map((multiaddr) => this.parserService.parseBootstrap(multiaddr) as Promise<PeerInfo>),
-      ),
+      bootstrapServers: envOptions.bootstrapServers ?? [
+        '/ip4/34.65.237.196/tcp/9091/p2p/16Uiu2HAm1pyd27aNRqx7icG5uDBKNFDwvwaEg2vuAUEtLN1pRa5X',
+        '/ip4/34.65.139.63/tcp/9091/p2p/16Uiu2HAmR2va1xavPsYRrpCVnjvcUr1Jqjf9UjywdyPxeZ5Z3eLZ',
+      ],
       provider: envOptions.provider ?? 'wss://kovan.infura.io/ws/v3/f7240372c1b442a6885ce9bb825ebc36',
-      hosts: (await this.parserService.parseHost(envOptions.host ?? '0.0.0.0:9091')) as HoprOptions['hosts'],
+      host: envOptions.host ?? '0.0.0.0:9091',
       password: 'switzerland',
-      // @TODO: deprecate this, refactor hopr-core to not expect an output function
-      output: this.parserService.outputFunctor(this.events),
     }
+
     console.log(':: HOPR Options ::', options)
     console.log(':: Starting HOPR Core Node ::')
-    this.node = await Hopr.create(options)
+    this.node = await Hopr.create({
+      id: options.id,
+      debug: options.debug,
+      bootstrapNode: options.bootstrapNode,
+      network: options.network,
+      connector,
+      bootstrapServers: await Promise.all<PeerInfo>(
+        options.bootstrapServers.map((multiaddr) => this.parserService.parseBootstrap(multiaddr) as Promise<PeerInfo>),
+      ),
+      provider: options.provider,
+      hosts: (await this.parserService.parseHost(options.host)) as HoprOptions['hosts'],
+      password: options.password,
+      // @TODO: deprecate this, refactor hopr-core to not expect an output function
+      output: this.parserService.outputFunctor(this.events),
+    })
     console.log(':: HOPR Core Node Started ::')
   }
 
@@ -98,7 +111,7 @@ export class CoreService {
     this.node = undefined
     console.log(':: HOPR Core Node Stopped ::')
     return {
-      timestamp: +new Date(),
+      timestamp: Math.floor(new Date().valueOf() / 1e3),
     }
   }
 
@@ -191,15 +204,14 @@ export class CoreService {
     )
   }
 
-  // @TODO: rename 'getChannelInfo' to 'getChannel'
   @mustBeStarted()
-  async getChannelInfo(
+  async getChannelData(
     channelId: string,
   ): Promise<{
     balance: string
     state: number
   }> {
-    const channel = await this.getChannel(channelId)
+    const channel = await this.findChannel(channelId)
 
     return {
       balance: channel.balance,
@@ -256,7 +268,7 @@ export class CoreService {
   // @TODO: improve proto: should return txHash
   @mustBeStarted()
   async closeChannel(channelId: string): Promise<string> {
-    const channel = await this.getChannel(channelId)
+    const channel = await this.findChannel(channelId)
 
     await channel.instance.initiateSettlement()
 
@@ -274,7 +286,7 @@ export class CoreService {
   }): Promise<{
     intermediatePeerIds: string[]
   }> {
-    // @TODO: this should be done by hopr-core
+    // @TODO: this should be done by hopr-core?
     const message = rlp.encode([payload, Date.now()])
 
     await this.node.sendMessage(message, PeerId.createFromB58String(peerId), async () => [])
@@ -284,7 +296,6 @@ export class CoreService {
     }
   }
 
-  // @TODO: support filter by peerId, hopr-core needs refactor
   @mustBeStarted()
   async listen({ peerId }: { peerId?: string }): Promise<EventEmitter> {
     return this.events
