@@ -111,7 +111,7 @@ export class CoreService {
     this.node = undefined
     console.log(':: HOPR Core Node Stopped ::')
     return {
-      timestamp: +new Date(),
+      timestamp: Math.floor(new Date().valueOf() / 1e3),
     }
   }
 
