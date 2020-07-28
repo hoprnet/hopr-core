@@ -1,34 +1,30 @@
-import { AbortError } from 'abortable-iterator'
-
 import debug from 'debug'
 const log = debug('hopr-core:transport')
 const error = debug('hopr-core:transport:error')
 
 import AbortController from 'abort-controller'
+import { AbortError } from 'abortable-iterator'
+import chalk from 'chalk'
+import defer from 'p-defer'
 
 // @ts-ignore
 import handshake = require('it-handshake')
 
 import type Multiaddr from 'multiaddr'
+import PeerInfo from 'peer-info'
+import PeerId from 'peer-id'
 
 // @ts-ignore
 import libp2p = require('libp2p')
 
 import { RELAY_CIRCUIT_TIMEOUT, RELAY_REGISTER, OK, FAIL, DELIVERY_REGISTER } from './constants'
 
-import PeerInfo from 'peer-info'
-import PeerId from 'peer-id'
-
 import { pubKeyToPeerId } from '../../utils'
-import { u8aEquals, u8aToHex } from '@hoprnet/hopr-utils'
+import { u8aEquals } from '@hoprnet/hopr-utils'
 
 import type { Connection, DialOptions, Registrar, Dialer, Handler, Stream } from './types'
 
-import chalk from 'chalk'
-
-import defer from 'p-defer'
-
-type AbortObj = {
+type ConnectionContext = {
   deferredPromise: defer.DeferredPromise<AsyncIterable<Uint8Array>>
   sinkDefer: defer.DeferredPromise<void> | undefined
   aborted: boolean
@@ -217,7 +213,7 @@ class Relay {
     const toSender = shaker.stream
     const toCounterparty = deliveryStream
 
-    const counterpartyConn: AbortObj = {
+    const counterpartyConn: ConnectionContext = {
       deferredPromise: defer<AsyncIterable<Uint8Array>>(),
       sinkDefer: undefined,
       aborted: false,
@@ -236,7 +232,7 @@ class Relay {
       id: counterparty,
     }
 
-    const initiatorConn: AbortObj = {
+    const initiatorConn: ConnectionContext = {
       deferredPromise: defer<AsyncIterable<Uint8Array>>(),
       sinkDefer: undefined,
       aborted: false,
@@ -257,36 +253,32 @@ class Relay {
 
     this.on('peer:connect', async (peer: PeerInfo) => {
       if (peer.id.isEqual(counterparty)) {
-        console.log(chalk.yellow(`overwriting counterparty connection`))
+        log(
+          chalk.yellow(
+            `overwriting counterparty connection. sender: ${chalk.blue(
+              initiatorConn.id.toB58String()
+            )} counterparty: ${chalk.blue(counterpartyConn.id.toB58String())}`
+          )
+        )
         await this.updateConnection(counterpartyConn, initiatorConn, true)
       } else if (peer.id.isEqual(connection.remotePeer)) {
-        console.log(chalk.yellow(`overwriting sender connection`))
+        log(
+          chalk.yellow(
+            `overwriting sender connection. sender: ${chalk.blue(
+              initiatorConn.id.toB58String()
+            )} counterparty: ${chalk.blue(counterpartyConn.id.toB58String())}`
+          )
+        )
         await this.updateConnection(initiatorConn, counterpartyConn, false)
       }
     })
 
-    toCounterparty.sink(
-      async function* () {
-        for await (const msg of this.forward(counterpartyConn, initiatorConn.source, 1)) {
-          console.log(chalk.green(`1st forwarding from sender to counterparty ${u8aToHex(msg.slice())}`))
+    toCounterparty.sink(this.forward(counterpartyConn, initiatorConn.source))
 
-          yield msg
-        }
-      }.call(this)
-    )
-
-    toSender.sink(
-      async function* () {
-        for await (const msg of this.forward(initiatorConn, counterpartyConn.source, 1)) {
-          console.log(chalk.green(`1st forwarding from counterparty to sender ${u8aToHex(msg.slice())}`))
-
-          yield msg
-        }
-      }.call(this)
-    )
+    toSender.sink(this.forward(initiatorConn, counterpartyConn.source))
   }
 
-  async updateConnection(reconnected: AbortObj, existing: AbortObj, senderToCounterparty: boolean) {
+  async updateConnection(reconnected: ConnectionContext, existing: ConnectionContext, senderToCounterparty: boolean) {
     reconnected.aborted = true
 
     const newStream = await this.establishForwarding(reconnected.id)
@@ -296,24 +288,12 @@ class Relay {
       return
     }
 
-    newStream.sink(
-      async function* () {
-        for await (const msg of this.forward(reconnected, existing.source, 2)) {
-          if (senderToCounterparty) {
-            console.log(chalk.green(`2nd forwarding from sender to counterparty ${u8aToHex(msg.slice())}`))
-          } else {
-            console.log(chalk.green(`2nd forwarding from counterparty to sender ${u8aToHex(msg.slice())}`))
-          }
-
-          yield msg
-        }
-      }.call(this)
-    )
+    newStream.sink(this.forward(reconnected, existing.source))
 
     reconnected.deferredPromise.resolve(newStream.source)
   }
 
-  forward(obj: AbortObj, streamSource: AsyncIterable<Uint8Array>, iteration: number): AsyncIterable<Uint8Array> {
+  forward(obj: ConnectionContext, streamSource: AsyncIterable<Uint8Array>): AsyncIterable<Uint8Array> {
     return (async function* () {
       obj.sinkDefer && (await obj.sinkDefer.promise)
 
@@ -329,7 +309,7 @@ class Relay {
       while (!obj.aborted) {
         const msg = (await streamSource[Symbol.asyncIterator]().next()).value
 
-        console.log(iteration, msg.slice(), obj.aborted)
+        // @TODO handle empty messages
 
         if (obj.aborted) {
           obj.cache = msg
