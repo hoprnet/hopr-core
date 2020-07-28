@@ -1,6 +1,6 @@
 {
   "name": "@hoprnet/hopr-protos",
-  "version": "0.0.11-12296a7",
+  "version": "0.0.12",
   "files": [
     "node/",
     "web/",
