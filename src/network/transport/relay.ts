@@ -1,4 +1,4 @@
-import abortable, { AbortError } from 'abortable-iterator'
+import { AbortError } from 'abortable-iterator'
 
 import debug from 'debug'
 const log = debug('hopr-core:transport')
@@ -31,7 +31,6 @@ import defer from 'p-defer'
 type AbortObj = {
   deferredPromise: defer.DeferredPromise<AsyncIterable<Uint8Array>>
   sinkDefer: defer.DeferredPromise<void> | undefined
-  abort: AbortController
   aborted: boolean
   cache: Uint8Array
   id: PeerId
@@ -90,7 +89,6 @@ class Relay {
     shaker.write(OK)
     shaker.rest()
 
-    console.log(`connHandler called`)
     this.connHandler?.({ stream: shaker.stream, connection: conn.connection, counterparty: sender })
   }
 
@@ -223,22 +221,16 @@ class Relay {
       deferredPromise: defer<AsyncIterable<Uint8Array>>(),
       sinkDefer: undefined,
       aborted: false,
-      abort: new AbortController(),
       cache: undefined,
       source: (async function* () {
         yield* toCounterparty.source
-        console.log(chalk.magenta('toCounterparty after yield'))
 
         while (true) {
           let source = await counterpartyConn.deferredPromise.promise
-          console.log(chalk.magenta('toCounterparty after awaiting'))
 
           counterpartyConn.deferredPromise = defer<AsyncIterable<Uint8Array>>()
 
-          for await (const msg of source) {
-            console.log(chalk.magenta(`yielding from new counterparty connection ${u8aToHex(msg.slice())}`))
-            yield msg
-          }
+          yield* source
         }
       })(),
       id: counterparty,
@@ -248,23 +240,16 @@ class Relay {
       deferredPromise: defer<AsyncIterable<Uint8Array>>(),
       sinkDefer: undefined,
       aborted: false,
-      abort: new AbortController(),
       cache: undefined,
       source: (async function* () {
         yield* toSender.source
 
-        console.log(chalk.magenta('toSender after yield'))
-
         while (true) {
           let source = await initiatorConn.deferredPromise.promise
-          console.log(chalk.magenta('toSender after awaiting'))
 
           initiatorConn.deferredPromise = defer<AsyncIterable<Uint8Array>>()
 
-          for await (const msg of source) {
-            console.log(chalk.magenta(`yielding from new sender connection ${u8aToHex(msg.slice())}`))
-            yield msg
-          }
+          yield* source
         }
       })(),
       id: connection.remotePeer,
@@ -307,9 +292,9 @@ class Relay {
     const newStream = await this.establishForwarding(reconnected.id)
 
     if (newStream == null) {
+      error(`Could not establish relay delivery stream to node ${reconnected.id.toB58String()}`)
       return
     }
-    console.log(`established deliver stream`)
 
     newStream.sink(
       async function* () {
@@ -330,19 +315,14 @@ class Relay {
 
   forward(obj: AbortObj, streamSource: AsyncIterable<Uint8Array>, iteration: number): AsyncIterable<Uint8Array> {
     return (async function* () {
-      console.log(iteration, `before sinkDefer`, obj.aborted)
       obj.sinkDefer && (await obj.sinkDefer.promise)
-      console.log(iteration, `before sinkDefer`)
 
       obj.sinkDefer = defer<void>()
-
-      console.log(iteration, obj.cache, obj.aborted)
 
       if (obj.cache != null) {
         let cacheResult = obj.cache
         obj.cache = undefined
 
-        console.log(chalk.yellow(`feeding from cache ${u8aToHex(cacheResult.slice())}`))
         yield cacheResult
       }
 

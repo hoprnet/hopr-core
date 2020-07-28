@@ -90,6 +90,12 @@ describe('should create a socket and connect to it', function () {
   }
 
   it('should create a node and exchange messages', async function () {
+    let testMessagesEchoed = false
+    let testMessagesReplied = false
+    let thirdBatchEchoed = false
+
+    let waitingForSecondBatch = defer<void>()
+
     let [sender, relay, counterparty] = await Promise.all([
       generateNode({ id: 0, ipv4: true }),
       generateNode({ id: 1, ipv4: true }),
@@ -97,23 +103,35 @@ describe('should create a socket and connect to it', function () {
         id: 2,
         ipv4: true,
         connHandler: (handler: Handler & { counterparty: PeerId }) => {
-          console.log(`counterparty connHandler called`)
           pipe(
             /* prettier-ignore */
             handler.stream,
             (source: AsyncIterable<Uint8Array>) => {
               return (async function* () {
                 for (let i = 0; i < 2; i++) {
-                  yield (await source[Symbol.asyncIterator]().next()).value
+                  let msg = (await source[Symbol.asyncIterator]().next()).value?.slice()
+
+                  assert(msg[0] == i + 1, 'Counterparty must receive all test messages in the right order')
+
+                  yield msg
                 }
 
-                await new Promise((resolve) => setTimeout(resolve, 1000))
+                testMessagesEchoed = true
 
-                console.log('here')
+                await new Promise((resolve) => setTimeout(resolve, 100))
+
                 yield new Uint8Array([3])
                 yield new Uint8Array([4])
 
-                console.log('sent')
+                for (let i = 0; i < 2; i++) {
+                  let msg = (await source[Symbol.asyncIterator]().next()).value?.slice()
+
+                  assert(msg[0] == i + 5, 'Counterparty must receive all test messages in the right order')
+                }
+
+                thirdBatchEchoed = true
+
+                waitingForSecondBatch.resolve()
               })()
             },
             handler.stream
@@ -122,6 +140,7 @@ describe('should create a socket and connect to it', function () {
       }),
     ])
 
+    // Make sure that the nodes know each other
     await Promise.all([sender.dial(relay.peerInfo), counterparty.dial(relay.peerInfo)])
 
     const { stream } = await sender.relay.establishRelayedConnection(
@@ -131,12 +150,20 @@ describe('should create a socket and connect to it', function () {
 
     await pipe(
       /* prettier-ignore */
-      [new Uint8Array([1]), new Uint8Array([2])],
+      (async function * () {
+        yield new Uint8Array([1])
+
+        yield new Uint8Array([2])
+      })(),
       stream,
       async (source: AsyncIterable<Uint8Array>) => {
         for (let i = 0; i < 2; i++) {
-          console.log(`receiving`, (await source[Symbol.asyncIterator]().next()).value)
+          let msg = (await source[Symbol.asyncIterator]().next()).value?.slice()
+
+          assert(msg[0] == i + 1, 'Sender must receive echoed messages')
         }
+
+        testMessagesReplied = true
       }
     )
 
@@ -147,32 +174,44 @@ describe('should create a socket and connect to it', function () {
     sender = await generateNode({
       id: 0,
       ipv4: true,
-      connHandler: (handler: Handler & { counterparty: PeerId }) => {
+      connHandler: async (handler: Handler & { counterparty: PeerId }) => {
         pipe(
           /* prettier-ignore */
           handler.stream,
           async (source: AsyncIterable<Uint8Array>) => {
             for (let i = 0; i < 2; i++) {
-              console.log(`receiving after reboot`, (await source[Symbol.asyncIterator]().next()).value)
+              let msg = (await source[Symbol.asyncIterator]().next()).value?.slice()
+
+              assert(msg[0] == i + 3, `Sender must receive all test messages in the right order.`)
             }
 
             waiting.resolve()
           }
+        )
+
+        await new Promise((resolve) => setTimeout(resolve, 100))
+
+        pipe(
+          (async function* () {
+            yield new Uint8Array([5])
+
+            yield new Uint8Array([6])
+          })(),
+          handler.stream
         )
       },
     })
 
     await sender.dial(relay.peerInfo)
 
-    await waiting.promise
+    await Promise.all([waiting.promise, waitingForSecondBatch.promise])
+
+    assert(testMessagesEchoed && testMessagesReplied && thirdBatchEchoed)
 
     await Promise.all([sender.stop(), relay.stop(), counterparty.stop()])
   })
 
   it('should create a node and exchange messages', async function () {
-    return
-    this.timeout(durations.seconds(5))
-
     let i = 1
 
     let firstBatchEchoed = false
@@ -180,6 +219,8 @@ describe('should create a socket and connect to it', function () {
     let thirdBatchEchoed = false
 
     let messagesReceived = false
+
+    const waiting = defer<void>()
 
     let [sender, relay, counterparty] = await Promise.all([
       generateNode({ id: 0, ipv4: true }),
@@ -219,7 +260,7 @@ describe('should create a socket and connect to it', function () {
       [relay.peerInfo]
     )
 
-    const pipePromise = pipe(
+    pipe(
       // prettier-ignore
       (async function* () {
         yield new Uint8Array([i++])
@@ -267,8 +308,6 @@ describe('should create a socket and connect to it', function () {
         yield new Uint8Array([i++])
 
         await new Promise(resolve => setTimeout(resolve, 500))
-
-        // yield new Uint8Array([i++])
 
         await counterparty.stop()
 
@@ -324,12 +363,13 @@ describe('should create a socket and connect to it', function () {
             i++
           } else if (i == 6 && u8aEquals(msg.slice(), new Uint8Array([6]))) {
             messagesReceived = true
+            waiting.resolve()
           }
         }
       }
     )
 
-    await new Promise((resolve) => setTimeout(resolve, durations.seconds(4)))
+    await waiting.promise
 
     assert(
       firstBatchEchoed && secondBatchEchoed && thirdBatchEchoed,
