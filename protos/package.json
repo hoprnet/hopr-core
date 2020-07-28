@@ -44,7 +44,6 @@
     "@types/node": "^12.11.0",
     "glob": "^7.1.6",
     "grpc-tools": "^1.9.0",
-    "grpc-web": "^1.2.0",
     "microbundle": "^0.12.2",
     "mkdirp": "^1.0.4",
     "protoc-gen-grpc-web": "^1.2.0",

@@ -2136,11 +2136,6 @@ grpc-tools@^1.9.0:
   dependencies:
     node-pre-gyp "^0.15.0"
 
-grpc-web@^1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/grpc-web/-/grpc-web-1.2.0.tgz#96402a1245ea834fedb1dd5a80f910476ddbbb1c"
-  integrity sha512-QS0RF+xiWnMEiHWyA0A0I8JYYJLOiF/DGEpRQ7vJDOzEZYfmNqI7d7d29sYBbNfTi+arVh2JpeGIX7ch24a+tA==
-
 gzip-size@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/gzip-size/-/gzip-size-3.0.0.tgz#546188e9bdc337f673772f81660464b389dce520"
