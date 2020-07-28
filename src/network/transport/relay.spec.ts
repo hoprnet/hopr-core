@@ -350,7 +350,6 @@ describe('should create a socket and connect to it', function () {
       async (source: AsyncIterable<Uint8Array>) => {
         let i = 1
         for await (const msg of source) {
-          console.log(`finally receiving:`, msg, i)
           if (u8aEquals(msg.slice(), new Uint8Array([1]))) {
             i++
           } else if (i == 2 && u8aEquals(msg.slice(), new Uint8Array([2]))) {
