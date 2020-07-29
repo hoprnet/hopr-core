@@ -2,7 +2,9 @@ import { AbstractInteraction } from '../abstractInteraction'
 
 import pipe from 'it-pipe'
 import PeerId from 'peer-id'
-import type PeerInfo from 'peer-info'
+
+import debug from 'debug'
+const log = debug('hopr-core:acknowledgement')
 
 import chalk from 'chalk'
 
@@ -39,9 +41,9 @@ class PacketAcknowledgementInteraction<Chain extends HoprCoreConnector> extends 
 
     try {
       struct = await this.node.dialProtocol(counterparty, this.protocols[0]).catch(async (err: Error) => {
-        return this.node.peerRouting
-          .findPeer(counterparty)
-          .then((peerInfo: PeerInfo) => this.node.dialProtocol(peerInfo, this.protocols[0]))
+        const result = await this.node.peerRouting.findPeer(counterparty)
+
+        return await this.node.dialProtocol(result, this.protocols[0])
       })
     } catch (err) {
       console.log(
@@ -50,7 +52,7 @@ class PacketAcknowledgementInteraction<Chain extends HoprCoreConnector> extends 
       return
     }
 
-    await pipe(
+    pipe(
       /* prettier-ignore */
       [acknowledgement],
       struct.stream
