@@ -158,14 +158,15 @@ class Crawler<Chain extends HoprCoreConnector> {
             if (!contactedPeerIds.has(peerString) && !unContactedPeers.includes(peerString)) {
               unContactedPeers.push(peerString)
 
-              if (comparator?.(peerString)) {
-                current++
-              }
-
+              let beforeInserting = this.node.network.peerStore.length
               this.node.network.peerStore.push({
                 id: peerString,
                 lastSeen: 0,
               })
+
+              if (comparator == null || comparator(peerString)) {
+                current = current + this.node.network.peerStore.length - beforeInserting
+              }
               this.node.peerStore.put(peerInfos[i])
             }
           }
