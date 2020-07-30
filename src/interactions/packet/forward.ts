@@ -41,27 +41,33 @@ class PacketForwardInteraction<Chain extends HoprCoreConnector> implements Abstr
       let struct: Handler
 
       const abort = new AbortController()
-  
+
       const timeout = setTimeout(() => {
         aborted = true
         abort.abort()
         reject(Error(`Timeout while establishing a connection to ${counterparty.toB58String()}.`))
       }, FORWARD_TIMEOUT)
-  
+
       try {
-        struct = await this.node.dialProtocol(counterparty, this.protocols[0], { signal: abort.signal }).catch(async (err: Error) => {
-          const peerInfo = await this.node.peerRouting.findPeer(counterparty)
-  
-          return await this.node.dialProtocol(peerInfo, this.protocols[0], { signal: abort.signal })
-        })
+        struct = await this.node
+          .dialProtocol(counterparty, this.protocols[0], { signal: abort.signal })
+          .catch(async (err: Error) => {
+            const peerInfo = await this.node.peerRouting.findPeer(counterparty)
+
+            return await this.node.dialProtocol(peerInfo, this.protocols[0], { signal: abort.signal })
+          })
       } catch (err) {
         log(`Could not transfer packet to ${counterparty.toB58String()}. Error was: ${chalk.red(err.message)}.`)
-        
-        return reject(Error(`Failed to send packet to ${counterparty.toB58String()}. Increase log level for further information.`))
-      } finally {
+
         clearTimeout(timeout)
+
+        return reject(
+          Error(`Failed to send packet to ${counterparty.toB58String()}. Increase log level for further information.`)
+        )
       }
-  
+
+      clearTimeout(timeout)
+
       pipe(
         /* prettier-ignore */
         [packet],
@@ -72,7 +78,6 @@ class PacketForwardInteraction<Chain extends HoprCoreConnector> implements Abstr
         resolve()
       }
     })
-
   }
 
   handler(struct: Handler): void {
