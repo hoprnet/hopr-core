@@ -13,8 +13,8 @@ jobs:
         node-version: [12.9.1]
         yarn-version: [1.19.2]
         # if you add items into this list, update "steps.filter" too
-        # repository: ['core', 'protos', 'server']
-        repository: ['protos', 'server']
+        # repository: ['core', 'server']
+        repository: ['server']
 
     steps:
       # Checkout, Cache, Filter, Setup Envs and Steps
@@ -26,10 +26,7 @@ jobs:
           filters: |
             core:
               - '**/*'
-              - '!protos'
               - '!server'
-            protos:
-              - 'protos/**/*'
             server:
               - 'server/**/*'
       - id: set-core-env
