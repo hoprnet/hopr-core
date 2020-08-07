@@ -84,6 +84,7 @@
     "husky": "^4.2.5",
     "it-pair": "^1.0.0",
     "jest": "^26.1.0",
+    "jest-silent-reporter": "^0.2.1",
     "libp2p-tcp": "^0.14.6",
     "memdown": "^5.1.0",
     "prettier": "^2.0.5",
@@ -103,7 +104,15 @@
     },
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
-    "maxConcurrency": 1
+    "maxConcurrency": 1,
+    "reporters": [
+      [
+        "jest-silent-reporter",
+        {
+          "useDots": true
+        }
+      ]
+    ]
   },
   "prettier": {
     "tabWidth": 2,
