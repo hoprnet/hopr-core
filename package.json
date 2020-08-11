@@ -29,7 +29,7 @@
   "scripts": {
     "build": "yarn clean && tsc -p .",
     "clean": "rm -rf ./lib",
-    "test": "jest --runInBand --forceExit",
+    "test": "jest --runInBand --forceExit --detectOpenHandles",
     "prepublishOnly": "yarn build",
     "lint": "prettier --check .",
     "lint:fix": "prettier --write ."
@@ -105,6 +105,7 @@
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
     "maxConcurrency": 1,
+    "setupFilesAfterEnv": ["./jest.setup.ts"],
     "reporters": [
       [
         "jest-silent-reporter",

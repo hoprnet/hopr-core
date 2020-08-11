@@ -29,8 +29,6 @@ import { RELAY_CIRCUIT_TIMEOUT, WEBRTC_TIMEOUT } from './constants'
 const TEST_PROTOCOL = `/test/0.0.1`
 
 describe('should create a socket and connect to it', function () {
-  jest.setTimeout(RELAY_CIRCUIT_TIMEOUT * 3)
-
   async function generateNode(
     options: {
       id: number
