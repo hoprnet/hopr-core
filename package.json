@@ -88,6 +88,7 @@
     "libp2p-tcp": "^0.14.6",
     "memdown": "^5.1.0",
     "prettier": "^2.0.5",
+    "tcp-port-used": "^1.0.1",
     "ts-jest": "^26.1.4",
     "typescript": "^3.9.7"
   },
@@ -105,7 +106,9 @@
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
     "maxConcurrency": 1,
-    "setupFilesAfterEnv": ["./jest.setup.ts"],
+    "setupFilesAfterEnv": [
+      "./jest.setup.ts"
+    ],
     "reporters": [
       [
         "jest-silent-reporter",

@@ -25,6 +25,7 @@ import { u8aEquals, durations } from '@hoprnet/hopr-utils'
 import { randomBytes } from 'crypto'
 import { privKeyToPeerId } from '../../utils'
 import { RELAY_CIRCUIT_TIMEOUT, WEBRTC_TIMEOUT } from './constants'
+import { waitUntilFree } from 'tcp-port-used'
 
 const TEST_PROTOCOL = `/test/0.0.1`
 
@@ -45,15 +46,15 @@ describe('should create a socket and connect to it', function () {
     const peerInfo = new PeerInfo(await PeerId.create({ keyType: 'secp256k1' }))
 
     if (options.ipv4) {
-      peerInfo.multiaddrs.add(
-        Multiaddr(`/ip4/127.0.0.1/tcp/${9090 + 2 * options.id}`).encapsulate(`/p2p/${peerInfo.id.toB58String()}`)
-      )
+      const port = 9090 + 2 * options.id
+      await waitUntilFree(port, 100, 300)
+      peerInfo.multiaddrs.add(Multiaddr(`/ip4/127.0.0.1/tcp/${port}`).encapsulate(`/p2p/${peerInfo.id.toB58String()}`))
     }
 
     if (options.ipv6) {
-      peerInfo.multiaddrs.add(
-        Multiaddr(`/ip6/::1/tcp/${9090 + 2 * options.id + 1}`).encapsulate(`/p2p/${peerInfo.id.toB58String()}`)
-      )
+      const port = 9090 + 2 * options.id + 1
+      await waitUntilFree(port, 100, 300)
+      peerInfo.multiaddrs.add(Multiaddr(`/ip6/::1/tcp/${port}`).encapsulate(`/p2p/${peerInfo.id.toB58String()}`))
     }
 
     const node = new libp2p({
