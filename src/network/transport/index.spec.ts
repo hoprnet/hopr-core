@@ -29,7 +29,7 @@ import { waitUntilFree } from 'tcp-port-used'
 
 const TEST_PROTOCOL = `/test/0.0.1`
 
-describe('should create a socket and connect to it', function () {
+describe('should create a socket and connect to it', async function () {
   async function generateNode(
     options: {
       id: number

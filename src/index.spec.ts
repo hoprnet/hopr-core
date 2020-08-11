@@ -7,6 +7,8 @@ describe('test hopr-core', function () {
   const ganache = new Ganache()
 
   beforeAll(async function () {
+    jest.setTimeout(durations.seconds(30))
+
     await ganache.start()
     await migrate()
   })

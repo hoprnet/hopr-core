@@ -52,12 +52,11 @@ describe('test webRTC upgrade with custom handshake', function () {
       AliceBob.sink
     )
 
-    const [channelAlice, channelBob] = (
-      await Promise.all([
-        upgradeToWebRtc(webRTCsendAlice, webRTCrecvAlice, { initiator: true }),
-        upgradeToWebRtc(webRTCsendBob, webRTCrecvBob),
-      ])
-    ).map(toIterable.duplex)
+    const [sockAlice, sockBob] = await Promise.all([
+      upgradeToWebRtc(webRTCsendAlice, webRTCrecvAlice, { initiator: true }),
+      upgradeToWebRtc(webRTCsendBob, webRTCrecvBob),
+    ])
+    const [channelAlice, channelBob] = [sockAlice, sockBob].map(toIterable.duplex)
 
     let messageForBobReceived = false
     const messageForBob = randomBytes(41)
@@ -94,5 +93,8 @@ describe('test webRTC upgrade with custom handshake', function () {
     await Promise.all([pipeAlicePromise, pipeBobPromise])
 
     assert(messageForBobReceived && messageForAliceReceived, `Alice and Bob should have received the right message`)
+
+    sockAlice.destroy()
+    sockBob.destroy()
   })
 })

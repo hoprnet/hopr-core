@@ -1,4 +1,4 @@
 import { durations } from '@hoprnet/hopr-utils'
 
-jest.useFakeTimers()
-jest.setTimeout(durations.seconds(10))
+//jest.useFakeTimers('modern')
+jest.setTimeout(durations.seconds(5))
