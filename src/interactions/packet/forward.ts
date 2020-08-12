@@ -140,8 +140,10 @@ class PacketForwardInteraction<Chain extends HoprCoreConnector> implements Abstr
       })
 
       if (this.node.peerInfo.id.isEqual(target)) {
+        this.node.receivedMessages++
         this.node.output(packet.message.plaintext)
       } else {
+        this.node.forwardedMessages++
         await this.interact(target, packet)
       }
     }

@@ -76,6 +76,7 @@ class Opening<Chain extends HoprCoreConnector> implements AbstractInteraction<Ch
       throw Error('Empty stream')
     }
 
+    this.node.processedPayments++
     return this.node.paymentChannels.types.SignedChannel.create({
       bytes: result.buffer,
       offset: result.byteOffset,

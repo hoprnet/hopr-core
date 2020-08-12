@@ -63,6 +63,15 @@ export type HoprOptions = {
   }
 }
 
+export type HoprStats = {
+  address: PeerId
+  connectedPeers: Map<string, PeerInfo>
+  sentMessages: number
+  forwardedMessages: number
+  receivedMessages: number
+  processedPayments: number
+}
+
 export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
   public interactions: Interactions<Chain>
   public network: Network<Chain>
@@ -71,6 +80,12 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
   public output: (arr: Uint8Array) => void
   public isBootstrapNode: boolean
   public bootstrapServers: PeerInfo[]
+
+  // Stats
+  public sentMessages = 0
+  public receivedMessages = 0
+  public forwardedMessages = 0
+  public processedPayments = 0
 
   // @TODO add libp2p types
   declare emit: (event: string, ...args: any[]) => void
@@ -304,6 +319,7 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
 
     try {
       await Promise.all(promises)
+      this.sentMessages++
     } catch (err) {
       this.log(`Could not send message. Error was: ${chalk.red(err.message)}`)
       throw err
@@ -373,5 +389,19 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
     createDirectoryIfNotExists(`${process.cwd()}/${db_dir}`)
 
     return levelup(leveldown(db_dir))
+  }
+
+  /**
+   * Get information about a running node.
+   */
+  async getStats(): Promise<HoprStats> {
+    return {
+      address: this.peerInfo.id,
+      connectedPeers: this.peerStore.peers,
+      sentMessages: this.sentMessages,
+      receivedMessages: this.receivedMessages,
+      forwardedMessages: this.forwardedMessages,
+      processedPayments: this.processedPayments,
+    }
   }
 }
