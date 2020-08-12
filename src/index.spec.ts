@@ -3,7 +3,7 @@ import { migrate } from '@hoprnet/hopr-ethereum'
 import { durations } from '@hoprnet/hopr-utils'
 import HoprCore from '.'
 
-const GANACHE_PORT = 60092
+const GANACHE_PORT = 9545 // We have to use this as it's hardcoded in hopr-ethereum / truffle-networks
 const HOPR_PORT = 60091
 
 describe('test hopr-core', function () {
@@ -12,7 +12,6 @@ describe('test hopr-core', function () {
 
   beforeAll(async function () {
     jest.setTimeout(durations.seconds(30))
-
     await ganache.start()
     await migrate()
   })
