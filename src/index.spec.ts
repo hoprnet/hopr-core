@@ -7,8 +7,8 @@ const GANACHE_PORT = 60092
 const HOPR_PORT = 60091
 
 describe('test hopr-core', function () {
-  const ganache = new Ganache({port: GANACHE_PORT})
-  let node;
+  const ganache = new Ganache({ port: GANACHE_PORT })
+  let node
 
   beforeAll(async function () {
     jest.setTimeout(durations.seconds(30))
@@ -17,23 +17,23 @@ describe('test hopr-core', function () {
     await migrate()
   })
 
-  afterAll(async function (){
+  afterAll(async function () {
     await node.stop()
   })
 
   it('should start a node', async function () {
     node = await HoprCore.create({
-        debug: true,
-        bootstrapNode: true,
-        network: 'ethereum',
-        provider: `ws://127.0.0.1:${GANACHE_PORT}`,
-        hosts: {
-          ip4: {
-            ip: '0.0.0.0',
-            port: HOPR_PORT,
-          },
+      debug: true,
+      bootstrapNode: true,
+      network: 'ethereum',
+      provider: `ws://127.0.0.1:${GANACHE_PORT}`,
+      hosts: {
+        ip4: {
+          ip: '0.0.0.0',
+          port: HOPR_PORT,
         },
-      })
+      },
+    })
     expect(node).toBeDefined()
   })
 
