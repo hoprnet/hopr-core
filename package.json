@@ -32,7 +32,8 @@
     "test": "jest --runInBand --forceExit",
     "prepublishOnly": "yarn build",
     "lint": "prettier --check .",
-    "lint:fix": "prettier --write ."
+    "lint:fix": "prettier --write .",
+    "integration": "jest --runInBand --forceExit --config=test/integration/jest.config.json"
   },
   "dependencies": {
     "@hoprnet/hopr-core-connector-interface": "1.4.0",
@@ -122,7 +123,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "yarn lint"
+      "pre-commit": "yarn lint:fix"
     }
   }
 }
