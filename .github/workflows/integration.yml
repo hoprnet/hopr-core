@@ -1,0 +1,51 @@
+name: Integration Tests
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Hourly...
+
+jobs:
+  integration:
+    name: 'Hourly Integration'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [12.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          ref: develop
+      - name: Cache node_modules
+        id: cache-modules
+        uses: actions/cache@v1
+        with:
+          path: node_modules
+          key: ${{ runner.OS }}-build-${{ hashFiles(env.pkgPath) }}
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      # Build and Test
+      - name: Install node modules
+        working-directory: ${{ env.workDir }}
+        if: steps.cache-modules.outputs.cache-hit != 'true'
+        run: |
+          yarn policies set-version ${{ matrix.yarn-version }}
+          yarn install --frozen-lockfile
+      - name: Build library
+        working-directory: ${{ env.workDir }}
+        run: |
+          yarn policies set-version ${{ matrix.yarn-version }}
+          yarn build
+      - name: Unit Test library (Should pass!)
+        working-directory: ${{ env.workDir }}
+        run: |
+          yarn policies set-version ${{ matrix.yarn-version }}
+          yarn test
+      - name: Integration Tests
+        working-directory: ${{ env.workDir }}
+        run: |
+          yarn policies set-version ${{ matrix.yarn-version }}
+          yarn run integration
