@@ -3,10 +3,10 @@ import type HoprCoreConnector from '@hoprnet/hopr-core-connector-interface'
 
 import { createMock } from 'ts-auto-mock'
 
+const MockConnector: typeof HoprCoreConnector = createMock<typeof HoprCoreConnector>()
+
 describe('test hopr-core', function () {
   it('should start a node', function (done) {
-    const MockConnector: typeof HoprCoreConnector = createMock<typeof HoprCoreConnector>()
-
     expect(
       HoprCore.create({
         debug: true,

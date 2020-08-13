@@ -99,6 +99,11 @@
       "json",
       "ts"
     ],
+    "globals": {
+      "ts-jest": {
+        "compiler": "ttypescript"
+      }
+    },
     "rootDir": "src",
     "testRegex": ".spec.ts$",
     "transform": {
