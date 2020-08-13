@@ -1,24 +1,18 @@
-import { Ganache } from '@hoprnet/hopr-testing'
-import { migrate } from '@hoprnet/hopr-ethereum'
-import { durations } from '@hoprnet/hopr-utils'
 import HoprCore from '.'
+import type HoprCoreConnector from '@hoprnet/hopr-core-connector-interface'
+
+import { createMock } from 'ts-auto-mock'
 
 describe('test hopr-core', function () {
-  const ganache = new Ganache()
-
-  beforeAll(async function () {
-    jest.setTimeout(durations.seconds(30))
-
-    await ganache.start()
-    await migrate()
-  })
-
   it('should start a node', function (done) {
+    const MockConnector: typeof HoprCoreConnector = createMock<typeof HoprCoreConnector>()
+
     expect(
       HoprCore.create({
         debug: true,
         bootstrapNode: true,
-        network: 'ethereum',
+        network: 'mocks',
+        connector: MockConnector,
         provider: 'ws://127.0.0.1:9545',
         hosts: {
           ip4: {

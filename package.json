@@ -88,7 +88,9 @@
     "libp2p-tcp": "^0.14.6",
     "memdown": "^5.1.0",
     "prettier": "^2.0.5",
+    "ts-auto-mock": "^2.3.4",
     "ts-jest": "^26.1.4",
+    "ttypescript": "^1.5.10",
     "typescript": "^3.9.7"
   },
   "jest": {

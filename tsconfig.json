@@ -6,7 +6,13 @@
     "module": "commonjs",
     "target": "es2019",
     "declaration": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "plugins": [
+      {
+        "transform": "ts-auto-mock/transformer",
+        "cacheBetweenTests": false
+      }
+    ]
   },
   "include": ["src/**/*.ts"]
 }
