@@ -1,5 +1,6 @@
 import type Hopr from '../../'
 import type HoprCoreConnector from '@hoprnet/hopr-core-connector-interface'
+import type { Types } from '@hoprnet/hopr-core-connector-interface'
 
 import { PROTOCOL_ONCHAIN_KEY } from '../../constants'
 import type { AbstractInteraction } from '../abstractInteraction'
@@ -27,7 +28,7 @@ class OnChainKey<Chain extends HoprCoreConnector> implements AbstractInteraction
     )
   }
 
-  async interact(counterparty: PeerInfo | PeerId): Promise<Uint8Array> {
+  async interact(counterparty: PeerInfo | PeerId): Promise<Types.Public> {
     let struct: Handler
 
     try {
@@ -53,7 +54,7 @@ class OnChainKey<Chain extends HoprCoreConnector> implements AbstractInteraction
   }
 }
 
-async function onReception(source: any): Promise<Uint8Array> {
+async function onReception(source: any): Promise<Types.Public> {
   let result: Uint8Array
   for await (const msg of source) {
     if (msg == null || msg.length == 0) {
@@ -68,7 +69,7 @@ async function onReception(source: any): Promise<Uint8Array> {
     }
   }
 
-  return result
+  return new this.node.paymentChannels.types.Public(result)
 }
 
 export { OnChainKey }
