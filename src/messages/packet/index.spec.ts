@@ -20,8 +20,6 @@ const WIN_PROB = new BN(1)
 
 const TWO_SECONDS = durations.seconds(2)
 
-// example how to use hopr-ethereum API
-
 async function startTestnet() {
   const ganache = new Ganache()
 
