@@ -100,7 +100,7 @@ class Stun {
     throw Error(`Cannot create STUN socket due to invalid configuration.`)
   }
 
-  async startServer() {
+  async startServer(port = undefined) {
     return new Promise(async (resolve, reject) => {
       this.socket = this.getSocket()
 
@@ -118,7 +118,7 @@ class Stun {
         }
       })
 
-      resolve(bindSocketToPort(this.socket))
+      resolve(bindSocketToPort(this.socket, port))
     })
   }
 
