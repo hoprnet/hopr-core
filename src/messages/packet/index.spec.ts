@@ -77,7 +77,7 @@ describe('test packet composition and decomposition', function () {
 
     for (let i = 1; i <= MAX_HOPS; i++) {
       msgReceivedPromises.push(receiveChecker(testMessages.slice(i - 1, i), nodes[i]))
-      await nodes[0].sendMessage(testMessages[i - 1], nodes[i].peerInfo, async () =>
+      await nodes[0].sendMessage(testMessages[i - 1], nodes[i].peerInfo.id, async () =>
         nodes.slice(1, i).map((node) => node.peerInfo.id)
       )
     }
@@ -97,7 +97,7 @@ describe('test packet composition and decomposition', function () {
     msgReceivedPromises.push(receiveChecker(testMessages.slice(1, 3), nodes[nodes.length - 1]))
 
     for (let i = 1; i <= MAX_HOPS - 1; i++) {
-      await nodes[i].sendMessage(testMessages[i], nodes[nodes.length - 1].peerInfo, async () =>
+      await nodes[i].sendMessage(testMessages[i], nodes[nodes.length - 1].peerInfo.id, async () =>
         nodes.slice(i + 1, nodes.length - 1).map((node) => node.peerInfo.id)
       )
     }
