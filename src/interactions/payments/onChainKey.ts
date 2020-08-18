@@ -4,7 +4,7 @@ import type { Types } from '@hoprnet/hopr-core-connector-interface'
 
 import { PROTOCOL_ONCHAIN_KEY } from '../../constants'
 import type { AbstractInteraction } from '../abstractInteraction'
-import PeerInfo from 'peer-info'
+import type PeerInfo from 'peer-info'
 import type PeerId from 'peer-id'
 
 import type { Handler } from '../../network/transport/types'
@@ -28,21 +28,20 @@ class OnChainKey<Chain extends HoprCoreConnector> implements AbstractInteraction
     )
   }
 
-  async interact(counterparty: PeerInfo | PeerId): Promise<Types.Public> {
+  async interact(counterparty: PeerId): Promise<Types.Public> {
     let struct: Handler
 
     try {
       struct = await this.node.dialProtocol(counterparty, this.protocols[0]).catch(async (_: Error) => {
         return this.node.peerRouting
-          .findPeer(PeerInfo.isPeerInfo(counterparty) ? counterparty.id : counterparty)
+          .findPeer(counterparty)
           .then((peerInfo: PeerInfo) => this.node.dialProtocol(peerInfo, this.protocols[0]))
       })
     } catch (err) {
       throw Error(
-        `Tried to get onChain key from party ${(PeerInfo.isPeerInfo(counterparty)
-          ? counterparty.id
-          : counterparty
-        ).toB58String()} but failed while trying to connect to that node. Error was: ${chalk.red(err.message)}`
+        `Tried to get onChain key from party ${counterparty.toB58String()} but failed while trying to connect to that node. Error was: ${chalk.red(
+          err.message
+        )}`
       )
     }
 
