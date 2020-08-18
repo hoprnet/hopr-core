@@ -23,7 +23,7 @@ class Opening<Chain extends HoprCoreConnector> implements AbstractInteraction<Ch
     pipe(
       /** prettier-ignore */
       struct.stream,
-      this.node.paymentChannels.channel.handleOpeningRequest.bind(this.node.paymentChannels),
+      this.node.paymentChannels.channel.handleOpeningRequest.bind(this.node.paymentChannels.channel),
       struct.stream
     )
   }

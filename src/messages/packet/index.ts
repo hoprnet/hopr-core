@@ -225,7 +225,15 @@ export class Packet<Chain extends HoprCoreConnector> extends Uint8Array {
         (_channelBalance: Types.ChannelBalance) => node.interactions.payments.open.interact(path[0], channelBalance)
       )
 
-      packet._ticket = await channel.ticket.create(fee, ticketChallenge, {
+      const newFee = {
+        toU8a() {
+          return fee.toBuffer('be', 32)
+        },
+      }
+
+      // log(Object.getOwnPropertyNames(newFee))
+      // @ts-ignore
+      packet._ticket = await channel.ticket.create(newFee, ticketChallenge, {
         bytes: packet.buffer,
         offset: packet.ticketOffset,
       })
@@ -393,8 +401,6 @@ export class Packet<Chain extends HoprCoreConnector> extends Uint8Array {
 
     const forwardedFunds = receivedMoney.isub(new BN(RELAY_FEE, 10))
 
-    console.log(`receivedMoney`, forwardedFunds.toNumber())
-
     if (forwardedFunds.gtn(0)) {
       const channelBalance = this.node.paymentChannels.types.ChannelBalance.create(undefined, {
         balance: new BN(12345),
@@ -408,10 +414,20 @@ export class Packet<Chain extends HoprCoreConnector> extends Uint8Array {
         (_channelBalance: Types.ChannelBalance) => this.node.interactions.payments.open.interact(target, channelBalance)
       )
 
-      this._ticket = await channel.ticket.create(forwardedFunds, this.header.encryptionKey, {
-        bytes: this.buffer,
-        offset: this.ticketOffset,
-      })
+      const newFee = {
+        toU8a() {
+          return forwardedFunds.toBuffer('be', 32)
+        },
+      }
+      this._ticket = await channel.ticket.create(
+        // @ts-ignore
+        newFee,
+        this.header.encryptionKey,
+        {
+          bytes: this.buffer,
+          offset: this.ticketOffset,
+        }
+      )
     } else if (forwardedFunds.isZero()) {
       this._ticket = await this.node.paymentChannels.channel.createDummyChannelTicket(
         await this.node.paymentChannels.utils.pubKeyToAccountId(target.pubKey.marshal()),

@@ -12,11 +12,11 @@ import { u8aEquals, durations } from '@hoprnet/hopr-utils'
 
 import { MAX_HOPS } from '../../constants'
 
-import BN from 'bn.js'
 import LevelUp from 'levelup'
 import MemDown from 'memdown'
 
-const WIN_PROB = new BN(1)
+import Debug from 'debug'
+const log = Debug(`hopr-core:testing`)
 
 const TWO_SECONDS = durations.seconds(2)
 
@@ -32,7 +32,7 @@ async function startTestnet() {
 
 async function generateNode(id: number): Promise<Hopr<HoprEthereum>> {
   // Start HOPR in DEBUG_MODE and use demo seeds
-  return (await Hopr.create({
+  const node = (await Hopr.create({
     id,
     db: new LevelUp(MemDown()),
     connector: HoprEthereum,
@@ -40,6 +40,10 @@ async function generateNode(id: number): Promise<Hopr<HoprEthereum>> {
     network: 'ethereum',
     debug: true,
   })) as Hopr<HoprEthereum>
+
+  await node.paymentChannels.initOnchainValues()
+
+  return node
 }
 
 const GANACHE_URI = `ws://127.0.0.1:9545`
@@ -59,7 +63,7 @@ describe('test packet composition and decomposition', function () {
   it('should create packets and decompose them', async function () {
     jest.setTimeout(durations.seconds(25))
 
-    const nodes = [await generateNode(0), await generateNode(1), await generateNode(2), await generateNode(3)]
+    const nodes = await Promise.all(Array.from({ length: MAX_HOPS + 1 }).map((_value, index) => generateNode(index)))
 
     connectionHelper(nodes)
 
@@ -99,6 +103,8 @@ describe('test packet composition and decomposition', function () {
     }
 
     await Promise.all(msgReceivedPromises)
+
+    log(`after Promise.all`)
 
     await Promise.all(nodes.map((node: Hopr<HoprEthereum>) => node.stop()))
   })

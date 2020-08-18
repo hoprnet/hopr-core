@@ -410,17 +410,17 @@
     "@ethersproject/rlp" "^5.0.0"
     "@ethersproject/signing-key" "^5.0.0"
 
-"@hoprnet/hopr-core-connector-interface@1.5.2":
-  version "1.5.2"
-  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-core-connector-interface/-/hopr-core-connector-interface-1.5.2.tgz#df5fc35ea0c004837c21ffb9edbd7410196f0dc5"
-  integrity sha512-MJ9RZUAO2e1Oten1eRLJORS/K9udArWHow2r9VHMj82Uf3WcbIhjPLDYHxNa/HyAo1mrqargvINlC1yui5yW4w==
+"@hoprnet/hopr-core-connector-interface@1.5.5":
+  version "1.5.5"
+  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-core-connector-interface/-/hopr-core-connector-interface-1.5.5.tgz#a188a87574375126a6ed93fe07a2d858f29e0fd4"
+  integrity sha512-aYjrEpxuX6n+8RNkHB1W2F3gJeT3MCn8XiGTAPHcu4nLSPf+14e8FPFEHxELdsyWlrPNTCjguehdDN4milnGCw==
 
-"@hoprnet/hopr-core-ethereum@0.2.0":
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-core-ethereum/-/hopr-core-ethereum-0.2.0.tgz#b33fe1327be3ce0fd88ea0d2f03e54c7ec7382a9"
-  integrity sha512-w9bl/la7WIAq9KIAEj3QDSyqbHIIx6bf7dTE1PMOLdYgu5dOiCRQSysK+9j6g7A1z6xj2wTkKxd8wubo1H9p/g==
+"@hoprnet/hopr-core-ethereum@0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-core-ethereum/-/hopr-core-ethereum-0.2.1.tgz#0f43fd46de9b717331133f4bbc99e39b70eae008"
+  integrity sha512-vwyy1YnmyPdtqY/upM6xUvXR2AfCikuEXkI7IOIorGhuzL6OB63saisfkFM3weXKUFg1Ndh0Dq/gnOYTuVDlSA==
   dependencies:
-    "@hoprnet/hopr-utils" "^0.3"
+    "@hoprnet/hopr-utils" "^0.4.0"
     bn.js "^5.1.2"
     chalk "^4.1.0"
     debug "^4.1.1"
@@ -468,13 +468,23 @@
     "@hoprnet/hopr-demo-seeds" "1.8.0"
     ganache-core "^2.10.2"
 
-"@hoprnet/hopr-utils@0.3.0", "@hoprnet/hopr-utils@^0.3":
+"@hoprnet/hopr-utils@0.3.0":
   version "0.3.0"
   resolved "https://registry.yarnpkg.com/@hoprnet/hopr-utils/-/hopr-utils-0.3.0.tgz#31c6510d9adcc1f63fe3b72075ee7c383ef48b8f"
   integrity sha512-whfmbE/DfKSpmeDNGyOOwHZfzTufsvtmJCFTkI7y5jt4/570AbaR3+Q2dFfNR1Zj1IHXVpC2JjVUaYk8ZiS3gg==
   dependencies:
     bignumber.js "^9.0.0"
     chalk "^4.1.0"
+    strip-ansi "^6.0.0"
+
+"@hoprnet/hopr-utils@^0.4.0":
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-utils/-/hopr-utils-0.4.0.tgz#b0ff6029917cbf898ec9dd9a731e2b828dd5e837"
+  integrity sha512-HQd3Dfp4C269/lJXnY7XW7zVGqlMDzrlZF7lIl/MDCkWgtA03V98N4lhK4ttU7D58m9Vobx7E1ktJQF09wE3cA==
+  dependencies:
+    bignumber.js "^9.0.0"
+    chalk "^4.1.0"
+    peer-info "^0.17.5"
     strip-ansi "^6.0.0"
 
 "@istanbuljs/load-nyc-config@^1.0.0":
@@ -1135,9 +1145,9 @@
     "@types/abstract-leveldown" "*"
 
 "@types/node@*":
-  version "14.0.27"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-14.0.27.tgz#a151873af5a5e851b51b3b065c9e63390a9e0eb1"
-  integrity sha512-kVrqXhbclHNHGu9ztnAwSncIgJv/FaxmzXJvGXNdcCpV1b8u1/Mi6z6m0vwy0LzKeXFTPLH0NzwmoJ3fNCIq0g==
+  version "14.6.0"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-14.6.0.tgz#7d4411bf5157339337d7cff864d9ff45f177b499"
+  integrity sha512-mikldZQitV94akrc4sCcSjtJfsTKt4p+e/s0AGscVA6XArQ9kFclP+ZiYUMnq987rc6QlYxXv/EivqlfSLxpKA==
 
 "@types/node@^10.12.18", "@types/node@^10.3.2":
   version "10.17.28"
@@ -1436,9 +1446,9 @@ any-promise@1.3.0, any-promise@^1.3.0:
   integrity sha1-q8av7tzqUugJzcA3au0845Y10X8=
 
 any-signal@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/any-signal/-/any-signal-1.1.0.tgz#8e43cd0ae03266261d5061595ecf8aaad1828872"
-  integrity sha512-mtwqpy58ys+/dRdH5Z8VArUluVrfz9/5BXo8tvSZ9kcQr3k9yyOPnGrYCBJQfcC5IlMrr63kDBlf5GyQCFn+Fw==
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/any-signal/-/any-signal-1.2.0.tgz#d755f690896f3e75c4a07480f429a1ee7f8db3b4"
+  integrity sha512-Cl08k4xItix3jvu4cxO/dt2rQ6iUAjO66pTyRMub+WL1VXeAyZydCpD8GqWTPKfdL28U0R0UucmQVsUsBnvCmQ==
   dependencies:
     abort-controller "^3.0.0"
 
@@ -2665,9 +2675,9 @@ camelcase@^6.0.0:
   integrity sha512-8KMDF1Vz2gzOq54ONPJS65IvTUaB1cHJ2DMM7MbPmLZljDH1qpzzLsWdiN9pHh6qvkRVDTi/07+eNGch/oLU4w==
 
 caniuse-lite@^1.0.30000844:
-  version "1.0.30001114"
-  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001114.tgz#2e88119afb332ead5eaa330e332e951b1c4bfea9"
-  integrity sha512-ml/zTsfNBM+T1+mjglWRPgVsu2L76GAaADKX5f4t0pbhttEp0WMawJsHDYlFkVZkoA+89uvBRrVrEE4oqenzXQ==
+  version "1.0.30001115"
+  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001115.tgz#c04cd828883ba47f6f776312e0817bcc9040cfa4"
+  integrity sha512-NZrG0439ePYna44lJX8evHX2L7Z3/z3qjVLnHgbBb/duNEnGo348u+BQS5o4HTWcrb++100dHFrU36IesIrC1Q==
 
 capture-exit@^2.0.0:
   version "2.0.0"
@@ -3634,9 +3644,9 @@ ee-first@1.1.1:
   integrity sha1-WQxhFWsK4vTwJVcyoViyZrxWsh0=
 
 electron-to-chromium@^1.3.47:
-  version "1.3.533"
-  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.3.533.tgz#d7e5ca4d57e9bc99af87efbe13e7be5dde729b0f"
-  integrity sha512-YqAL+NXOzjBnpY+dcOKDlZybJDCOzgsq4koW3fvyty/ldTmsb4QazZpOWmVvZ2m0t5jbBf7L0lIGU3BUipwG+A==
+  version "1.3.534"
+  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.3.534.tgz#fc7af8518dd00a5b22a24aed3f116b5d097e2330"
+  integrity sha512-7x2S3yUrspNHQOoPk+Eo+iHViSiJiEGPI6BpmLy1eT2KRNGCkBt/NUYqjfXLd1DpDCQp7n3+LfA1RkbG+LqTZQ==
 
 elliptic@6.3.3:
   version "6.3.3"
@@ -8472,7 +8482,7 @@ pbkdf2@^3.0.17, pbkdf2@^3.0.3, pbkdf2@^3.0.9:
     safe-buffer "^5.0.1"
     sha.js "^2.4.8"
 
-peer-id@^0.13.11, peer-id@^0.13.6, peer-id@~0.13.13, peer-id@~0.13.2, peer-id@~0.13.5:
+peer-id@^0.13.11, peer-id@^0.13.6, peer-id@~0.13, peer-id@~0.13.2, peer-id@~0.13.5:
   version "0.13.13"
   resolved "https://registry.yarnpkg.com/peer-id/-/peer-id-0.13.13.tgz#63c3561f1e602ec9d7a205103488256d59dd299a"
   integrity sha512-5FpBXN6PDTcHs51gkHWPf0OIQZAO3Z10i6lWc+GaoxTU4bQHtsoKFnhxoXo5Ze04JblpzIrtowkluLSCLP1WYg==
@@ -8485,7 +8495,7 @@ peer-id@^0.13.11, peer-id@^0.13.6, peer-id@~0.13.13, peer-id@~0.13.2, peer-id@~0
     multihashes "^1.0.1"
     protons "^1.0.2"
 
-peer-info@^0.17.0, peer-info@~0.17.0, peer-info@~0.17.5:
+peer-info@^0.17.0, peer-info@^0.17.5, peer-info@~0.17.0, peer-info@~0.17.5:
   version "0.17.5"
   resolved "https://registry.yarnpkg.com/peer-info/-/peer-info-0.17.5.tgz#80afc709e03069cf94a29d8fcfa0426140fa7b69"
   integrity sha512-ebbbnvdCnb0onWuW+QNXO4KvLPuQ+kih3zezhov2uxHqA6VLbtzMUyQ06IHtwYLr50AYYWyBOSn17g4zEBsFpw==
@@ -10189,9 +10199,9 @@ truffle-plugin-verify@^0.3.11:
     sol-merger "3.0.1"
 
 truffle@^5.1.23:
-  version "5.1.40"
-  resolved "https://registry.yarnpkg.com/truffle/-/truffle-5.1.40.tgz#f93a147612b3b083354808dd0abbe6723bd04f7f"
-  integrity sha512-frlNrytZLxy3PwN6SZ7oL7wmXr+tyNw3oDq3GwAwI7EM/koRwIyCNvSxnwTBtzYyC7Z4D0BOGQUnCh/Tuv451Q==
+  version "5.1.41"
+  resolved "https://registry.yarnpkg.com/truffle/-/truffle-5.1.41.tgz#662a0f2816c4e5a12bae25c0b68d908478ff4606"
+  integrity sha512-6vphA82Os7HvrzqkMy0o2kxP0SYsf7glHE8U8jk15lbUNOy76SrBLmTi7at7xFkIq6LMgv03YRf0EFEN/qwAxg==
   dependencies:
     app-module-path "^2.2.0"
     mocha "8.0.1"
