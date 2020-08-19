@@ -387,7 +387,7 @@ export class Packet<Chain extends HoprCoreConnector> extends Uint8Array {
 
     this.node.log(
       `Received ${chalk.magenta(
-        `${this.node.paymentChannels.utils.convertUnit(receivedMoney, 'wei', 'eth').toString()} ETH`
+        `${this.node.paymentChannels.utils.convertUnit(receivedMoney, 'wei', 'ether').toString()} ETH`
       )} on channel ${chalk.yellow(channelId.toString())}.`
     )
 
