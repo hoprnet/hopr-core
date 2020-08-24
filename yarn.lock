@@ -410,15 +410,15 @@
     "@ethersproject/rlp" "^5.0.0"
     "@ethersproject/signing-key" "^5.0.0"
 
-"@hoprnet/hopr-core-connector-interface@1.5.5":
-  version "1.5.5"
-  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-core-connector-interface/-/hopr-core-connector-interface-1.5.5.tgz#a188a87574375126a6ed93fe07a2d858f29e0fd4"
-  integrity sha512-aYjrEpxuX6n+8RNkHB1W2F3gJeT3MCn8XiGTAPHcu4nLSPf+14e8FPFEHxELdsyWlrPNTCjguehdDN4milnGCw==
+"@hoprnet/hopr-core-connector-interface@1.5.6":
+  version "1.5.6"
+  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-core-connector-interface/-/hopr-core-connector-interface-1.5.6.tgz#ded55ed9b041efcfe3da6e2c37eb330fa5bebac1"
+  integrity sha512-3wbVxCq22O0l0dqHzEZ1IVP27Q6TuG122yPRbctso3hGdr0L98QTvTvaHIRkDKKS7SNbc4uqwdT/zDobLTaxXw==
 
-"@hoprnet/hopr-core-ethereum@0.2.1":
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-core-ethereum/-/hopr-core-ethereum-0.2.1.tgz#0f43fd46de9b717331133f4bbc99e39b70eae008"
-  integrity sha512-vwyy1YnmyPdtqY/upM6xUvXR2AfCikuEXkI7IOIorGhuzL6OB63saisfkFM3weXKUFg1Ndh0Dq/gnOYTuVDlSA==
+"@hoprnet/hopr-core-ethereum@0.2.2":
+  version "0.2.2"
+  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-core-ethereum/-/hopr-core-ethereum-0.2.2.tgz#070536d9520000bf83119ce8f8570804a55c7782"
+  integrity sha512-rdKWrgVGxk5Pj7x9IaU585LxfKplwRfhVQ7HaZItgTDnfTn2hcypyOnDxuNDIwBF2Qx7AwgqxhKqn2nPAQwlPg==
   dependencies:
     "@hoprnet/hopr-utils" "^0.4.0"
     bn.js "^5.1.2"
