@@ -2,7 +2,6 @@ import * as stun from 'webrtc-stun'
 
 import net, { AddressInfo } from 'net'
 
-import { durations } from '@hoprnet/hopr-utils'
 import Multiaddr from 'multiaddr'
 
 export type Interface = {
@@ -11,7 +10,7 @@ export type Interface = {
   address: string
 }
 
-const STUN_TIMEOUT = durations.seconds(4)
+export const STUN_TIMEOUT = 500
 
 export function handleStunRequest(address: AddressInfo, data: Buffer): Buffer {
   const req = stun.createBlank()
@@ -32,7 +31,13 @@ export function handleStunRequest(address: AddressInfo, data: Buffer): Buffer {
 }
 
 export function getPublicIp(myAddress: Multiaddr, stunServer: Multiaddr): Promise<AddressInfo> {
-  return new Promise<AddressInfo>((resolve) => {
+  return new Promise<AddressInfo>((resolve, reject) => {
+    let finished = false
+    setTimeout(() => {
+      finished = true
+      reject()
+    }, STUN_TIMEOUT)
+
     const cOptsOwn = myAddress.nodeAddress()
     const cOptsStun = stunServer.nodeAddress()
 
@@ -46,6 +51,12 @@ export function getPublicIp(myAddress: Multiaddr, stunServer: Multiaddr): Promis
       () => {
         const transactionId = stun.generateTransactionId()
 
+        if (finished) {
+          socket.destroy()
+          socket.once('close', () => setTimeout(reject, 50))
+          return
+        }
+
         socket.on('data', (data: Buffer) => {
           const res = stun.createBlank()
 
@@ -56,7 +67,9 @@ export function getPublicIp(myAddress: Multiaddr, stunServer: Multiaddr): Promis
               if (attr) {
                 socket.destroy()
 
-                socket.once('close', () => setTimeout(() => resolve(res.getXorMappedAddressAttribute()), 50))
+                if (!finished) {
+                  socket.once('close', () => setTimeout(() => resolve(res.getXorMappedAddressAttribute()), 50))
+                }
               }
             }
           }
