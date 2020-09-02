@@ -176,12 +176,15 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
    */
   async connectToBootstrapServers(): Promise<void> {
     const results = await Promise.all(
-      this.bootstrapServers.map((addr: PeerInfo) =>
-        this.dial(addr).then(
-          () => true,
-          () => false
+      this.bootstrapServers
+        // prevents from dialing ourself
+        .filter((addr: PeerInfo) => !addr.id.equals(this.peerInfo.id))
+        .map((addr: PeerInfo) =>
+          this.dial(addr).then(
+            () => true,
+            () => false
+          )
         )
-      )
     )
 
     if (!results.some((online: boolean) => online)) {
@@ -198,9 +201,7 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
   async up(): Promise<Hopr<Chain>> {
     await super.start()
 
-    if (!this.isBootstrapNode && this.bootstrapServers.length != 0) {
-      await this.connectToBootstrapServers()
-    }
+    await this.connectToBootstrapServers()
 
     this.log(`Available under the following addresses:`)
 
