@@ -45,6 +45,7 @@ class Relay {
   private _registrar: Registrar
   private _handle: (protocols: string[] | string, handler: (connection: Handler) => void) => void
   private _dht: { peerRouting: PeerRouting } | undefined
+  private _peerInfo: PeerInfo
 
   private on: (event: 'peer:connect', handler: (peer: PeerInfo) => void) => void
 
@@ -54,6 +55,7 @@ class Relay {
     this._dialer = libp2p.dialer
     this._registrar = libp2p.registrar
     this._dht = libp2p._dht
+    this._peerInfo = libp2p.peerInfo
 
     this.connHandler = _connHandler
 
@@ -106,29 +108,31 @@ class Relay {
     }
 
     let [relayConnection, index] = await Promise.race(
-      relays.map(
-        (relay: PeerInfo, index: number): Promise<[Connection, number]> => {
-          return new Promise<[Connection, number]>(async (resolve) => {
-            let relayConnection = this._registrar.getConnection(relay)
+      relays
+        .filter((relay: PeerInfo) => !this._peerInfo.id.isEqual(relay.id))
+        .map(
+          (relay: PeerInfo, index: number): Promise<[Connection, number]> => {
+            return new Promise<[Connection, number]>(async (resolve) => {
+              let relayConnection = this._registrar.getConnection(relay)
 
-            if (!relayConnection) {
-              relayConnection = await this._dialer
-                .connectToPeer(relay, { signal: options?.signal })
-                .catch(async (err) => {
-                  if (this._dht != null && (options == null || options.signal == null || !options.signal.aborted)) {
-                    relay = await this._dht.peerRouting.findPeer(relay.id)
+              if (!relayConnection) {
+                relayConnection = await this._dialer
+                  .connectToPeer(relay, { signal: options?.signal })
+                  .catch(async (err) => {
+                    if (this._dht != null && (options == null || options.signal == null || !options.signal.aborted)) {
+                      relay = await this._dht.peerRouting.findPeer(relay.id)
 
-                    return this._dialer.connectToPeer(relay, { signal: options?.signal })
-                  }
+                      return this._dialer.connectToPeer(relay, { signal: options?.signal })
+                    }
 
-                  throw Error(`Could not reach relay node. Error was ${err}`)
-                })
-            }
+                    throw Error(`Could not reach relay node. Error was ${err}`)
+                  })
+              }
 
-            resolve([relayConnection, index])
-          })
-        }
-      )
+              resolve([relayConnection, index])
+            })
+          }
+        )
     )
 
     if (!relayConnection) {
