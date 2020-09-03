@@ -133,7 +133,7 @@ class TCP {
     let webRTCsendBuffer: Pushable<Uint8Array>
     let webRTCrecvBuffer: Pushable<Uint8Array>
 
-    let socket: Promise<net.Socket>
+    let socket: Promise<Socket>
 
     if (this._useWebRTC) {
       webRTCsendBuffer = pushable<Uint8Array>()
@@ -161,45 +161,48 @@ class TCP {
     )
 
     if (this._useWebRTC) {
+      let mAddrConn: MultiaddrConnection
+      let webRTCSocket: Socket
       try {
-        let _socket = await socket
+        webRTCSocket = await socket
 
         webRTCrecvBuffer.end()
         webRTCsendBuffer.end()
 
-        conn = await this._upgrader.upgradeInbound(
-          socketToConn(_socket, {
-            remoteAddr: Multiaddr(`/p2p/${counterparty.toB58String()}`),
-            localAddr: Multiaddr(`/p2p/${this._peerInfo.id.toB58String()}`),
-          })
-        )
-      } catch (err) {
-        error(`error while handling: ${err}`)
+        mAddrConn = socketToConn(webRTCSocket, {
+          remoteAddr: Multiaddr(`/p2p/${counterparty.toB58String()}`),
+          localAddr: Multiaddr(`/p2p/${this._peerInfo.id.toB58String()}`),
+        })
 
-        webRTCrecvBuffer.end()
-        webRTCsendBuffer.end()
+        conn = await this._upgrader.upgradeInbound(mAddrConn)
 
-        conn = await this._upgrader.upgradeInbound(
-          this.relayToConn({
-            stream: myStream.relayStream,
-            counterparty,
-            connection,
-          })
-        )
-      }
-    } else {
-      try {
-        conn = await this._upgrader.upgradeInbound(
-          this.relayToConn({
-            stream: myStream.relayStream,
-            counterparty,
-            connection,
-          })
-        )
-      } catch (err) {
-        error(err)
+        this.connHandler?.(conn)
         return
+      } catch (err) {
+        error(`Could not upgrade to WebRTC connection. Error was: ${err}`)
+
+        webRTCrecvBuffer.end()
+        webRTCsendBuffer.end()
+
+        if (mAddrConn != null) {
+          mAddrConn.close()
+        } else if (webRTCSocket != null) {
+          webRTCSocket.destroy()
+        }
       }
+    }
+
+    try {
+      conn = await this._upgrader.upgradeInbound(
+        this.relayToConn({
+          stream: myStream.relayStream,
+          counterparty,
+          connection,
+        })
+      )
+    } catch (err) {
+      error(`Could not upgrade relayed connection. Error was: ${err}`)
+      return
     }
 
     this.connHandler?.(conn)
@@ -229,7 +232,9 @@ class TCP {
 
     if (this.relays === undefined) {
       throw Error(
-        `Could not connect ${chalk.yellow(ma.toString())} because there was no relay defined.${
+        `Could not connect ${chalk.yellow(
+          ma.toString()
+        )} because we can't connect directly and we have no potential relays.${
           error != null ? ` Connection error was:\n${error}` : ''
         }`
       )
@@ -273,7 +278,7 @@ class TCP {
       throw new AbortError()
     }
 
-    let socket: Promise<net.Socket>
+    let socket: Promise<Socket>
 
     if (this._useWebRTC) {
       webRTCsendBuffer = pushable<Uint8Array>()
@@ -302,48 +307,42 @@ class TCP {
     )
 
     if (this._useWebRTC) {
+      let mAddrConn: MultiaddrConnection
+      let webRTCSocket: Socket
       try {
-        let _socket = await socket
+        webRTCSocket = await socket
 
         webRTCsendBuffer.end()
         webRTCrecvBuffer.end()
 
-        conn = await this._upgrader.upgradeOutbound(
-          socketToConn(_socket, {
-            signal: options.signal,
-            remoteAddr: Multiaddr(`/p2p/${destination.toB58String()}`),
-            localAddr: Multiaddr(`/p2p/${this._peerInfo.id.toB58String()}`),
-          })
-        )
+        mAddrConn = socketToConn(webRTCSocket, {
+          signal: options.signal,
+          remoteAddr: Multiaddr(`/p2p/${destination.toB58String()}`),
+          localAddr: Multiaddr(`/p2p/${this._peerInfo.id.toB58String()}`),
+        })
+
+        return await this._upgrader.upgradeOutbound(mAddrConn)
       } catch (err) {
         error(`error while dialling: ${err}`)
+
         webRTCsendBuffer.end()
         webRTCrecvBuffer.end()
 
-        conn = await this._upgrader.upgradeOutbound(
-          this.relayToConn({
-            stream: stream.relayStream,
-            counterparty: destination,
-            connection: relayConnection.connection,
-          })
-        )
-      }
-    } else {
-      try {
-        conn = await this._upgrader.upgradeOutbound(
-          this.relayToConn({
-            stream: stream.relayStream,
-            counterparty: destination,
-            connection: relayConnection.connection,
-          })
-        )
-      } catch (err) {
-        error(err)
-        throw err
+        if (mAddrConn != null) {
+          mAddrConn.close()
+        } else if (webRTCSocket != null) {
+          webRTCSocket.destroy()
+        }
       }
     }
 
-    return conn
+    return await this._upgrader.upgradeOutbound(
+      this.relayToConn({
+        stream: stream.relayStream,
+        counterparty: destination,
+        connection: relayConnection.connection,
+      })
+    )
   }
 
   async dialDirectly(ma: Multiaddr, options?: DialOptions): Promise<Connection> {
@@ -427,7 +426,7 @@ class TCP {
    * @param {function(Connection)} handler
    * @returns {Listener} A TCP listener
    */
-  createListener(options: any, handler: (connection: any) => void): Listener {
+  createListener(options: any, handler: (connection: Connection) => void): Listener {
     if (typeof options === 'function') {
       handler = options
       options = {}
