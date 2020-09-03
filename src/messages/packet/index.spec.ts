@@ -103,8 +103,6 @@ describe('test packet composition and decomposition', function () {
 
       await Promise.all(msgReceivedPromises)
 
-      log(`after Promise.all`)
-
       await Promise.all(nodes.map((node: Hopr<HoprEthereum>) => node.stop()))
     },
     durations.seconds(25)
