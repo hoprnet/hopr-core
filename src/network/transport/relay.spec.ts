@@ -413,4 +413,23 @@ describe('should create a socket and connect to it', function () {
 
     await Promise.all([sender.stop(), relay.stop(), counterparty.stop()])
   })
+
+  it('should not use itself as relay node', async function () {
+    let [sender, counterparty] = await Promise.all([
+      generateNode({ id: 0, ipv4: true }),
+      generateNode({ id: 2, ipv4: true }),
+    ])
+
+    let errThrown = false
+
+    try {
+      await sender.relay.establishRelayedConnection(Multiaddr(`/p2p/${counterparty.peerInfo.id.toB58String()}`), [
+        sender.peerInfo,
+      ])
+    } catch (err) {
+      errThrown = true
+    }
+
+    assert(errThrown, `Must throw an error if there is no other opportunity than calling ourself`)
+  })
 })

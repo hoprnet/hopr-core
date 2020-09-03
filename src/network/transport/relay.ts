@@ -107,32 +107,36 @@ class Relay {
       throw new AbortError()
     }
 
+    const potentialRelays = relays.filter((relay: PeerInfo) => !relay.id.equals(this._peerInfo.id))
+
+    if (potentialRelays.length == 0) {
+      throw Error(`Could not establish relayed connection without any valid relays`)
+    }
+
     let [relayConnection, index] = await Promise.race(
-      relays
-        .filter((relay: PeerInfo) => !this._peerInfo.id.isEqual(relay.id))
-        .map(
-          (relay: PeerInfo, index: number): Promise<[Connection, number]> => {
-            return new Promise<[Connection, number]>(async (resolve) => {
-              let relayConnection = this._registrar.getConnection(relay)
+      potentialRelays.map(
+        (relay: PeerInfo, index: number): Promise<[Connection, number]> => {
+          return new Promise<[Connection, number]>(async (resolve) => {
+            let relayConnection = this._registrar.getConnection(relay)
 
-              if (!relayConnection) {
-                relayConnection = await this._dialer
-                  .connectToPeer(relay, { signal: options?.signal })
-                  .catch(async (err) => {
-                    if (this._dht != null && (options == null || options.signal == null || !options.signal.aborted)) {
-                      relay = await this._dht.peerRouting.findPeer(relay.id)
+            if (!relayConnection) {
+              relayConnection = await this._dialer
+                .connectToPeer(relay, { signal: options?.signal })
+                .catch(async (err) => {
+                  if (this._dht != null && (options == null || options.signal == null || !options.signal.aborted)) {
+                    relay = await this._dht.peerRouting.findPeer(relay.id)
 
-                      return this._dialer.connectToPeer(relay, { signal: options?.signal })
-                    }
+                    return this._dialer.connectToPeer(relay, { signal: options?.signal })
+                  }
 
-                    throw Error(`Could not reach relay node. Error was ${err}`)
-                  })
-              }
+                  throw Error(`Could not reach relay node. Error was ${err}`)
+                })
+            }
 
-              resolve([relayConnection, index])
-            })
-          }
-        )
+            resolve([relayConnection, index])
+          })
+        }
+      )
     )
 
     if (!relayConnection) {
