@@ -51,8 +51,6 @@ describe('check heartbeat mechanism', function () {
       heartbeat: new EventEmitter(),
     } as Hopr<HoprCoreConnector>['network']
 
-    node.log = Debug(`${chalk.blue(node.peerInfo.id.toB58String())}: `)
-
     return (node as unknown) as Hopr<HoprCoreConnector>
   }
 

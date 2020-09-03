@@ -13,6 +13,9 @@ import { PacketTag } from '../../dbKeys'
 import Message from './message'
 import { LevelUp } from 'levelup'
 
+import Debug from 'debug'
+const log = Debug(`hopr-core`)
+
 import Hopr from '../../'
 
 import HoprCoreConnector, { Types } from '@hoprnet/hopr-core-connector-interface'
@@ -385,7 +388,7 @@ export class Packet<Chain extends HoprCoreConnector> extends Uint8Array {
       throw Error(`Cannot forward ${forwardedFunds.toNumber()}`)
     }
 
-    this.node.log(
+    log(
       `Received ${chalk.magenta(
         `${this.node.paymentChannels.utils.convertUnit(receivedMoney, 'wei', 'ether').toString()} ETH`
       )} on channel ${chalk.yellow(channelId.toString())}.`

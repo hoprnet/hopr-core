@@ -53,8 +53,6 @@ describe('test crawler', function () {
 
     node.on('peer:connect', (peerInfo: PeerInfo) => node.peerStore.put(peerInfo))
 
-    node.log = Debug(`${chalk.blue(node.peerInfo.id.toB58String())}: `)
-
     return (node as unknown) as Hopr<HoprCoreConnector>
   }
 

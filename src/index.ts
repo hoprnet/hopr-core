@@ -21,7 +21,9 @@ import levelup, { LevelUp } from 'levelup'
 import leveldown from 'leveldown'
 import Multiaddr from 'multiaddr'
 import chalk from 'chalk'
-import Debug, { Debugger } from 'debug'
+
+import Debug from 'debug'
+const log = Debug(`hopr-core`)
 
 import PeerId from 'peer-id'
 import PeerInfo from 'peer-info'
@@ -64,7 +66,6 @@ const MAX_ITERATIONS_PATH_SELECTION = 2000
 export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
   public interactions: Interactions<Chain>
   public network: Network<Chain>
-  public log: Debugger
   public dbKeys = DbKeys
   public output: (arr: Uint8Array) => void
   public isBootstrapNode: boolean
@@ -91,8 +92,6 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
     findPeer: (addr: PeerId) => Promise<PeerInfo>
   }
   declare handle: (protocol: string[], handler: (struct: { connection: any; stream: any }) => void) => void
-  declare start: () => Promise<void>
-  declare stop: () => Promise<void>
   declare on: (str: string, handler: (...props: any[]) => void) => void
 
   /**
@@ -138,8 +137,6 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
 
     this.interactions = new Interactions(this)
     this.network = new Network(this, options)
-
-    this.log = Debug(`${chalk.blue(this.peerInfo.id.toB58String())}: `)
   }
 
   /**
@@ -166,7 +163,7 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
       debug: options.debug,
     })) as CoreConnector
 
-    return await new Hopr<CoreConnector>(options, db, connector).up()
+    return await new Hopr<CoreConnector>(options, db, connector).start()
   }
 
   /**
@@ -175,20 +172,31 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
    * @throws an error if none of the bootstrapservers is online
    */
   async connectToBootstrapServers(): Promise<void> {
-    const results = await Promise.all(
-      this.bootstrapServers
-        // prevents from dialing ourself
-        .filter((addr: PeerInfo) => !addr.id.equals(this.peerInfo.id))
-        .map((addr: PeerInfo) =>
-          this.dial(addr).then(
-            () => true,
-            () => false
-          )
+    const potentialBootstrapServers = this.bootstrapServers.filter(
+      (addr: PeerInfo) => !addr.id.equals(this.peerInfo.id)
+    )
+
+    if (potentialBootstrapServers.length == 0) {
+      if (!this.isBootstrapNode) {
+        throw Error(
+          `Can't start HOPR without any known bootstrap server. You might want to start this node as a bootstrap server.`
         )
+      }
+
+      return
+    }
+
+    const results = await Promise.all(
+      potentialBootstrapServers.map((addr: PeerInfo) =>
+        this.dial(addr).then(
+          () => true,
+          () => false
+        )
+      )
     )
 
     if (!results.some((online: boolean) => online)) {
-      throw Error('Unable to connect to any bootstrap server.')
+      throw Error('Unable to connect to any known bootstrap server.')
     }
   }
 
@@ -198,20 +206,21 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
    *
    * @param options
    */
-  async up(): Promise<Hopr<Chain>> {
-    await super.start()
+  async start(): Promise<Hopr<Chain>> {
+    await Promise.all([
+      super.start().then(() =>
+        Promise.all([
+          // prettier-ignore
+          this.connectToBootstrapServers(),
+          this.network.start(),
+        ])
+      ),
+      this.paymentChannels?.start(),
+    ])
 
-    await this.connectToBootstrapServers()
+    log(`Available under the following addresses:`)
 
-    this.log(`Available under the following addresses:`)
-
-    this.peerInfo.multiaddrs.forEach((ma: Multiaddr) => {
-      this.log(ma.toString())
-    })
-
-    await this.paymentChannels?.start()
-
-    await this.network.start()
+    this.peerInfo.multiaddrs.forEach((ma: Multiaddr) => log(ma.toString()))
 
     return this
   }
@@ -219,16 +228,16 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
   /**
    * Shuts down the node and saves keys and peerBook in the database
    */
-  async down(): Promise<void> {
+  async stop(): Promise<void> {
     await this.db?.close()
 
-    this.log(`Database closed.`)
+    log(`Database closed.`)
 
     await this.network.stop()
 
     await this.paymentChannels?.stop()
 
-    this.log(`Connector stopped.`)
+    log(`Connector stopped.`)
 
     await super.stop()
   }
@@ -297,7 +306,7 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
     try {
       await Promise.all(promises)
     } catch (err) {
-      this.log(`Could not send message. Error was: ${chalk.red(err.message)}`)
+      log(`Could not send message. Error was: ${chalk.red(err.message)}`)
       throw err
     }
   }
