@@ -18,6 +18,7 @@ export const WEBRTC_TIMEOUT = 1700
 
 export const OK = new TextEncoder().encode('OK')
 export const FAIL = new TextEncoder().encode('FAIL')
+export const FAIL_COULD_NOT_REACH_COUNTERPARTY = new TextEncoder().encode('FAIL_COULD_NOT_REACH_COUNTERPARTY')
 
 export const RELAY_REGISTER = '/hopr/relay-register/0.0.1'
 export const DELIVERY_REGISTER = '/hopr/delivery-register/0.0.1'

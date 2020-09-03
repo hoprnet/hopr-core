@@ -71,6 +71,9 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
   public isBootstrapNode: boolean
   public bootstrapServers: PeerInfo[]
 
+  // Allows us to construct HOPR with falsy options
+  public _debug: boolean
+
   // @TODO add libp2p types
   declare emit: (event: string, ...args: any[]) => void
   declare dial: (addr: Multiaddr | PeerInfo | PeerId, options?: { signal: AbortSignal }) => Promise<Handler>
@@ -137,6 +140,7 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
 
     this.interactions = new Interactions(this)
     this.network = new Network(this, options)
+    this._debug = options.debug
   }
 
   /**
@@ -177,7 +181,7 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
     )
 
     if (potentialBootstrapServers.length == 0) {
-      if (!this.isBootstrapNode) {
+      if (this._debug != true && !this.isBootstrapNode) {
         throw Error(
           `Can't start HOPR without any known bootstrap server. You might want to start this node as a bootstrap server.`
         )
@@ -229,17 +233,20 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
    * Shuts down the node and saves keys and peerBook in the database
    */
   async stop(): Promise<void> {
-    await this.db?.close()
+    await Promise.all([
+      // prettier-ignore
+      this.network.stop(),
+      this.paymentChannels?.stop().then(() => log(`Connector stopped.`)),
+    ])
 
-    log(`Database closed.`)
+    await Promise.all([
+      // prettier-ignore
+      this.db?.close().then(() => log(`Database closed.`)),
+      super.stop(),
+    ])
 
-    await this.network.stop()
-
-    await this.paymentChannels?.stop()
-
-    log(`Connector stopped.`)
-
-    await super.stop()
+    // Give the operating system some extra time to close the sockets
+    await new Promise((resolve) => setTimeout(resolve, 100))
   }
 
   /**
