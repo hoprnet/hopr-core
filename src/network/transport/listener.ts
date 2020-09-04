@@ -1,4 +1,6 @@
-import net, { AddressInfo, Server } from 'net'
+import net, { AddressInfo, Socket as TCPSocket } from 'net'
+import dgram, { RemoteInfo } from 'dgram'
+
 import EventEmitter from 'events'
 import debug from 'debug'
 
@@ -8,21 +10,10 @@ const error = debug('hopr-core:transport:listener:error')
 import { socketToConn } from './socket-to-conn'
 import { CODE_P2P } from './constants'
 import { getMultiaddrs, multiaddrToNetConfig } from './utils'
-import { MultiaddrConnection, Connection, Upgrader } from './types'
+import { MultiaddrConnection, Connection, Upgrader, Libp2pServer } from './types'
 import Multiaddr from 'multiaddr'
 
-import type { Interface } from '../stun'
-import Stun from '../stun'
-
-export interface Libp2pServer extends Server {
-  __connections: MultiaddrConnection[]
-}
-
-export interface Listener extends EventEmitter {
-  close(): void
-  listen(ma: Multiaddr): Promise<void>
-  getAddrs(): Multiaddr[]
-}
+import { handleStunRequest, getExternalIp } from './stun'
 
 /**
  * Attempts to close the given maConn. If a failure occurs, it will be logged.
@@ -37,112 +28,146 @@ async function attemptClose(maConn: MultiaddrConnection) {
   }
 }
 
-export function createListener(
-  { handler, upgrader }: { handler: (_conn: Connection) => void; upgrader: Upgrader },
-  options: any
-): Listener {
-  const listener = new EventEmitter() as Listener
+enum State {
+  UNINITIALIZED,
+  LISTENING,
+  CLOSED,
+}
 
-  const server = net.createServer(async (socket) => {
-    // Avoid uncaught errors caused by unstable connections
-    socket.on('error', (err) => error('socket error', err))
+class Listener extends EventEmitter {
+  private __connections: MultiaddrConnection[]
+  private tcpSocket: net.Server
+  private udpSocket: dgram.Socket
 
-    let maConn: MultiaddrConnection
-    let conn: Connection
-    try {
-      maConn = socketToConn(socket, { listeningAddr })
-      log('new inbound connection %s', maConn.remoteAddr)
-      conn = await upgrader.upgradeInbound(maConn)
-    } catch (err) {
-      error('inbound connection failed', err)
-      return attemptClose(maConn)
-    }
+  private state: State
 
-    log('inbound connection %s upgraded', maConn.remoteAddr)
+  private listeningAddr: Multiaddr
+  private peerId: string
 
-    trackConn(server, maConn)
-
-    handler?.(conn)
-
-    listener.emit('connection', conn)
-  }) as Libp2pServer
-
-  server
-    .on('listening', () => listener.emit('listening'))
-    .on('error', (err) => listener.emit('error', err))
-    .on('close', () => listener.emit('close'))
-
-  // Keep track of open connections to destroy in case of timeout
-  server.__connections = []
-
-  listener.close = () => {
-    if (!server.listening) return
-
-    return new Promise((resolve, reject) => {
-      server.__connections.forEach((maConn: MultiaddrConnection) => attemptClose(maConn))
-      server.close((err) => (err ? reject(err) : resolve()))
-    })
+  private externalAddress: {
+    address: string
+    port: number
   }
 
-  let peerId: string, listeningAddr: Multiaddr | undefined
-  let externalIp: Interface
+  constructor(
+    private handler: (conn: Connection) => void,
+    private upgrader: Upgrader,
+    private stunServers: Multiaddr[]
+  ) {
+    super()
 
-  listener.listen = async (ma: Multiaddr): Promise<void> => {
-    listeningAddr = ma
-    peerId = ma.getPeerId()
+    this.__connections = []
 
-    if (peerId) {
-      listeningAddr = ma.decapsulateCode(CODE_P2P)
+    this.tcpSocket = net.createServer(this.onTCPConnection) as Libp2pServer
+
+    this.udpSocket = dgram.createSocket({
+      type: 'udp6',
+      reuseAddr: true,
+    })
+
+    this.state = State.UNINITIALIZED
+
+    Promise.all([
+      new Promise((resolve) => this.udpSocket.once('listening', resolve)),
+      new Promise((resolve) => this.tcpSocket.once('listening', resolve)),
+    ]).then(() => {
+      this.state = State.LISTENING
+      this.emit('listening')
+    })
+
+    Promise.all([
+      new Promise((resolve) => this.udpSocket.once('close', resolve)),
+      new Promise((resolve) => this.tcpSocket.once('close', resolve)),
+    ]).then(() => this.emit('close'))
+
+    this.udpSocket.on('message', (msg: Buffer, rinfo: RemoteInfo) => handleStunRequest(this.udpSocket, msg, rinfo))
+
+    this.tcpSocket.on('error', (err) => this.emit('error', err))
+    this.udpSocket.on('error', (err) => this.emit('error', err))
+  }
+
+  async listen(ma: Multiaddr): Promise<void> {
+    if (this.state == State.CLOSED) {
+      throw Error(`Cannot listen after 'close()' has been called`)
     }
 
-    return new Promise(async (resolve, reject) => {
-      try {
-        // @TODO replace this with our own STUN servers
-        externalIp = await Stun.getExternalIP(
-          [
-            {
-              hostname: 'stun.l.google.com',
-              port: 19302,
-            },
-            {
-              hostname: 'stun.1und1.de',
-              port: 3478,
-            },
-          ],
-          ma.toOptions().port
-        )
-      } catch (err) {
-        error(err)
+    this.listeningAddr = ma
+    this.peerId = ma.getPeerId()
+
+    if (this.peerId == null) {
+      this.listeningAddr = ma.decapsulateCode(CODE_P2P)
+
+      if (!this.listeningAddr.isThinWaistAddress()) {
+        throw Error(`Unable to bind socket to <${this.listeningAddr.toString()}>`)
       }
+    }
 
-      const options = multiaddrToNetConfig(listeningAddr)
-      server.listen(options, (err?: Error) => {
-        if (err) return reject(err)
-        log('Listening on %s', server.address())
-        resolve()
-      })
+    const options = multiaddrToNetConfig(this.listeningAddr)
+
+    await Promise.all([
+      new Promise((resolve, reject) =>
+        this.tcpSocket.listen(options, (err?: Error) => {
+          if (err) return reject(err)
+          log('Listening on %s', this.tcpSocket.address())
+          resolve()
+        })
+      ),
+      new Promise((resolve) =>
+        this.udpSocket.bind(parseInt(ma.nodeAddress().port, 10), async () => {
+          try {
+            this.externalAddress = await getExternalIp(this.stunServers, this.udpSocket)
+          } catch (err) {
+            console.log(err)
+            error(`Unable to fetch external address using STUN. Error was: ${err}`)
+          }
+
+          resolve()
+        })
+      ),
+    ]).then(() => (this.state = State.LISTENING))
+  }
+
+  async close(): Promise<void> {
+    return new Promise(async (resolve, rejcect) => {
+      await Promise.all([
+        new Promise((resolve) => {
+          this.udpSocket.once('close', resolve)
+          this.udpSocket.close()
+        }),
+        this.tcpSocket.listening
+          ? new Promise((resolve, reject) => {
+              this.__connections.forEach((maConn: MultiaddrConnection) => attemptClose(maConn))
+              this.tcpSocket.close((err) => (err ? reject(err) : resolve()))
+            })
+          : Promise.resolve(),
+      ])
+
+      this.state = State.CLOSED
+
+      // Give the operating system some time to release the sockets
+      setTimeout(resolve, 100)
     })
   }
 
-  listener.getAddrs = () => {
-    let addrs: Multiaddr[] = []
-    const address = server.address() as AddressInfo
-
-    if (!address) {
-      throw new Error('Listener is not ready yet')
+  getAddrs() {
+    if (this.state != State.LISTENING) {
+      throw Error(`Listener is not yet ready`)
     }
+
+    let addrs: Multiaddr[] = []
+    const address = this.tcpSocket.address() as AddressInfo
 
     // Because TCP will only return the IPv6 version
     // we need to capture from the passed multiaddr
-    if (listeningAddr?.toString().startsWith('/ip4')) {
-      if (externalIp != null) {
-        if (externalIp.port == null) {
+    if (this.listeningAddr?.toString().startsWith('/ip4')) {
+      if (this.externalAddress != null) {
+        if (this.externalAddress.port == null) {
           console.log(`Attention: Bidirectional NAT detected. Publishing no public ip address to the DHT`)
-          if (peerId != null) {
+          if (this.peerId != null) {
             addrs.push(Multiaddr(''))
           }
         } else {
-          addrs.push(Multiaddr(`/ip4/${externalIp.address}/tcp/${externalIp.port}`))
+          addrs.push(Multiaddr(`/ip4/${this.externalAddress.address}/tcp/${this.externalAddress.port}`))
         }
       }
 
@@ -151,20 +176,42 @@ export function createListener(
       addrs = addrs.concat(getMultiaddrs('ip6', address.address, address.port))
     }
 
-    return addrs.map((ma) => (peerId ? ma.encapsulate(`/p2p/${peerId}`) : ma))
+    return addrs.map((ma) => (this.peerId ? ma.encapsulate(`/p2p/${this.peerId}`) : ma))
   }
 
-  return listener
-}
+  private trackConn(maConn: MultiaddrConnection) {
+    this.__connections.push(maConn)
 
-function trackConn(server: Libp2pServer, maConn: MultiaddrConnection) {
-  // @ts-ignore
-  server.__connections.push(maConn)
+    const untrackConn = () => {
+      this.__connections = this.__connections.filter((c) => c !== maConn)
+    }
 
-  const untrackConn = () => {
-    // @ts-ignore
-    server.__connections = server.__connections.filter((c) => c !== maConn)
+    maConn.conn.once('close', untrackConn)
   }
 
-  maConn.conn.once('close', untrackConn)
+  private async onTCPConnection(socket: TCPSocket) {
+    // Avoid uncaught errors caused by unstable connections
+    socket.on('error', (err) => error('socket error', err))
+
+    let maConn: MultiaddrConnection
+    let conn: Connection
+    try {
+      maConn = socketToConn(socket, { listeningAddr: this.listeningAddr })
+      log('new inbound connection %s', maConn.remoteAddr)
+      conn = await this.upgrader.upgradeInbound(maConn)
+    } catch (err) {
+      error('inbound connection failed', err)
+      return attemptClose(maConn)
+    }
+
+    log('inbound connection %s upgraded', maConn.remoteAddr)
+
+    this.trackConn(maConn)
+
+    this.handler?.(conn)
+
+    this.emit('connection', conn)
+  }
 }
+
+export default Listener

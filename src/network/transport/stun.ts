@@ -1,6 +1,6 @@
 import * as stun from 'webrtc-stun'
 
-import net, { AddressInfo } from 'net'
+import type { Socket, RemoteInfo } from 'dgram'
 
 import Multiaddr from 'multiaddr'
 
@@ -12,7 +12,7 @@ export type Interface = {
 
 export const STUN_TIMEOUT = 500
 
-export function handleStunRequest(address: AddressInfo, data: Buffer): Buffer {
+export function handleStunRequest(socket: Socket, data: Buffer, rinfo: RemoteInfo): void {
   const req = stun.createBlank()
 
   // if msg is valid STUN message
@@ -20,65 +20,88 @@ export function handleStunRequest(address: AddressInfo, data: Buffer): Buffer {
     // if STUN message is BINDING_REQUEST and valid content
     if (req.isBindingRequest({ fingerprint: true })) {
       const res = req
+        // prettier-ignore
         .createBindingResponse(true)
-        // @ts-ignore
-        .setXorMappedAddressAttribute(address)
+        .setXorMappedAddressAttribute(rinfo)
         .setFingerprintAttribute()
 
-      return res.toBuffer()
+      socket.send(res.toBuffer(), rinfo.port, rinfo.address)
     }
   }
 }
 
-export function getPublicIp(myAddress: Multiaddr, stunServer: Multiaddr): Promise<AddressInfo> {
-  return new Promise<AddressInfo>((resolve, reject) => {
+export function getExternalIp(
+  multiAddrs: Multiaddr[],
+  socket: Socket
+): Promise<{
+  port: number
+  address: string
+}> {
+  return new Promise((resolve, reject) => {
+    const tids = Array.from({ length: multiAddrs.length }).map(stun.generateTransactionId)
+
+    let result: {
+      address: string
+      port: number
+    }
+
     let finished = false
-    setTimeout(() => {
-      finished = true
-      reject()
-    }, STUN_TIMEOUT)
+    let timeout: NodeJS.Timeout
 
-    const cOptsOwn = myAddress.nodeAddress()
-    const cOptsStun = stunServer.nodeAddress()
+    const msgHandler = (msg: Buffer) => {
+      const res = stun.createBlank()
 
-    const socket = net.connect(
-      {
-        port: parseInt(cOptsStun.port, 10),
-        host: cOptsStun.address,
-        localPort: parseInt(cOptsOwn.port, 10),
-        localAddress: cOptsOwn.address,
-      },
-      () => {
-        const transactionId = stun.generateTransactionId()
+      if (res.loadBuffer(msg)) {
+        let index: number
+        if (
+          tids.some((tid: string, _index: number) => {
+            if (res.isBindingResponseSuccess({ transactionId: tid })) {
+              index = _index
+              return true
+            }
 
-        if (finished) {
-          socket.destroy()
-          socket.once('close', () => setTimeout(reject, 50))
-          return
-        }
+            return false
+          })
+        ) {
+          tids.splice(index, 1)
+          const attr = res.getXorMappedAddressAttribute()
 
-        socket.on('data', (data: Buffer) => {
-          const res = stun.createBlank()
-
-          if (res.loadBuffer(data)) {
-            // if msg is BINDING_RESPONSE_SUCCESS and valid content
-            if (res.isBindingResponseSuccess({ transactionId })) {
-              const attr = res.getXorMappedAddressAttribute()
-              if (attr) {
-                socket.destroy()
-
-                if (!finished) {
-                  socket.once('close', () => setTimeout(() => resolve(res.getXorMappedAddressAttribute()), 50))
-                }
-              }
+          if (attr != null) {
+            if (result == null) {
+              result = attr
+            } else if (tids.length == 0 || attr.port != result.port || attr.address !== result.address) {
+              socket.removeListener('message', msgHandler)
+              finished = true
+              clearTimeout(timeout)
+              resolve({
+                address: attr.address === result.address ? attr.address : undefined,
+                port: attr.port == result.port ? attr.port : undefined,
+              })
             }
           }
-        })
-
-        const req = stun.createBindingRequest(transactionId).setFingerprintAttribute()
-
-        socket.write(req.toBuffer())
+        }
       }
-    )
+    }
+    socket.on('message', msgHandler)
+
+    multiAddrs.forEach((ma: Multiaddr, index: number) => {
+      const nodeAddress = ma.nodeAddress()
+
+      const res = stun
+        .createBindingRequest(tids[index])
+        //.setSoftwareAttribute(`${pkg.name}@${pkg.version}`)
+        .setFingerprintAttribute()
+
+      socket.send(res.toBuffer(), parseInt(nodeAddress.port, 10), nodeAddress.address)
+    })
+
+    timeout = (setTimeout(() => {
+      finished = true
+      if (result == null) {
+        reject(Error(`Timeout. Could not complete STUN request in time.`))
+      } else {
+        resolve(result)
+      }
+    }, STUN_TIMEOUT) as unknown) as NodeJS.Timeout
   })
 }
