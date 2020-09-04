@@ -84,7 +84,7 @@ class PacketAcknowledgementInteraction<Chain extends HoprCoreConnector>
   }
 }
 
-async function handleHelper(source: any): Promise<void> {
+async function handleHelper(source: AsyncIterable<Uint8Array>): Promise<void> {
   for await (const msg of source) {
     const arr = msg.slice()
     const acknowledgement = new Acknowledgement(this.node.paymentChannels, {
@@ -99,7 +99,7 @@ async function handleHelper(source: any): Promise<void> {
 
     //  console.log(unAcknowledgedDbKey, this.node.db)
 
-    let record: any
+    let record: Uint8Array
     try {
       record = await this.node.db.get(Buffer.from(unAcknowledgedDbKey))
     } catch (err) {
