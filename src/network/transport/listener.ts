@@ -61,7 +61,10 @@ class Listener extends EventEmitter {
     this.tcpSocket = net.createServer(this.onTCPConnection) as Libp2pServer
 
     this.udpSocket = dgram.createSocket({
-      type: 'udp6',
+      // @TODO
+      // `udp6` does not seem to work in Node 12.x
+      // can receive IPv6 packet and IPv4 after reconnecting the socket
+      type: 'udp4',
       reuseAddr: true,
     })
 
@@ -117,7 +120,6 @@ class Listener extends EventEmitter {
           try {
             this.externalAddress = await getExternalIp(this.stunServers, this.udpSocket)
           } catch (err) {
-            console.log(err)
             error(`Unable to fetch external address using STUN. Error was: ${err}`)
           }
 

@@ -93,4 +93,3 @@ export interface Listener extends EventEmitter {
   listen(ma: Multiaddr): Promise<void>
   getAddrs(): Multiaddr[]
 }
-
