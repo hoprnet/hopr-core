@@ -410,10 +410,10 @@
     "@ethersproject/rlp" "^5.0.0"
     "@ethersproject/signing-key" "^5.0.0"
 
-"@hoprnet/hopr-core-connector-interface@1.5.6":
-  version "1.5.6"
-  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-core-connector-interface/-/hopr-core-connector-interface-1.5.6.tgz#ded55ed9b041efcfe3da6e2c37eb330fa5bebac1"
-  integrity sha512-3wbVxCq22O0l0dqHzEZ1IVP27Q6TuG122yPRbctso3hGdr0L98QTvTvaHIRkDKKS7SNbc4uqwdT/zDobLTaxXw==
+"@hoprnet/hopr-core-connector-interface@1.8.1":
+  version "1.8.1"
+  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-core-connector-interface/-/hopr-core-connector-interface-1.8.1.tgz#5ca90d87a4e93957eee345ed8e09345aa26c1cac"
+  integrity sha512-zAfos3LmsA1Ig4ZUdaAnyBaw/26QCcjXgKVWqYUzocAQI0IITqsV0PxsukUDBP6Kl1JlADEQJZHxKs/5WB0PyQ==
 
 "@hoprnet/hopr-core-ethereum@0.2.2":
   version "0.2.2"
@@ -5197,6 +5197,11 @@ heap-js@^2.1.1:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/heap-js/-/heap-js-2.1.1.tgz#d8f7367d6b22ca415f17b0a4f4de7c1bb69ac982"
   integrity sha512-hqBidw0lY8sDMy5PUHbY+P4KZcGM2ArnnY3SqSkNoI14RJfhik7Bse3zHzSh6ZYXEUxBj/7nEdQUrpXtf+OYYQ==
+
+heap-js@^2.1.2:
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/heap-js/-/heap-js-2.1.2.tgz#f438145d24082b078a9a35d91e03511ccad48176"
+  integrity sha512-urRBDI/0ol7m3OS/ZzvB5+Ym9i4zwlzTACSHMrGmTgh1xcrB1AX6lmeWW6u5rrS5YHHMYClta35/LUPZhjPH9Q==
 
 heap@0.2.6, heap@~0.2.6:
   version "0.2.6"
