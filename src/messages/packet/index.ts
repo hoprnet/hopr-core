@@ -16,6 +16,7 @@ import { LevelUp } from 'levelup'
 import Hopr from '../../'
 
 import HoprCoreConnector, { Types } from '@hoprnet/hopr-core-connector-interface'
+import { UnacknowledgedTicket } from '../ticket'
 
 /**
  * Encapsulates the internal representation of a packet
@@ -195,9 +196,11 @@ export class Packet<Chain extends HoprCoreConnector> extends Uint8Array {
     const ticketChallenge = await node.paymentChannels.utils.hash(
       secrets.length == 1
         ? deriveTicketLastKey(secrets[0])
-        : u8aConcat(
-            deriveTicketKey(secrets[0]),
-            await node.paymentChannels.utils.hash(deriveTicketKeyBlinding(secrets[1]))
+        : await node.paymentChannels.utils.hash(
+            u8aConcat(
+              deriveTicketKey(secrets[0]),
+              await node.paymentChannels.utils.hash(deriveTicketKeyBlinding(secrets[1]))
+            )
           )
     )
 
@@ -323,7 +326,9 @@ export class Packet<Chain extends HoprCoreConnector> extends Uint8Array {
     if (
       !u8aEquals(
         await this.node.paymentChannels.utils.hash(
-          u8aConcat(deriveTicketKey(this.header.derivedSecret), this.header.hashedKeyHalf)
+          await this.node.paymentChannels.utils.hash(
+            u8aConcat(deriveTicketKey(this.header.derivedSecret), this.header.hashedKeyHalf)
+          )
         ),
         (await this.ticket).ticket.challenge
       )
@@ -336,9 +341,13 @@ export class Packet<Chain extends HoprCoreConnector> extends Uint8Array {
       await this.node.paymentChannels.utils.pubKeyToAccountId(target.pubKey.marshal())
     )
 
+    const unacknowledged = new UnacknowledgedTicket(this.node.paymentChannels, undefined, {
+      signedTicket: await this.ticket,
+      secretA: deriveTicketKey(this.header.derivedSecret),
+    })
     await this.node.db.put(
       Buffer.from(this.node.dbKeys.UnAcknowledgedTickets(target.pubKey.marshal(), this.header.hashedKeyHalf)),
-      Buffer.from(await this.ticket)
+      Buffer.from(unacknowledged)
     )
 
     const receivedMoney = (await this.ticket).ticket.getEmbeddedFunds()

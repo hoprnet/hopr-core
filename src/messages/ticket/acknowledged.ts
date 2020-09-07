@@ -139,4 +139,4 @@ class AcknowledgedTicket<Chain extends HoprCoreConnector> extends Uint8Array {
   }
 }
 
-export default AcknowledgedTicket
+export { AcknowledgedTicket }

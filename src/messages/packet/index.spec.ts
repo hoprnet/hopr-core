@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import Hopr from '../..'
 import HoprCoreConnector from '@hoprnet/hopr-core-connector-interface'
 
@@ -16,6 +18,7 @@ import LevelUp from 'levelup'
 import MemDown from 'memdown'
 
 import Debug from 'debug'
+import { AcknowledgedTicket } from '../ticket'
 const log = Debug(`hopr-core:testing`)
 
 const TWO_SECONDS = durations.seconds(2)
@@ -102,6 +105,46 @@ describe('test packet composition and decomposition', function () {
     }
 
     await Promise.all(msgReceivedPromises)
+
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = 0; j < nodes.length; j++) {
+        if (j == i || !(await nodes[i].paymentChannels.channel.isOpen(nodes[j].peerInfo.id.pubKey.marshal()))) {
+          continue
+        }
+
+        const tickets: AcknowledgedTicket[] = []
+
+        await new Promise((resolve) =>
+          nodes[i].db
+            .createValueStream({
+              gt: Buffer.from(
+                nodes[i].dbKeys.AcknowledgedTickets(nodes[j].peerInfo.id.pubKey.marshal(), Buffer.alloc(32, 0x00))
+              ),
+              lt: Buffer.from(
+                nodes[i].dbKeys.AcknowledgedTickets(nodes[j].peerInfo.id.pubKey.marshal(), Buffer.alloc(32, 0xff))
+              ),
+            })
+            .on('data', (data: Buffer) => {
+              const acknowledged = new AcknowledgedTicket(nodes[i].paymentChannels)
+              acknowledged.set(data)
+  
+              tickets.push(acknowledged)
+            })
+            .on('end', resolve)
+        )
+
+        if (tickets.length == 0) {
+          continue
+        }
+
+        const channel = await nodes[i].paymentChannels.channel.create(nodes[j].peerInfo.id.pubKey.marshal())
+
+        for (let k = 0; k < tickets.length; k++) {
+          await channel.ticket.submit(await tickets[k].signedTicket, tickets[k].response)
+        }
+      }
+
+    }
 
     log(`after Promise.all`)
 

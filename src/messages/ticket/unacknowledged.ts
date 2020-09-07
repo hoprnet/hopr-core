@@ -116,4 +116,4 @@ class UnacknowledgedTicket<Chain extends HoprCoreConnector> extends Uint8Array {
   }
 }
 
-export default UnacknowledgedTicket
+export { UnacknowledgedTicket }
