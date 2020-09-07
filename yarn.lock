@@ -415,16 +415,15 @@
   resolved "https://registry.yarnpkg.com/@hoprnet/hopr-core-connector-interface/-/hopr-core-connector-interface-1.9.3.tgz#2a895163caff4a2787c750199900f28b0a9c16cd"
   integrity sha512-aMMjUdPR5m7jI8VYBbFXoQ+i1kgNhQN4y0CTUNCdV+YlbdsmL8PUYIWeps9LP9fZL1C286gHhgu5pwtrqrV/Ow==
 
-"@hoprnet/hopr-core-ethereum@0.2.2":
-  version "0.2.2"
-  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-core-ethereum/-/hopr-core-ethereum-0.2.2.tgz#070536d9520000bf83119ce8f8570804a55c7782"
-  integrity sha512-rdKWrgVGxk5Pj7x9IaU585LxfKplwRfhVQ7HaZItgTDnfTn2hcypyOnDxuNDIwBF2Qx7AwgqxhKqn2nPAQwlPg==
+"@hoprnet/hopr-core-ethereum@hoprnet/hopr-core-ethereum":
+  version "0.4.7"
+  resolved "https://codeload.github.com/hoprnet/hopr-core-ethereum/tar.gz/a20b89dc1ec363f473222563c637dc0dc74d26ec"
   dependencies:
-    "@hoprnet/hopr-utils" "^0.4.0"
+    "@hoprnet/hopr-utils" "^0.5.2"
     bn.js "^5.1.2"
     chalk "^4.1.0"
     debug "^4.1.1"
-    heap-js "^2.1.1"
+    heap-js "^2.1.2"
     keccak "^3.0.0"
     secp256k1 "^4.0.2"
     web3 "^1.2.11"
@@ -468,7 +467,7 @@
     "@hoprnet/hopr-demo-seeds" "1.8.0"
     ganache-core "^2.10.2"
 
-"@hoprnet/hopr-utils@0.5.2":
+"@hoprnet/hopr-utils@0.5.2", "@hoprnet/hopr-utils@^0.5.2":
   version "0.5.2"
   resolved "https://registry.yarnpkg.com/@hoprnet/hopr-utils/-/hopr-utils-0.5.2.tgz#711885c1ae1d10b8b5ded68b7152101e2e3022de"
   integrity sha512-wcGbDvVNa21MwZwU2dWlukNS3J2E42tj4JNkD93qaqScgqTfpZHyVdxr6HwjSRuWcJqT4OI5Mke3MmEx6gs1lA==
@@ -479,16 +478,6 @@
     peer-info "^0.17.5"
     strip-ansi "^6.0.0"
     typestub-multihashes "^0.0.4"
-
-"@hoprnet/hopr-utils@^0.4.0":
-  version "0.4.0"
-  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-utils/-/hopr-utils-0.4.0.tgz#b0ff6029917cbf898ec9dd9a731e2b828dd5e837"
-  integrity sha512-HQd3Dfp4C269/lJXnY7XW7zVGqlMDzrlZF7lIl/MDCkWgtA03V98N4lhK4ttU7D58m9Vobx7E1ktJQF09wE3cA==
-  dependencies:
-    bignumber.js "^9.0.0"
-    chalk "^4.1.0"
-    peer-info "^0.17.5"
-    strip-ansi "^6.0.0"
 
 "@istanbuljs/load-nyc-config@^1.0.0":
   version "1.1.0"
@@ -2320,7 +2309,7 @@ bl@^1.0.0:
     readable-stream "^2.3.5"
     safe-buffer "^5.1.1"
 
-bl@^4.0.0, bl@^4.0.2:
+bl@^4.0.0, bl@^4.0.2, bl@^4.0.3:
   version "4.0.3"
   resolved "https://registry.yarnpkg.com/bl/-/bl-4.0.3.tgz#12d6287adc29080e22a705e5764b2a9522cdc489"
   integrity sha512-fs4G6/Hu4/EE+F75J8DuN/0IpQqNjAdC7aEQv7Qt8MHGUH7Ckv2MwTEEeN9QehD0pfIDkMI1bkHYkKy7xHyKIg==
@@ -5188,11 +5177,6 @@ he@1.2.0, he@^1.1.1:
   resolved "https://registry.yarnpkg.com/he/-/he-1.2.0.tgz#84ae65fa7eafb165fddb61566ae14baf05664f0f"
   integrity sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==
 
-heap-js@^2.1.1:
-  version "2.1.1"
-  resolved "https://registry.yarnpkg.com/heap-js/-/heap-js-2.1.1.tgz#d8f7367d6b22ca415f17b0a4f4de7c1bb69ac982"
-  integrity sha512-hqBidw0lY8sDMy5PUHbY+P4KZcGM2ArnnY3SqSkNoI14RJfhik7Bse3zHzSh6ZYXEUxBj/7nEdQUrpXtf+OYYQ==
-
 heap-js@^2.1.2:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/heap-js/-/heap-js-2.1.2.tgz#f438145d24082b078a9a35d91e03511ccad48176"
@@ -5957,7 +5941,7 @@ it-goodbye@^2.0.1:
   dependencies:
     buffer "^5.6.0"
 
-it-handshake@^1.0.0, it-handshake@^1.0.1:
+it-handshake@^1.0.0, it-handshake@^1.0.1, it-handshake@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/it-handshake/-/it-handshake-1.0.2.tgz#64804d42621f6825f550c89cdcbd30d1bf978204"
   integrity sha512-uutOim5xF1eyDQD3u8qd3TxbWKwxqGMlbvacZsRsPdjO1BD9lnPTVci0jSMGsvMOu+5Y3W/QQ4hPQb87qPmPVQ==
@@ -9266,7 +9250,7 @@ scryptsy@^1.2.1:
   dependencies:
     pbkdf2 "^3.0.3"
 
-secp256k1@4.0.2, secp256k1@^4.0.0, secp256k1@^4.0.1, secp256k1@^4.0.2, secp256k1@~4.0.1:
+secp256k1@4.0.2, secp256k1@^4.0.0, secp256k1@^4.0.1, secp256k1@^4.0.2, secp256k1@~4.0.2:
   version "4.0.2"
   resolved "https://registry.yarnpkg.com/secp256k1/-/secp256k1-4.0.2.tgz#15dd57d0f0b9fdb54ac1fa1694f40e5e9a54f4a1"
   integrity sha512-UDar4sKvWAksIlfX3xIaQReADn+WFnHvbVujpcbr+9Sf/69odMwy2MUsz5CKLQgX9nsIyrjuxL2imVyoNHa3fg==
