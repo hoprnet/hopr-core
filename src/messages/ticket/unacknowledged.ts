@@ -26,6 +26,8 @@ class UnacknowledgedTicket<Chain extends HoprCoreConnector> extends Uint8Array {
       super(arr.bytes, arr.offset, UnacknowledgedTicket.SIZE(paymentChannels))
     }
 
+    this.paymentChannels = paymentChannels
+
     if (struct != null) {
       this.set(struct.signedTicket, this.signedTicketOffset - this.byteOffset)
       this.set(struct.secretA, this.secretAOffset - this.byteOffset)
@@ -33,8 +35,6 @@ class UnacknowledgedTicket<Chain extends HoprCoreConnector> extends Uint8Array {
       this._signedTicket = struct.signedTicket
       this._secretA = struct.secretA
     }
-
-    this.paymentChannels = paymentChannels
   }
 
   subarray(begin: number = 0, end: number = UnacknowledgedTicket.SIZE(this.paymentChannels)): Uint8Array {
@@ -116,4 +116,4 @@ class UnacknowledgedTicket<Chain extends HoprCoreConnector> extends Uint8Array {
   }
 }
 
-export { UnacknowledgedTicket }
+export default UnacknowledgedTicket
