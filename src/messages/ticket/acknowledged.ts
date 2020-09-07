@@ -2,12 +2,10 @@ import { u8aConcat, u8aEquals } from '@hoprnet/hopr-utils'
 
 import HoprCoreConnector, { Types } from '@hoprnet/hopr-core-connector-interface'
 import PeerId from 'peer-id'
-import { Hash } from '@hoprnet/hopr-core-connector-interface/src/types'
 
 class AcknowledgedTicket<Chain extends HoprCoreConnector> extends Uint8Array {
   private _signedTicket: Types.SignedTicket
-  private _secretA: Types.Hash
-  private _secretB: Types.Hash
+  private _response: Types.Hash
   private _preImage: Types.Hash
 
   private paymentChannels: Chain
@@ -20,9 +18,9 @@ class AcknowledgedTicket<Chain extends HoprCoreConnector> extends Uint8Array {
     },
     struct?: {
       signedTicket: Types.SignedTicket
-      secretA: Types.Hash
-      secretB: Types.Hash
+      response: Types.Hash
       preImage: Types.Hash
+      redeemed: boolean
     }
   ) {
     if (arr == null) {
@@ -33,9 +31,13 @@ class AcknowledgedTicket<Chain extends HoprCoreConnector> extends Uint8Array {
 
     if (struct != null) {
       this.set(struct.signedTicket, this.signedTicketOffset - this.byteOffset)
-      this.set(struct.secretA, this.secretAOffset - this.byteOffset)
-      this.set(struct.secretB, this.secretBOffset - this.byteOffset)
+      this.set(struct.response, this.responseOffset - this.byteOffset)
       this.set(struct.preImage, this.preImageOffset - this.byteOffset)
+      this.set([struct.redeemed ? 1 : 0], this.redeemedOffset - this.byteOffset)
+
+      this._signedTicket = struct.signedTicket
+      this._response = struct.response
+      this._preImage = struct.preImage
     }
 
     this.paymentChannels = paymentChannels
@@ -64,31 +66,35 @@ class AcknowledgedTicket<Chain extends HoprCoreConnector> extends Uint8Array {
     })
   }
 
-  get secretAOffset(): number {
+  get responseOffset(): number {
     return this.byteOffset + this.paymentChannels.types.SignedTicket.SIZE
   }
 
-  get secretA(): Types.Hash {
-    if (this._secretA == null) {
-      this._secretA = new Hash(new Uint8Array(this.buffer, this.secretAOffset, this.paymentChannels.types.Hash.SIZE))
+  get response(): Types.Hash {
+    if (this._response == null) {
+      this._response = new this.paymentChannels.types.Hash(
+        new Uint8Array(this.buffer, this.responseOffset, this.paymentChannels.types.Hash.SIZE)
+      )
     }
 
-    return this._secretA
-  }
-
-  get secretBOffset(): number {
-    return this.byteOffset + this.paymentChannels.types.SignedTicket.SIZE + this.paymentChannels.types.Hash.SIZE
-  }
-
-  get secretB(): Types.Hash {
-    if (this._secretB == null) {
-      this._secretB = new Hash(new Uint8Array(this.buffer, this.secretBOffset, this.paymentChannels.types.Hash.SIZE))
-    }
-
-    return this._secretB
+    return this._response
   }
 
   get preImageOffset(): number {
+    return this.byteOffset + this.paymentChannels.types.SignedTicket.SIZE + this.paymentChannels.types.Hash.SIZE
+  }
+
+  get preImage(): Types.Hash {
+    if (this._preImage == null) {
+      this._preImage = new this.paymentChannels.types.Hash(
+        new Uint8Array(this.buffer, this.signedTicketOffset, this.paymentChannels.types.Hash.SIZE)
+      )
+    }
+
+    return this._preImage
+  }
+
+  get redeemedOffset(): number {
     return (
       this.byteOffset +
       this.paymentChannels.types.SignedTicket.SIZE +
@@ -97,27 +103,23 @@ class AcknowledgedTicket<Chain extends HoprCoreConnector> extends Uint8Array {
     )
   }
 
-  get preImage(): Types.Hash {
-    if (this._preImage == null) {
-      this._preImage = new Hash(
-        new Uint8Array(this.buffer, this.signedTicketOffset, this.paymentChannels.types.Hash.SIZE)
-      )
-    }
+  get redeemed(): boolean {
+    return this[this.redeemedOffset - this.byteOffset] == 0 ? false : true
+  }
 
-    return this._preImage
+  set redeemed(_redeemed: boolean) {
+    this.set([_redeemed ? 1 : 0], this.redeemedOffset - this.byteOffset)
   }
 
   async verify(peerId: PeerId): Promise<boolean> {
     const signatureOk = (await this.signedTicket).verify(peerId.pubKey.marshal())
 
-    const challengeOk = u8aEquals(await this.computeResponse(), (await this.signedTicket).ticket.challenge)
-
-    return challengeOk && signatureOk
+    return (await this.verifyChallenge()) && signatureOk
   }
 
   async isWinning(): Promise<boolean> {
     const luck = await this.paymentChannels.utils.hash(
-      u8aConcat(await (await this.signedTicket).ticket.hash, this.preImage, this.secretB)
+      u8aConcat(await (await this.signedTicket).ticket.hash, this.preImage, this.response)
     )
 
     return luck < (await this.signedTicket).ticket.winProb
@@ -128,12 +130,12 @@ class AcknowledgedTicket<Chain extends HoprCoreConnector> extends Uint8Array {
       hoprCoreConnector.types.SignedTicket.SIZE +
       hoprCoreConnector.types.Hash.SIZE +
       hoprCoreConnector.types.Hash.SIZE +
-      hoprCoreConnector.types.Hash.SIZE
+      1
     )
   }
 
-  private async computeResponse(): Promise<Types.Hash> {
-    return await this.paymentChannels.utils.hash(u8aConcat(this.secretA, this.secretB))
+  private async verifyChallenge(): Promise<boolean> {
+    return u8aEquals((await this.signedTicket).ticket.challenge, await this.paymentChannels.utils.hash(this.response))
   }
 }
 

@@ -29,6 +29,9 @@ class UnacknowledgedTicket<Chain extends HoprCoreConnector> extends Uint8Array {
     if (struct != null) {
       this.set(struct.signedTicket, this.signedTicketOffset - this.byteOffset)
       this.set(struct.secretA, this.secretAOffset - this.byteOffset)
+
+      this._signedTicket = struct.signedTicket
+      this._secretA = struct.secretA
     }
 
     this.paymentChannels = paymentChannels
@@ -73,7 +76,9 @@ class UnacknowledgedTicket<Chain extends HoprCoreConnector> extends Uint8Array {
 
   async verifyChallenge(hashedKeyHalf: Uint8Array) {
     return u8aEquals(
-      await this.paymentChannels.utils.hash(u8aConcat(this.secretA, hashedKeyHalf)),
+      await this.paymentChannels.utils.hash(
+        await this.paymentChannels.utils.hash(u8aConcat(this.secretA, hashedKeyHalf))
+      ),
       (await this.signedTicket).ticket.challenge
     )
   }
@@ -96,19 +101,18 @@ class UnacknowledgedTicket<Chain extends HoprCoreConnector> extends Uint8Array {
     }
 
     const luck = await this.paymentChannels.utils.hash(
-      u8aConcat(await (await this.signedTicket).ticket.hash, preImage, secretB)
+      u8aConcat(
+        await (await this.signedTicket).ticket.hash,
+        preImage,
+        await this.paymentChannels.utils.hash(u8aConcat(this.secretA, secretB))
+      )
     )
 
     return luck < (await this.signedTicket).ticket.winProb
   }
 
   static SIZE<Chain extends HoprCoreConnector>(hoprCoreConnector: Chain): number {
-    return (
-      hoprCoreConnector.types.SignedTicket.SIZE +
-      hoprCoreConnector.types.Hash.SIZE +
-      hoprCoreConnector.types.Hash.SIZE +
-      hoprCoreConnector.types.Hash.SIZE
-    )
+    return hoprCoreConnector.types.SignedTicket.SIZE + hoprCoreConnector.types.Hash.SIZE
   }
 }
 
