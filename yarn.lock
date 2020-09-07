@@ -415,15 +415,16 @@
   resolved "https://registry.yarnpkg.com/@hoprnet/hopr-core-connector-interface/-/hopr-core-connector-interface-1.9.3.tgz#2a895163caff4a2787c750199900f28b0a9c16cd"
   integrity sha512-aMMjUdPR5m7jI8VYBbFXoQ+i1kgNhQN4y0CTUNCdV+YlbdsmL8PUYIWeps9LP9fZL1C286gHhgu5pwtrqrV/Ow==
 
-"@hoprnet/hopr-core-ethereum@hoprnet/hopr-core-ethereum":
-  version "0.4.7"
-  resolved "https://codeload.github.com/hoprnet/hopr-core-ethereum/tar.gz/a20b89dc1ec363f473222563c637dc0dc74d26ec"
+"@hoprnet/hopr-core-ethereum@0.4.1":
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-core-ethereum/-/hopr-core-ethereum-0.4.1.tgz#afb5c7ebb512c1df914a7e6d6e8072390ed65cb2"
+  integrity sha512-Yzs+DrfPnnJ39kVHN8VPDM3AANVHLncPQf8/DTAra8b384JjcFcK45PqeN4biuo0I7BsCvu9DiO0cu/XdR1mMQ==
   dependencies:
-    "@hoprnet/hopr-utils" "^0.5.2"
+    "@hoprnet/hopr-utils" "^0.4.0"
     bn.js "^5.1.2"
     chalk "^4.1.0"
     debug "^4.1.1"
-    heap-js "^2.1.2"
+    heap-js "^2.1.1"
     keccak "^3.0.0"
     secp256k1 "^4.0.2"
     web3 "^1.2.11"
@@ -478,6 +479,16 @@
     peer-info "^0.17.5"
     strip-ansi "^6.0.0"
     typestub-multihashes "^0.0.4"
+
+"@hoprnet/hopr-utils@^0.4.0":
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/@hoprnet/hopr-utils/-/hopr-utils-0.4.0.tgz#b0ff6029917cbf898ec9dd9a731e2b828dd5e837"
+  integrity sha512-HQd3Dfp4C269/lJXnY7XW7zVGqlMDzrlZF7lIl/MDCkWgtA03V98N4lhK4ttU7D58m9Vobx7E1ktJQF09wE3cA==
+  dependencies:
+    bignumber.js "^9.0.0"
+    chalk "^4.1.0"
+    peer-info "^0.17.5"
+    strip-ansi "^6.0.0"
 
 "@istanbuljs/load-nyc-config@^1.0.0":
   version "1.1.0"
@@ -5177,7 +5188,7 @@ he@1.2.0, he@^1.1.1:
   resolved "https://registry.yarnpkg.com/he/-/he-1.2.0.tgz#84ae65fa7eafb165fddb61566ae14baf05664f0f"
   integrity sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==
 
-heap-js@^2.1.2:
+heap-js@^2.1.1, heap-js@^2.1.2:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/heap-js/-/heap-js-2.1.2.tgz#f438145d24082b078a9a35d91e03511ccad48176"
   integrity sha512-urRBDI/0ol7m3OS/ZzvB5+Ym9i4zwlzTACSHMrGmTgh1xcrB1AX6lmeWW6u5rrS5YHHMYClta35/LUPZhjPH9Q==
