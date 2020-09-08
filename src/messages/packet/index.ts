@@ -264,18 +264,17 @@ export class Packet<Chain extends HoprCoreConnector> extends Uint8Array {
 
     this.header.extractHeaderInformation()
 
-    const [sender, target] = await Promise.all([this.getSenderPeerId(), this.getTargetPeerId()])
-
-    const channelId = await this.node.paymentChannels.utils.getId(
-      await this.node.paymentChannels.utils.pubKeyToAccountId(this.node.peerInfo.id.pubKey.marshal()),
-      await this.node.paymentChannels.utils.pubKeyToAccountId(sender.pubKey.marshal())
-    )
-
     let isRecipient = u8aEquals(this.node.peerInfo.id.pubKey.marshal(), this.header.address)
 
-    // check if channel exists
-    if (!isRecipient && !(await this.node.paymentChannels.channel.isOpen(new Uint8Array(sender.pubKey.marshal())))) {
-      throw Error('Payment channel is not open')
+    let sender: PeerId, target: PeerId
+    if (!isRecipient) {
+      ;[sender, target] = await Promise.all([this.getSenderPeerId(), this.getTargetPeerId()])
+
+      // check if channel exists
+
+      if (!(await this.node.paymentChannels.channel.isOpen(new Uint8Array(sender.pubKey.marshal())))) {
+        throw Error('Payment channel is not open')
+      }
     }
 
     this.message.decrypt(this.header.derivedSecret)
@@ -284,9 +283,9 @@ export class Packet<Chain extends HoprCoreConnector> extends Uint8Array {
     const ticketKey = deriveTicketKeyBlinding(this.header.derivedSecret)
 
     if (isRecipient) {
-      await this.prepareDelivery(null, null, channelId)
+      await this.prepareDelivery()
     } else {
-      await this.prepareForward(null, null, target)
+      await this.prepareForward(sender, target)
     }
 
     return { receivedChallenge, ticketKey }
@@ -294,13 +293,8 @@ export class Packet<Chain extends HoprCoreConnector> extends Uint8Array {
 
   /**
    * Prepares the delivery of the packet.
-   *
-   * @param node the node itself
-   * @param state current off-chain state
-   * @param newState future off-chain state
-   * @param nextNode the ID of the payment channel
    */
-  async prepareDelivery(state, newState, nextNode): Promise<void> {
+  async prepareDelivery(): Promise<void> {
     if (
       !u8aEquals(
         await this.node.paymentChannels.utils.hash(deriveTicketLastKey(this.header.derivedSecret)),
@@ -316,13 +310,11 @@ export class Packet<Chain extends HoprCoreConnector> extends Uint8Array {
   /**
    * Prepares the packet in order to forward it to the next node.
    *
-   * @param node the node itself
-   * @param state current off-chain state
-   * @param newState future off-chain state
-   * @param channelId the ID of the payment channel
+   * @param sender peer Id of the previous node
    * @param target peer Id of the next node
+
    */
-  async prepareForward(state, newState, target: PeerId): Promise<void> {
+  async prepareForward(sender: PeerId, target: PeerId): Promise<void> {
     if (
       !u8aEquals(
         await this.node.paymentChannels.utils.hash(
@@ -336,7 +328,7 @@ export class Packet<Chain extends HoprCoreConnector> extends Uint8Array {
       throw Error('General error.')
     }
 
-    const channelId = await this.node.paymentChannels.utils.getId(
+    const channelIdOutgoing = await this.node.paymentChannels.utils.getId(
       await this.node.paymentChannels.utils.pubKeyToAccountId(this.node.peerInfo.id.pubKey.marshal()),
       await this.node.paymentChannels.utils.pubKeyToAccountId(target.pubKey.marshal())
     )
@@ -345,8 +337,9 @@ export class Packet<Chain extends HoprCoreConnector> extends Uint8Array {
       signedTicket: await this.ticket,
       secretA: deriveTicketKey(this.header.derivedSecret),
     })
+
     await this.node.db.put(
-      Buffer.from(this.node.dbKeys.UnAcknowledgedTickets(target.pubKey.marshal(), this.header.hashedKeyHalf)),
+      Buffer.from(this.node.dbKeys.UnAcknowledgedTickets(sender.pubKey.marshal(), this.header.hashedKeyHalf)),
       Buffer.from(unacknowledged)
     )
 
@@ -397,7 +390,7 @@ export class Packet<Chain extends HoprCoreConnector> extends Uint8Array {
     this.node.log(
       `Received ${chalk.magenta(
         `${this.node.paymentChannels.utils.convertUnit(receivedMoney, 'wei', 'ether').toString()} ETH`
-      )} on channel ${chalk.yellow(channelId.toString())}.`
+      )} on channel ${chalk.yellow(channelIdOutgoing.toString())}.`
     )
 
     this.header.transformForNextNode()

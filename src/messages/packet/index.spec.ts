@@ -108,7 +108,7 @@ describe('test packet composition and decomposition', function () {
 
     for (let i = 0; i < nodes.length; i++) {
       for (let j = 0; j < nodes.length; j++) {
-        if (j == i || !(await nodes[i].paymentChannels.channel.isOpen(nodes[j].peerInfo.id.pubKey.marshal()))) {
+        if (j == i) {
           continue
         }
 
@@ -127,7 +127,7 @@ describe('test packet composition and decomposition', function () {
             .on('data', (data: Buffer) => {
               const acknowledged = new AcknowledgedTicket(nodes[i].paymentChannels)
               acknowledged.set(data)
-  
+
               tickets.push(acknowledged)
             })
             .on('end', resolve)
@@ -143,7 +143,6 @@ describe('test packet composition and decomposition', function () {
           await channel.ticket.submit(await tickets[k].signedTicket, tickets[k].response)
         }
       }
-
     }
 
     log(`after Promise.all`)
