@@ -38,7 +38,7 @@
     "lint:fix": "prettier --write ."
   },
   "dependencies": {
-    "@hoprnet/hopr-core-ethereum": "0.4.1",
+    "@hoprnet/hopr-core-ethereum": "0.4.5-xdai",
     "@hoprnet/hopr-demo-seeds": "1.8.0",
     "@hoprnet/hopr-utils": "^0.5.2",
     "abort-controller": "^3.0.0",
