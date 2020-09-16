@@ -229,6 +229,11 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
     return this
   }
 
+  async down(): Promise<void> {
+    log('DEPRECATED use stop() not down()')
+    return this.stop()
+  }
+
   /**
    * Shuts down the node and saves keys and peerBook in the database
    */
