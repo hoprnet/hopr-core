@@ -35,7 +35,6 @@ class TCP {
   }
 
   private _useWebRTC: boolean
-  private _useOwnStunServers: boolean
   private _upgrader: Upgrader
   private _peerInfo: PeerInfo
   private _handle: (protocols: string[] | string, handler: (connection: Handler) => void) => void
@@ -100,18 +99,17 @@ class TCP {
     this._timeoutIntentionallyOnWebRTC = timeoutIntentionallyOnWebRTC
     this._answerIntentionallyWithIncorrectMessages = answerIntentionallyWithIncorrectMessages
     this._failIntentionallyOnWebRTC = failIntentionallyOnWebRTC || false
-    this._useOwnStunServers = useOwnStunServers === undefined ? USE_OWN_STUN_SERVERS : useOwnStunServers
     this._useWebRTC = useWebRTC === undefined ? USE_WEBRTC : useWebRTC
     this._handle = libp2p.handle.bind(libp2p)
     this._peerInfo = libp2p.peerInfo
     this._upgrader = upgrader
 
     this._relay = new Relay(libp2p, this.handleDelivery.bind(this))
-    verbose('Created TCP stack', this.stunServers)
+    verbose(`Created TCP stack (Stun: ${this.stunServers.map(x => x.toString()).join(',')}`)
   }
 
   async handleDelivery({ stream, connection, counterparty }: Handler & { counterparty: PeerId }) {
-    verbose('handle delivery', connection.remoteAddr, counterparty.id)
+    verbose('handle delivery', connection.remoteAddr.toString(), counterparty.toB58String())
     let conn: Connection
 
     let webRTCsendBuffer: Pushable<Uint8Array>

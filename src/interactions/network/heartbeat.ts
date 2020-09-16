@@ -58,7 +58,7 @@ class Heartbeat<Chain extends HoprCoreConnector> implements AbstractInteraction<
       const timeout = setTimeout(() => {
         aborted = true
         abort.abort()
-        verbose('heartbeat timeout')
+        verbose(`heartbeat timeout while querying ${counterparty.toB58String()}`)
         reject(Error(`Timeout while querying ${counterparty.toB58String()}.`))
       }, HEARTBEAT_TIMEOUT)
 
@@ -66,11 +66,12 @@ class Heartbeat<Chain extends HoprCoreConnector> implements AbstractInteraction<
         struct = await this.node
           .dialProtocol(counterparty, this.protocols[0], { signal: abort.signal })
           .catch(async (err: Error) => {
-            verbose('heartbeat connection error', err)
+            verbose(`heartbeat connection error ${err.name} while dialing ${counterparty.toB58String()} (initial)`)
             const peerInfo = await this.node.peerRouting.findPeer(counterparty)
             return await this.node.dialProtocol(peerInfo, this.protocols[0], { signal: abort.signal })
           })
       } catch (err) {
+        verbose(`heartbeat connection error ${err.name} while dialing ${counterparty.toB58String()} (subsequent)`)
         clearTimeout(timeout)
         error(err)
         return reject()
