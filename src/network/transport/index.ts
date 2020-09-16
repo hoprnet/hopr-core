@@ -427,7 +427,7 @@ class TCP {
    */
   createListener(handler: (connection: Connection) => void): Listener {
     this.connHandler = handler
-    return new Listener(handler, this._upgrader, this.stunServers)
+    return new Listener(handler, this._upgrader, this.stunServers.map(x => Multiaddr(x.urls)))
   }
 
   /**
