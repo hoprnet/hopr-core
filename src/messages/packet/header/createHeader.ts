@@ -1,6 +1,5 @@
 import secp256k1 from 'secp256k1'
 import { randomBytes } from 'crypto'
-
 import { u8aXOR, u8aConcat, PRG } from '@hoprnet/hopr-utils'
 import { MAX_HOPS } from '../../../constants'
 
@@ -16,9 +15,7 @@ import {
 } from './index'
 
 import HoprCoreConnector from '@hoprnet/hopr-core-connector-interface'
-
 import Hopr from '../../../'
-
 import PeerId from 'peer-id'
 
 import {
@@ -32,6 +29,9 @@ import {
   KEY_LENGTH,
 } from './parameters'
 
+import Debug from 'debug'
+const verbose = Debug(`hopr-core:verbose:packet:header`)
+
 export async function createHeader<Chain extends HoprCoreConnector>(
   node: Hopr<Chain>,
   header: Header<Chain>,
@@ -39,7 +39,8 @@ export async function createHeader<Chain extends HoprCoreConnector>(
 ) {
   function checkPeerIds() {
     if (peerIds.length > MAX_HOPS) {
-      throw Error(`Expected at most ${MAX_HOPS} but got ${peerIds.length}`)
+      verbose('Error creating header - more hops than alloweds:', peerIds)
+      throw Error(`Expected at most ${MAX_HOPS} hops but got ${peerIds.length}`)
     }
 
     peerIds.forEach((peerId, index) => {
