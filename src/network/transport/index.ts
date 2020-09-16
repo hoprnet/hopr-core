@@ -40,7 +40,7 @@ class TCP {
   private _peerInfo: PeerInfo
   private _handle: (protocols: string[] | string, handler: (connection: Handler) => void) => void
   private relays?: PeerInfo[]
-  private stunServers: { urls: string }[]
+  private stunServers: Multiaddr[]
   private _relay: Relay
   private connHandler: ConnHandler
 
@@ -84,22 +84,16 @@ class TCP {
 
       this.stunServers = []
       for (let i = 0; i < this.relays.length; i++) {
-        let urls = ''
         this.relays[i].multiaddrs.forEach((ma: Multiaddr) => {
-          if (urls.length > 0) {
-            urls += ', '
-          }
-
           const opts = ma.toOptions()
 
           if (opts.family == 'ipv4') {
-            urls += `stun:${opts.host}`
+            this.stunServers.push(ma)
           } else if (opts.family == 'ipv6') {
             // WebRTC seems to have no support IPv6 addresses
-            // urls += `stun:[0${opts.host}]`
+            throw new Error('Cannot use IPv6 for stun server')
           }
         })
-        this.stunServers.push({ urls })
       }
     }
 
@@ -430,8 +424,7 @@ class TCP {
     return new Listener(
       handler,
       this._upgrader,
-      this.stunServers.map((x) => Multiaddr(x.urls))
-    )
+      this.stunServers)
   }
 
   /**
