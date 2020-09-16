@@ -27,11 +27,10 @@ A lot of the complexity in this area of the code derives from the many different
 coding styles used in the various libraries we must interact with, namely event
 streams and asynchronous generator functions.
 
-
 @TODO Questions:
+
 - What are the reasons not to use multiple libp2p transports and upgrade with a
   libp2p switch?
-
 
 #### Listener
 
