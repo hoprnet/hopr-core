@@ -50,6 +50,12 @@ class Heartbeat<Chain extends HoprCoreConnector> implements AbstractInteraction<
 
   async interact(counterparty: PeerId): Promise<void> {
     return new Promise<void>(async (resolve, reject) => {
+      // There is an assumption here that we 'know' how to contact this peer
+      // and therefore we are immediately trying to dial, rather than checking
+      // our peerRouting info first.
+      //
+      // NB. This is a false assumption for 'ping' and we therefore trigger
+      // errors.
       let struct: Handler
       let aborted = false
 
@@ -68,6 +74,7 @@ class Heartbeat<Chain extends HoprCoreConnector> implements AbstractInteraction<
           .catch(async (err: Error) => {
             verbose(`heartbeat connection error ${err.name} while dialing ${counterparty.toB58String()} (initial)`)
             const peerInfo = await this.node.peerRouting.findPeer(counterparty)
+            //verbose('trying with peer info', peerInfo)
             return await this.node.dialProtocol(peerInfo, this.protocols[0], { signal: abort.signal })
           })
       } catch (err) {

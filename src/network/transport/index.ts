@@ -105,7 +105,7 @@ class TCP {
     this._upgrader = upgrader
 
     this._relay = new Relay(libp2p, this.handleDelivery.bind(this))
-    verbose(`Created TCP stack (Stun: ${this.stunServers.map(x => x.toString()).join(',')}`)
+    verbose(`Created TCP stack (Stun: ${this.stunServers.map((x) => x.toString()).join(',')}`)
   }
 
   async handleDelivery({ stream, connection, counterparty }: Handler & { counterparty: PeerId }) {
@@ -121,7 +121,7 @@ class TCP {
       webRTCsendBuffer = pushable<Uint8Array>()
       webRTCrecvBuffer = pushable<Uint8Array>()
 
-      verbose('attempting to upgrade to webRTC from a delivery', connection.remoteAddr)
+      verbose('attempting to upgrade to webRTC from a delivery', connection.remoteAddr.toString())
       socket = upgradeToWebRTC(webRTCsendBuffer, webRTCrecvBuffer, {
         _timeoutIntentionallyOnWebRTC: this._timeoutIntentionallyOnWebRTC,
         _failIntentionallyOnWebRTC: this._failIntentionallyOnWebRTC,
@@ -151,7 +151,7 @@ class TCP {
 
         webRTCrecvBuffer.end()
         webRTCsendBuffer.end()
-        verbose('upgraded to webRTC, now attempting upgrade to direct conn')
+        verbose(`attempting upgrade to direct webRTC connection to ${counterparty.toB58String()}`)
 
         mAddrConn = socketToConn(webRTCSocket, {
           remoteAddr: Multiaddr(`/p2p/${counterparty.toB58String()}`),
@@ -160,10 +160,14 @@ class TCP {
 
         conn = await this._upgrader.upgradeInbound(mAddrConn)
 
-        this.connHandler?.(conn)
+        if (this.connHandler) {
+          this.connHandler(conn)
+        } else {
+          throw new Error('ConnHandler not initialized')
+        }
         return
       } catch (err) {
-        error(`Could not upgrade to WebRTC connection. Error was: ${err}`)
+        error(`Could not upgrade to WebRTC direct connection. Error was: ${err} (${counterparty.toB58String()})`)
 
         webRTCrecvBuffer.end()
         webRTCsendBuffer.end()
@@ -189,7 +193,11 @@ class TCP {
       return
     }
 
-    this.connHandler?.(conn)
+    if (this.connHandler) {
+      this.connHandler(conn)
+    } else {
+      throw new Error('ConnHandler not initialized')
+    }
   }
 
   /**
@@ -205,7 +213,7 @@ class TCP {
     let error: Error
     if (['ip4', 'ip6', 'dns4', 'dns6'].includes(ma.protoNames()[0])) {
       try {
-        verbose('attempting to dial directly', ma)
+        verbose('attempting to dial directly', ma.toString())
         return await this.dialDirectly(ma, options)
       } catch (err) {
         if (err.type === 'timeout') {
