@@ -58,6 +58,7 @@ class Listener extends EventEmitter {
     super()
 
     this.__connections = []
+    this.upgrader = upgrader
 
     this.tcpSocket = net.createServer(this.onTCPConnection) as Libp2pServer
 
@@ -101,6 +102,7 @@ class Listener extends EventEmitter {
     if (this.peerId == null) {
       this.listeningAddr = ma.decapsulateCode(CODE_P2P)
 
+      verbose(`No peerId for ${ma.toString()} - trying decapsulateCode`)
       if (!this.listeningAddr.isThinWaistAddress()) {
         throw Error(`Unable to bind socket to <${this.listeningAddr.toString()}>`)
       }

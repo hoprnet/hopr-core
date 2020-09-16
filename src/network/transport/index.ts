@@ -377,6 +377,8 @@ class TCP {
 
       const onError = (err: Error) => {
         verbose('Error connecting:', err)
+        // ENETUNREACH
+        // ECONNREFUSED
         err.message = `connection error ${cOpts.host}:${cOpts.port}: ${err.message}`
         done(err)
       }
