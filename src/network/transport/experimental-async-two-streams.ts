@@ -72,7 +72,9 @@ const it2 = (async function* foo() {
           bFinished = true
         }
       })
-    } else if (bFinished) {
+    }
+    
+    if (bFinished) {
       await aPromise.then(({ done }) => {
         //console.log(`from first iterator`, result.value)
         aResolved = true
