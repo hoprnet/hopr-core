@@ -70,7 +70,7 @@
     "wrtc": "0.4.6"
   },
   "devDependencies": {
-    "@hoprnet/hopr-core-connector-interface": "1.10.2",
+    "@hoprnet/hopr-core-connector-interface": "1.10.4",
     "@hoprnet/hopr-ethereum": "^1.4.3",
     "@hoprnet/hopr-testing": "0.2",
     "@types/bl": "^2.1.0",
