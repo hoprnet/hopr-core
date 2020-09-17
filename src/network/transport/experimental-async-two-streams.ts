@@ -38,52 +38,37 @@ const it2 = (async function* foo() {
   let aFinished = false
   let bFinished = false
 
+  function aPromiseFunction({ done }: { done?: boolean }) {
+    aResolved = true
+
+    if (done) {
+      aFinished = true
+    }
+  }
+
+  function bPromiseFunction({ done }: { done?: boolean }) {
+    bResolved = true
+
+    if (done) {
+      bFinished = true
+    }
+  }
+
   while (true) {
     if (!aFinished && !bFinished) {
       await Promise.race([
-        aPromise.then(({ done }) => {
-          //console.log(`from first iterator`, result.value)
-          aResolved = true
-
-          console.log(`a done`, done)
-          if (done) {
-            aFinished = true
-          }
-        }),
-        bPromise.then(({ done }) => {
-          // console.log(`from second iterator`, result.value)
-          bResolved = true
-
-          console.log(`b done`, done)
-          if (done) {
-            bFinished = true
-          }
-        }),
+        // prettier-ignore
+        aPromise.then(aPromiseFunction),
+        bPromise.then(bPromiseFunction),
       ])
     }
 
     if (aFinished) {
-      await bPromise.then(({ done }) => {
-        // console.log(`from second iterator`, result.value)
-        bResolved = true
-
-        console.log(`b done`, done)
-        if (done) {
-          bFinished = true
-        }
-      })
+      await bPromise.then(bPromiseFunction)
     }
-    
-    if (bFinished) {
-      await aPromise.then(({ done }) => {
-        //console.log(`from first iterator`, result.value)
-        aResolved = true
 
-        console.log(`a done`, done)
-        if (done) {
-          aFinished = true
-        }
-      })
+    if (bFinished) {
+      await aPromise.then(aPromiseFunction)
     }
 
     if (aResolved || bFinished) {
@@ -92,6 +77,7 @@ const it2 = (async function* foo() {
       } else {
         yield (await aPromise).value
       }
+
       aPromise = gen1.next()
       aResolved = false
     }
@@ -102,6 +88,7 @@ const it2 = (async function* foo() {
       } else {
         yield (await bPromise).value
       }
+
       bPromise = gen2.next()
       bResolved = false
     }
