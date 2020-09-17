@@ -19,12 +19,14 @@ import type { Handler } from '../../network/transport/types'
 import EventEmitter from 'events'
 
 import { PROTOCOL_ACKNOWLEDGEMENT } from '../../constants'
-import { u8aToHex, durations, u8aConcat } from '@hoprnet/hopr-utils'
+import { u8aToHex, durations, u8aConcat, toU8a, u8aToNumber } from '@hoprnet/hopr-utils'
 import { pubKeyToPeerId } from '../../utils'
-import { UnacknowledgedTicket, AcknowledgedTicket } from '../../messages/ticket'
+import { UnacknowledgedTicket } from '../../messages/ticket'
 
 import { randomBytes } from 'crypto'
+import { ACKNOWLEDGED_TICKET_INDEX_LENGTH } from '../../dbKeys'
 
+const HASHED_SECRET_WIDTH = 27
 const ACKNOWLEDGEMENT_TIMEOUT = durations.seconds(2)
 
 class PacketAcknowledgementInteraction<Chain extends HoprCoreConnector>
@@ -94,23 +96,11 @@ class PacketAcknowledgementInteraction<Chain extends HoprCoreConnector>
         offset: arr.byteOffset,
       })
 
-      const unAcknowledgedDbKey = this.node.dbKeys.UnAcknowledgedTickets(
-        await acknowledgement.responseSigningParty,
-        await acknowledgement.hashedKey
-      )
+      const unAcknowledgedDbKey = this.node.dbKeys.UnAcknowledgedTickets(await acknowledgement.hashedKey)
 
-      let unacknowledgedTicket: UnacknowledgedTicket<Chain>
-      let tmp: Buffer
-
+      let tmp: Uint8Array
       try {
         tmp = await this.node.db.get(Buffer.from(unAcknowledgedDbKey))
-
-        if (tmp.length > 0) {
-          unacknowledgedTicket = new UnacknowledgedTicket(this.node.paymentChannels, {
-            bytes: tmp.buffer,
-            offset: tmp.byteOffset,
-          })
-        }
       } catch (err) {
         if (err.notFound) {
           error(
@@ -120,39 +110,65 @@ class PacketAcknowledgementInteraction<Chain extends HoprCoreConnector>
               u8aToHex(await acknowledgement.hashedKey)
             )}. ${chalk.red('Dropping acknowledgement')}.`
           )
-        } else {
-          error(`Database error. Error was: ${err}`)
-        }
 
-        // Dropping ack and handling next message
-        continue
+          continue
+        } else {
+          throw err
+        }
       }
 
       if (tmp.length > 0) {
-        const acknowledgedDbKey = this.node.dbKeys.AcknowledgedTickets(
-          await acknowledgement.responseSigningParty,
-          acknowledgement.key
+        const unacknowledgedTicket = new UnacknowledgedTicket(this.node.paymentChannels, {
+          bytes: tmp.buffer,
+          offset: tmp.byteOffset,
+        })
+
+        let ticketCounter: Uint8Array
+        try {
+          ticketCounter = toU8a(
+            u8aToNumber(await this.node.db.get(Buffer.from(this.node.dbKeys.AcknowledgedTicketCounter()))) + 1,
+            ACKNOWLEDGED_TICKET_INDEX_LENGTH
+          )
+        } catch (err) {
+          // Set ticketCounter to initial value
+          ticketCounter = toU8a(0, ACKNOWLEDGED_TICKET_INDEX_LENGTH)
+
+          this.node.db.put(
+            Buffer.from(this.node.dbKeys.AcknowledgedTicketCounter()),
+            Buffer.from(toU8a(0, ACKNOWLEDGED_TICKET_INDEX_LENGTH))
+          )
+        }
+
+        let acknowledgedTicket = this.node.paymentChannels.types.AcknowledgedTicket.create(
+          this.node.paymentChannels,
+          undefined,
+          {
+            signedTicket: await unacknowledgedTicket.signedTicket,
+            response: await this.node.paymentChannels.utils.hash(
+              u8aConcat(unacknowledgedTicket.secretA, await acknowledgement.hashedKey)
+            ),
+            preImage: randomBytes(HASHED_SECRET_WIDTH),
+            redeemed: false,
+          }
         )
 
-        let acknowledgedTicket = new AcknowledgedTicket(this.node.paymentChannels, undefined, {
-          signedTicket: await unacknowledgedTicket.signedTicket,
-          response: await this.node.paymentChannels.utils.hash(
-            u8aConcat(unacknowledgedTicket.secretA, await acknowledgement.hashedKey)
-          ),
-          preImage: randomBytes(32),
-          redeemed: false,
-        })
+        const acknowledgedDbKey = this.node.dbKeys.AcknowledgedTickets(ticketCounter)
+
+        console.log(`storing ticket`, ticketCounter, `we are`, this.node.peerInfo.id.toB58String())
 
         try {
           await this.node.db
-            /* prettier-ignore */
             .batch()
             .del(Buffer.from(unAcknowledgedDbKey))
             .put(Buffer.from(acknowledgedDbKey), Buffer.from(acknowledgedTicket))
+            .put(Buffer.from(this.node.dbKeys.AcknowledgedTicketCounter()), Buffer.from(ticketCounter))
             .write()
         } catch (err) {
           error(`Error while writing to database. Error was ${chalk.red(err.message)}.`)
         }
+      } else {
+        // Deleting dummy DB entry
+        await this.node.db.del(Buffer.from(unAcknowledgedDbKey))
       }
 
       this.emit(u8aToHex(unAcknowledgedDbKey))

@@ -91,26 +91,6 @@ class UnacknowledgedTicket<Chain extends HoprCoreConnector> extends Uint8Array {
     return (await this.verifyChallenge(hashedKeyHalf)) && (await this.verifySignature(peerId))
   }
 
-  async isWinning(preImage: Types.Hash, secretB: Types.Hash): Promise<boolean> {
-    if (preImage.length != this.paymentChannels.types.Hash.SIZE) {
-      throw Error(`Invalid preImage length`)
-    }
-
-    if (secretB.length != this.paymentChannels.types.Hash.SIZE) {
-      throw Error(`Invalid secretB length`)
-    }
-
-    const luck = await this.paymentChannels.utils.hash(
-      u8aConcat(
-        await (await this.signedTicket).ticket.hash,
-        preImage,
-        await this.paymentChannels.utils.hash(u8aConcat(this.secretA, secretB))
-      )
-    )
-
-    return luck < (await this.signedTicket).ticket.winProb
-  }
-
   static SIZE<Chain extends HoprCoreConnector>(hoprCoreConnector: Chain): number {
     return hoprCoreConnector.types.SignedTicket.SIZE + hoprCoreConnector.types.Hash.SIZE
   }
