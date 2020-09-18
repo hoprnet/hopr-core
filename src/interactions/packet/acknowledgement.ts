@@ -6,6 +6,7 @@ import PeerId from 'peer-id'
 import AbortController from 'abort-controller'
 
 import debug from 'debug'
+const log = debug('hopr-core:acknowledgement')
 const error = debug('hopr-core:acknowledgement:error')
 
 import chalk from 'chalk'
@@ -23,10 +24,8 @@ import { u8aToHex, durations, u8aConcat, toU8a, u8aToNumber } from '@hoprnet/hop
 import { pubKeyToPeerId } from '../../utils'
 import { UnacknowledgedTicket } from '../../messages/ticket'
 
-import { randomBytes } from 'crypto'
 import { ACKNOWLEDGED_TICKET_INDEX_LENGTH } from '../../dbKeys'
 
-const HASHED_SECRET_WIDTH = 27
 const ACKNOWLEDGEMENT_TIMEOUT = durations.seconds(2)
 
 class PacketAcknowledgementInteraction<Chain extends HoprCoreConnector>
@@ -132,11 +131,6 @@ class PacketAcknowledgementInteraction<Chain extends HoprCoreConnector>
         } catch (err) {
           // Set ticketCounter to initial value
           ticketCounter = toU8a(0, ACKNOWLEDGED_TICKET_INDEX_LENGTH)
-
-          this.node.db.put(
-            Buffer.from(this.node.dbKeys.AcknowledgedTicketCounter()),
-            Buffer.from(toU8a(0, ACKNOWLEDGED_TICKET_INDEX_LENGTH))
-          )
         }
 
         let acknowledgedTicket = this.node.paymentChannels.types.AcknowledgedTicket.create(
@@ -147,14 +141,18 @@ class PacketAcknowledgementInteraction<Chain extends HoprCoreConnector>
             response: await this.node.paymentChannels.utils.hash(
               u8aConcat(unacknowledgedTicket.secretA, await acknowledgement.hashedKey)
             ),
-            preImage: randomBytes(HASHED_SECRET_WIDTH),
             redeemed: false,
           }
         )
 
+        if (!(await this.node.paymentChannels.account.reservePreImageIfIsWinning(acknowledgedTicket))) {
+          log(`Got a ticket that is not a win. Dropping ticket.`)
+          await this.node.db.del(Buffer.from(unAcknowledgedDbKey))
+        }
+
         const acknowledgedDbKey = this.node.dbKeys.AcknowledgedTickets(ticketCounter)
 
-        console.log(`storing ticket`, ticketCounter, `we are`, this.node.peerInfo.id.toB58String())
+        log(`storing ticket`, ticketCounter, `we are`, this.node.peerInfo.id.toB58String())
 
         try {
           await this.node.db
