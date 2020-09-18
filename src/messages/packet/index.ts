@@ -2,7 +2,7 @@ import BN from 'bn.js'
 import chalk from 'chalk'
 
 import PeerId from 'peer-id'
-const RELAY_FEE = 10
+const RELAY_FEE = 1
 
 import { pubKeyToPeerId } from '../../utils'
 import { u8aConcat, u8aEquals, u8aToHex } from '@hoprnet/hopr-utils'
