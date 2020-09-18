@@ -1,40 +1,29 @@
 import net from 'net'
 import { AbortError } from 'abortable-iterator'
-
 import type { Socket } from 'net'
 import mafmt from 'mafmt'
 import errCode from 'err-code'
-
 import debug from 'debug'
-const log = debug('hopr-core:transport')
-const error = debug('hopr-core:transport:error')
-
 import { socketToConn } from './socket-to-conn'
-
 import myHandshake from './handshake'
-
 // @ts-ignore
 import libp2p = require('libp2p')
-
-import { createListener, Listener } from './listener'
+import Listener from './listener'
 import { multiaddrToNetConfig } from './utils'
 import { USE_WEBRTC, CODE_P2P, USE_OWN_STUN_SERVERS } from './constants'
-
 import Multiaddr from 'multiaddr'
 import PeerInfo from 'peer-info'
 import PeerId from 'peer-id'
-
 import pipe from 'it-pipe'
-
 import type { Connection, Upgrader, DialOptions, ConnHandler, Handler, Stream, MultiaddrConnection } from './types'
-
 import chalk from 'chalk'
-
 import pushable, { Pushable } from 'it-pushable'
-
 import upgradeToWebRTC from './webrtc'
-
 import Relay from './relay'
+
+const log = debug('hopr-core:transport')
+const error = debug('hopr-core:transport:error')
+const verbose = debug('hopr-core:verbose:transport')
 
 /**
  * @class TCP
@@ -46,21 +35,19 @@ class TCP {
   }
 
   private _useWebRTC: boolean
-  private _useOwnStunServers: boolean
+  private _upgrader: Upgrader
+  private _peerInfo: PeerInfo
+  private _handle: (protocols: string[] | string, handler: (connection: Handler) => void) => void
+  private relays?: PeerInfo[]
+  private stunServers: Multiaddr[]
+  private _relay: Relay
+  private connHandler: ConnHandler
+
   // ONLY FOR TESTING
   private _failIntentionallyOnWebRTC?: boolean
   private _timeoutIntentionallyOnWebRTC?: Promise<void>
   private _answerIntentionallyWithIncorrectMessages?: boolean
   // END ONLY FOR TESTING
-  private _upgrader: Upgrader
-  private _peerInfo: PeerInfo
-  private _handle: (protocols: string[] | string, handler: (connection: Handler) => void) => void
-  private relays?: PeerInfo[]
-  private stunServers: { urls: string }[]
-
-  private _relay: Relay
-
-  private connHandler: ConnHandler
 
   constructor({
     upgrader,
@@ -96,38 +83,33 @@ class TCP {
 
       this.stunServers = []
       for (let i = 0; i < this.relays.length; i++) {
-        let urls = ''
         this.relays[i].multiaddrs.forEach((ma: Multiaddr) => {
-          if (urls.length > 0) {
-            urls += ', '
-          }
-
           const opts = ma.toOptions()
 
           if (opts.family == 'ipv4') {
-            urls += `stun:${opts.host}`
+            this.stunServers.push(ma)
           } else if (opts.family == 'ipv6') {
             // WebRTC seems to have no support IPv6 addresses
-            // urls += `stun:[0${opts.host}]`
+            throw new Error('Cannot use IPv6 for stun server')
           }
         })
-        this.stunServers.push({ urls })
       }
     }
 
     this._timeoutIntentionallyOnWebRTC = timeoutIntentionallyOnWebRTC
     this._answerIntentionallyWithIncorrectMessages = answerIntentionallyWithIncorrectMessages
     this._failIntentionallyOnWebRTC = failIntentionallyOnWebRTC || false
-    this._useOwnStunServers = useOwnStunServers === undefined ? USE_OWN_STUN_SERVERS : useOwnStunServers
     this._useWebRTC = useWebRTC === undefined ? USE_WEBRTC : useWebRTC
     this._handle = libp2p.handle.bind(libp2p)
     this._peerInfo = libp2p.peerInfo
     this._upgrader = upgrader
 
     this._relay = new Relay(libp2p, this.handleDelivery.bind(this))
+    verbose(`Created TCP stack (Stun: ${this.stunServers.map((x) => x.toString()).join(',')}`)
   }
 
   async handleDelivery({ stream, connection, counterparty }: Handler & { counterparty: PeerId }) {
+    verbose('handle delivery', connection.remoteAddr.toString(), counterparty.toB58String())
     let conn: Connection
 
     let webRTCsendBuffer: Pushable<Uint8Array>
@@ -139,6 +121,7 @@ class TCP {
       webRTCsendBuffer = pushable<Uint8Array>()
       webRTCrecvBuffer = pushable<Uint8Array>()
 
+      verbose('attempting to upgrade to webRTC from a delivery', connection.remoteAddr.toString())
       socket = upgradeToWebRTC(webRTCsendBuffer, webRTCrecvBuffer, {
         _timeoutIntentionallyOnWebRTC: this._timeoutIntentionallyOnWebRTC,
         _failIntentionallyOnWebRTC: this._failIntentionallyOnWebRTC,
@@ -168,6 +151,7 @@ class TCP {
 
         webRTCrecvBuffer.end()
         webRTCsendBuffer.end()
+        verbose(`attempting upgrade to direct webRTC connection to ${counterparty.toB58String()}`)
 
         mAddrConn = socketToConn(webRTCSocket, {
           remoteAddr: Multiaddr(`/p2p/${counterparty.toB58String()}`),
@@ -176,10 +160,14 @@ class TCP {
 
         conn = await this._upgrader.upgradeInbound(mAddrConn)
 
-        this.connHandler?.(conn)
+        if (this.connHandler) {
+          this.connHandler(conn)
+        } else {
+          throw new Error('ConnHandler not initialized')
+        }
         return
       } catch (err) {
-        error(`Could not upgrade to WebRTC connection. Error was: ${err}`)
+        error(`Could not upgrade to WebRTC direct connection. Error was: ${err} (${counterparty.toB58String()})`)
 
         webRTCrecvBuffer.end()
         webRTCsendBuffer.end()
@@ -205,7 +193,11 @@ class TCP {
       return
     }
 
-    this.connHandler?.(conn)
+    if (this.connHandler) {
+      this.connHandler(conn)
+    } else {
+      throw new Error('ConnHandler not initialized')
+    }
   }
 
   /**
@@ -221,12 +213,18 @@ class TCP {
     let error: Error
     if (['ip4', 'ip6', 'dns4', 'dns6'].includes(ma.protoNames()[0])) {
       try {
+        verbose('attempting to dial directly', ma.toString())
         return await this.dialDirectly(ma, options)
       } catch (err) {
-        if (err.type === 'aborted') {
+        if (err.type === 'timeout') {
+          // expected case, continue
+          error = err
+        } else {
+          // Unexpected error, ie:
+          // type === aborted
+          verbose(`Dial directly unexpected error ${err}`)
           throw err
         }
-        error = err
       }
     }
 
@@ -255,6 +253,7 @@ class TCP {
       )
     }
 
+    verbose('dialing with relay ', ma)
     return await this.dialWithRelay(ma, potentialRelays, options)
   }
 
@@ -284,6 +283,7 @@ class TCP {
       webRTCsendBuffer = pushable<Uint8Array>()
       webRTCrecvBuffer = pushable<Uint8Array>()
 
+      verbose('attempting to upgrade a relay dial to webRTC')
       socket = upgradeToWebRTC(webRTCsendBuffer, webRTCrecvBuffer, {
         initiator: true,
         _timeoutIntentionallyOnWebRTC: this._timeoutIntentionallyOnWebRTC,
@@ -346,14 +346,13 @@ class TCP {
   }
 
   async dialDirectly(ma: Multiaddr, options?: DialOptions): Promise<Connection> {
-    log(`[${chalk.blue(this._peerInfo.id.toB58String())}] dailing ${chalk.yellow(ma.toString())} directly`)
+    log(`[${chalk.blue(this._peerInfo.id.toB58String())}] dialing ${chalk.yellow(ma.toString())} directly`)
     const socket = await this._connect(ma, options)
     const maConn = socketToConn(socket, { remoteAddr: ma, signal: options?.signal })
 
-    log('new outbound connection %s', maConn.remoteAddr)
+    log('new outbound direct connection %s', maConn.remoteAddr)
     const conn = await this._upgrader.upgradeOutbound(maConn)
-
-    log('outbound connection %s upgraded', maConn.remoteAddr)
+    log('outbound direct connection %s upgraded', maConn.remoteAddr)
     return conn
   }
 
@@ -377,6 +376,9 @@ class TCP {
       const rawSocket = net.connect(cOpts)
 
       const onError = (err: Error) => {
+        verbose('Error connecting:', err)
+        // ENETUNREACH
+        // ECONNREFUSED
         err.message = `connection error ${cOpts.host}:${cOpts.port}: ${err.message}`
         done(err)
       }
@@ -422,20 +424,12 @@ class TCP {
    * Creates a TCP listener. The provided `handler` function will be called
    * anytime a new incoming Connection has been successfully upgraded via
    * `upgrader.upgradeInbound`.
-   * @param {*} [options]
    * @param {function(Connection)} handler
    * @returns {Listener} A TCP listener
    */
-  createListener(options: any, handler: (connection: Connection) => void): Listener {
-    if (typeof options === 'function') {
-      handler = options
-      options = {}
-    }
-    options = options || {}
-
+  createListener(handler: (connection: Connection) => void): Listener {
     this.connHandler = handler
-
-    return createListener({ handler, upgrader: this._upgrader }, options)
+    return new Listener(handler, this._upgrader, this.stunServers)
   }
 
   /**
@@ -445,7 +439,7 @@ class TCP {
    */
   filter(multiaddrs: Multiaddr[]): Multiaddr[] {
     multiaddrs = Array.isArray(multiaddrs) ? multiaddrs : [multiaddrs]
-
+    verbose('filtering multiaddrs')
     return multiaddrs.filter((ma: Multiaddr) => {
       return mafmt.TCP.matches(ma.decapsulateCode(CODE_P2P)) || mafmt.P2P.matches(ma)
     })

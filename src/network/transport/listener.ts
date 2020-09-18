@@ -6,6 +6,7 @@ import debug from 'debug'
 
 const log = debug('hopr-core:transport:listener')
 const error = debug('hopr-core:transport:listener:error')
+const verbose = debug('hopr-core:verbose:listener:error')
 
 import { socketToConn } from './socket-to-conn'
 import { CODE_P2P } from './constants'
@@ -57,6 +58,7 @@ class Listener extends EventEmitter {
     super()
 
     this.__connections = []
+    this.upgrader = upgrader
 
     this.tcpSocket = net.createServer(this.onTCPConnection) as Libp2pServer
 
@@ -100,6 +102,7 @@ class Listener extends EventEmitter {
     if (this.peerId == null) {
       this.listeningAddr = ma.decapsulateCode(CODE_P2P)
 
+      verbose(`No peerId for ${ma.toString()} - trying decapsulateCode`)
       if (!this.listeningAddr.isThinWaistAddress()) {
         throw Error(`Unable to bind socket to <${this.listeningAddr.toString()}>`)
       }
