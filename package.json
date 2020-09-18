@@ -99,8 +99,8 @@
       "json",
       "ts"
     ],
-    "rootDir": "src/messages/packet",
-    "testRegex": "index.spec.ts$",
+    "rootDir": "src",
+    "testRegex": ".spec.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
