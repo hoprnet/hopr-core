@@ -5194,6 +5194,11 @@ heap-js@^2.1.2:
   resolved "https://registry.yarnpkg.com/heap-js/-/heap-js-2.1.2.tgz#f438145d24082b078a9a35d91e03511ccad48176"
   integrity sha512-urRBDI/0ol7m3OS/ZzvB5+Ym9i4zwlzTACSHMrGmTgh1xcrB1AX6lmeWW6u5rrS5YHHMYClta35/LUPZhjPH9Q==
 
+heap-js@^2.1.2:
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/heap-js/-/heap-js-2.1.2.tgz#f438145d24082b078a9a35d91e03511ccad48176"
+  integrity sha512-urRBDI/0ol7m3OS/ZzvB5+Ym9i4zwlzTACSHMrGmTgh1xcrB1AX6lmeWW6u5rrS5YHHMYClta35/LUPZhjPH9Q==
+
 heap@0.2.6, heap@~0.2.6:
   version "0.2.6"
   resolved "https://registry.yarnpkg.com/heap/-/heap-0.2.6.tgz#087e1f10b046932fc8594dd9e6d378afc9d1e5ac"

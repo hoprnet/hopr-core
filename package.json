@@ -1,6 +1,6 @@
 {
   "name": "@hoprnet/hopr-core",
-  "version": "0.6.34",
+  "version": "0.6.35",
   "description": "Privacy-preserving messaging protocol with incentivations for relay operators",
   "license": "GPL-3.0-only",
   "keywords": [
@@ -40,7 +40,7 @@
   "dependencies": {
     "@hoprnet/hopr-core-ethereum": "0.5.1",
     "@hoprnet/hopr-demo-seeds": "1.8.0",
-    "@hoprnet/hopr-utils": "^0.5.2",
+    "@hoprnet/hopr-utils": "^0.6.2",
     "abort-controller": "^3.0.0",
     "bl": "^4.0.3",
     "chalk": "~4.1.0",
@@ -116,7 +116,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "yarn lint"
+      "pre-commit": "yarn lint:fix"
     }
   }
 }
