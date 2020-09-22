@@ -53,7 +53,6 @@ class TCP {
     libp2p,
     bootstrapServers,
     useWebRTC,
-    useOwnStunServers,
     failIntentionallyOnWebRTC,
     timeoutIntentionallyOnWebRTC,
     answerIntentionallyWithIncorrectMessages,
@@ -62,7 +61,6 @@ class TCP {
     libp2p: libp2p
     bootstrapServers?: PeerInfo[]
     useWebRTC?: boolean
-    useOwnStunServers?: boolean
     failIntentionallyOnWebRTC?: boolean
     timeoutIntentionallyOnWebRTC?: Promise<void>
     answerIntentionallyWithIncorrectMessages?: boolean
@@ -129,6 +127,7 @@ class TCP {
         _timeoutIntentionallyOnWebRTC: this._timeoutIntentionallyOnWebRTC,
         _failIntentionallyOnWebRTC: this._failIntentionallyOnWebRTC,
         _answerIntentionallyWithIncorrectMessages: this._answerIntentionallyWithIncorrectMessages,
+        stunServers: this.stunServers,
       })
     }
 
@@ -285,6 +284,7 @@ class TCP {
         _timeoutIntentionallyOnWebRTC: this._timeoutIntentionallyOnWebRTC,
         _failIntentionallyOnWebRTC: this._failIntentionallyOnWebRTC,
         _answerIntentionallyWithIncorrectMessages: this._answerIntentionallyWithIncorrectMessages,
+        stunServers: this.stunServers,
       })
     }
 
