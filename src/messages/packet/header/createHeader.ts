@@ -21,7 +21,6 @@ import Debug from 'debug'
 const log = Debug('hopr-core:packet:header')
 const verbose = Debug(`hopr-core:verbose:packet:header`)
 
-
 import {
   PRIVATE_KEY_LENGTH,
   PER_HOP_SIZE,

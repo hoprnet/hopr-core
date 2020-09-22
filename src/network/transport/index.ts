@@ -488,7 +488,6 @@ class TCP {
     return maConn
   }
 
-
   /**
    * Filters unrealistic addresses
    * @param ma Multiaddr to check

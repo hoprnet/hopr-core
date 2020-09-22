@@ -102,41 +102,45 @@ describe('test packet composition and decomposition', function () {
         )
       }
 
-    await new Promise((resolve) => setTimeout(resolve, 700))
+      await new Promise((resolve) => setTimeout(resolve, 700))
 
-    for (let i = 0; i < nodes.length; i++) {
-      const tickets = []
+      for (let i = 0; i < nodes.length; i++) {
+        const tickets = []
 
-      await new Promise((resolve) =>
-        nodes[i].db
-          .createValueStream({
-            gte: Buffer.from(nodes[i].dbKeys.AcknowledgedTickets(Buffer.alloc(ACKNOWLEDGED_TICKET_INDEX_LENGTH, 0x00))),
-            lt: Buffer.from(nodes[i].dbKeys.AcknowledgedTickets(Buffer.alloc(ACKNOWLEDGED_TICKET_INDEX_LENGTH, 0xff))),
-          })
-          .on('data', (data: Buffer) => {
-            const acknowledged = nodes[i].paymentChannels.types.AcknowledgedTicket.create(nodes[i].paymentChannels)
-            acknowledged.set(data)
+        await new Promise((resolve) =>
+          nodes[i].db
+            .createValueStream({
+              gte: Buffer.from(
+                nodes[i].dbKeys.AcknowledgedTickets(Buffer.alloc(ACKNOWLEDGED_TICKET_INDEX_LENGTH, 0x00))
+              ),
+              lt: Buffer.from(
+                nodes[i].dbKeys.AcknowledgedTickets(Buffer.alloc(ACKNOWLEDGED_TICKET_INDEX_LENGTH, 0xff))
+              ),
+            })
+            .on('data', (data: Buffer) => {
+              const acknowledged = nodes[i].paymentChannels.types.AcknowledgedTicket.create(nodes[i].paymentChannels)
+              acknowledged.set(data)
 
-            tickets.push(acknowledged)
-          })
-          .on('end', resolve)
-      )
+              tickets.push(acknowledged)
+            })
+            .on('end', resolve)
+        )
 
-      if (tickets.length == 0) {
-        continue
+        if (tickets.length == 0) {
+          continue
+        }
+
+        console.log(tickets.length)
+
+        for (let k = 0; k < tickets.length; k++) {
+          console.log((await tickets[k].signedTicket).ticket.amount)
+          // @ts-ignore
+          await nodes[i].paymentChannels.channel.tickets.submit(tickets[k])
+          console.log(`ticket submitted`)
+        }
       }
 
-      console.log(tickets.length)
-
-      for (let k = 0; k < tickets.length; k++) {
-        console.log((await tickets[k].signedTicket).ticket.amount)
-        // @ts-ignore
-        await nodes[i].paymentChannels.channel.tickets.submit(tickets[k])
-        console.log(`ticket submitted`)
-      }
-    }
-
-    log(`after Promise.all`)
+      log(`after Promise.all`)
 
       await Promise.all(nodes.map((node: Hopr<HoprEthereum>) => node.stop()))
     },
