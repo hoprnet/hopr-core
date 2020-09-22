@@ -203,6 +203,10 @@ class TCP {
    * @returns {Connection} An upgraded Connection
    */
   async dial(ma: Multiaddr, options?: DialOptions): Promise<Connection> {
+    if (!this.isRealisticAddress(ma)) {
+      return Promise.reject(new Error('Filtering unrealistic address'))
+    }
+
     options = options || {}
 
     let error: Error
@@ -482,6 +486,39 @@ class TCP {
     }
 
     return maConn
+  }
+
+
+  /**
+   * Filters unrealistic addresses
+   * @param ma Multiaddr to check
+   */
+  private isRealisticAddress(ma: Multiaddr): boolean {
+    if (ma.getPeerId() === this._peerInfo.id.toB58String()) {
+      log('Tried to dial self, skipping.')
+      return false
+    }
+
+    if (ma.protoNames()[0] === 'p2p') {
+      return true
+    }
+
+    if (
+      this._peerInfo.multiaddrs
+        .toArray()
+        .map((ma: Multiaddr) => ma.nodeAddress())
+        .filter(
+          (x) =>
+            x.address === ma.nodeAddress().address || // Same private network
+            ma.nodeAddress().address === '127.0.0.1' // localhost
+        )
+        .filter((x) => x.port == ma.nodeAddress().port).length // Same port // Therefore dialing self.
+    ) {
+      log(`Tried to dial host on same network / port - aborting: ${ma.toString()}`)
+      return false
+    }
+
+    return true
   }
 }
 

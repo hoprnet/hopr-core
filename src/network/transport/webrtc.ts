@@ -28,7 +28,7 @@ export default function upgradetoWebRTC(
     _failIntentionallyOnWebRTC?: boolean
     _answerIntentionallyWithIncorrectMessages?: boolean
     // END ONLY FOR TESTING
-    stunServers: Multiaddr[]
+    stunServers?: Multiaddr[]
   }
 ): Promise<Socket> {
   if (options?.signal?.aborted) {
@@ -44,7 +44,7 @@ export default function upgradetoWebRTC(
       // @ts-ignore
       allowHalfTrickle: true,
       config: {
-        iceServers: options.stunServers.map((ma: Multiaddr) => {
+        iceServers: options?.stunServers?.map((ma: Multiaddr) => {
           const options = ma.toOptions()
 
           return { urls: `stun:${options.host}:${options.port}` }

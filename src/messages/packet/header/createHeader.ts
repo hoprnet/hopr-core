@@ -17,6 +17,10 @@ import {
 import HoprCoreConnector from '@hoprnet/hopr-core-connector-interface'
 import Hopr from '../../../'
 import PeerId from 'peer-id'
+import Debug from 'debug'
+const log = Debug('hopr-core:packet:header')
+const verbose = Debug(`hopr-core:verbose:packet:header`)
+
 
 import {
   PRIVATE_KEY_LENGTH,
@@ -29,9 +33,6 @@ import {
   KEY_LENGTH,
 } from './parameters'
 
-import Debug from 'debug'
-const verbose = Debug(`hopr-core:verbose:packet:header`)
-
 export async function createHeader<Chain extends HoprCoreConnector>(
   node: Hopr<Chain>,
   header: Header<Chain>,
@@ -39,8 +40,8 @@ export async function createHeader<Chain extends HoprCoreConnector>(
 ) {
   function checkPeerIds() {
     if (peerIds.length > MAX_HOPS) {
-      verbose('Error creating header - more hops than alloweds:', peerIds)
-      throw Error(`Expected at most ${MAX_HOPS} hops but got ${peerIds.length}`)
+      log('Exceeded max hops')
+      throw Error(`Expected at most ${MAX_HOPS} but got ${peerIds.length}`)
     }
 
     peerIds.forEach((peerId, index) => {
@@ -177,9 +178,11 @@ export async function createHeader<Chain extends HoprCoreConnector>(
            */
           header.beta.set(
             await node.paymentChannels.utils.hash(
-              u8aConcat(
-                deriveTicketKey(secrets[i]),
-                await node.paymentChannels.utils.hash(deriveTicketKeyBlinding(secrets[i + 1]))
+              await node.paymentChannels.utils.hash(
+                u8aConcat(
+                  deriveTicketKey(secrets[i]),
+                  await node.paymentChannels.utils.hash(deriveTicketKeyBlinding(secrets[i + 1]))
+                )
               )
             ),
             ADDRESS_SIZE + MAC_SIZE + KEY_LENGTH

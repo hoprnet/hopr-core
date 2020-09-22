@@ -24,8 +24,12 @@ const SOCKET_CLOSE_TIMEOUT = 100
  * @param maConn
  */
 async function attemptClose(maConn: MultiaddrConnection) {
+  if (maConn == null) {
+    return
+  }
+
   try {
-    maConn && (await maConn.close())
+    await maConn.close()
   } catch (err) {
     error('an error occurred closing the connection', err)
   }
@@ -146,25 +150,24 @@ class Listener extends EventEmitter {
   }
 
   async close(): Promise<void> {
-    return new Promise(async (resolve) => {
-      await Promise.all([
-        new Promise((resolve) => {
-          this.udpSocket.once('close', resolve)
-          this.udpSocket.close()
-        }),
-        this.tcpSocket.listening
-          ? new Promise((resolve, reject) => {
-              this.__connections.forEach((maConn: MultiaddrConnection) => attemptClose(maConn))
-              this.tcpSocket.close((err) => (err ? reject(err) : resolve()))
-            })
-          : Promise.resolve(),
-      ])
+    await Promise.all([
+      new Promise((resolve) => {
+        this.udpSocket.once('close', resolve)
+        this.udpSocket.close()
+      }),
+      this.tcpSocket.listening
+        ? new Promise((resolve) => {
+            this.__connections.forEach(attemptClose)
+            this.tcpSocket.once('close', resolve)
+            this.tcpSocket.close()
+          })
+        : Promise.resolve(),
+    ])
 
-      this.state = State.CLOSED
+    this.state = State.CLOSED
 
-      // Give the operating system some time to release the sockets
-      setTimeout(resolve, SOCKET_CLOSE_TIMEOUT)
-    })
+    // Give the operating system some time to release the sockets
+    await new Promise((resolve) => setTimeout(resolve, SOCKET_CLOSE_TIMEOUT))
   }
 
   getAddrs() {
@@ -211,8 +214,10 @@ class Listener extends EventEmitter {
 
   private trackConn(maConn: MultiaddrConnection) {
     this.__connections.push(maConn)
+    verbose(`currently tracking ${this.__connections.length} connections ++`)
 
     const untrackConn = () => {
+      verbose(`currently tracking ${this.__connections.length} connections --`)
       this.__connections = this.__connections.filter((c: MultiaddrConnection) => c !== maConn)
     }
 

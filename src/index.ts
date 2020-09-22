@@ -16,6 +16,7 @@ import { Network } from './network'
 
 import { addPubKey, getPeerInfo, pubKeyToPeerId } from './utils'
 import { createDirectoryIfNotExists, u8aToHex } from '@hoprnet/hopr-utils'
+import { existsSync } from 'fs'
 
 import levelup, { LevelUp } from 'levelup'
 import leveldown from 'leveldown'
@@ -37,6 +38,8 @@ import HoprCoreEthereum from '@hoprnet/hopr-core-ethereum'
 import { Interactions } from './interactions'
 import * as DbKeys from './dbKeys'
 
+const verbose = Debug('hopr-core:verbose')
+
 interface NetOptions {
   ip: string
   port: number
@@ -45,6 +48,7 @@ interface NetOptions {
 export type HoprOptions = {
   debug: boolean
   db?: LevelUp
+  dbPath?: string
   peerId?: PeerId
   peerInfo?: PeerInfo
   password?: string
@@ -70,6 +74,7 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
   public output: (arr: Uint8Array) => void
   public isBootstrapNode: boolean
   public bootstrapServers: PeerInfo[]
+  public initializedWithOptions: HoprOptions
 
   // Allows us to construct HOPR with falsy options
   public _debug: boolean
@@ -134,6 +139,7 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
       },
     })
 
+    this.initializedWithOptions = options
     this.output = options.output || console.log
     this.bootstrapServers = options.bootstrapServers || []
     this.isBootstrapNode = options.bootstrapNode || false
@@ -150,7 +156,7 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
    */
   static async create<CoreConnector extends HoprCoreConnector>(options: HoprOptions): Promise<Hopr<CoreConnector>> {
     const Connector = options.connector ?? HoprCoreEthereum
-    const db = options.db || Hopr.openDatabase(`db`, Connector.constants, options)
+    const db = Hopr.openDatabase(options, Connector.constants.CHAIN_NAME, Connector.constants.NETWORK)
 
     options.peerInfo = options.peerInfo || (await getPeerInfo(options, db))
 
@@ -279,6 +285,7 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
         new Promise<void>(async (resolve, reject) => {
           let path: PeerId[]
           if (getIntermediateNodesManually != undefined) {
+            verbose('manually creating path')
             path = await getIntermediateNodesManually()
           } else {
             path = await this.getIntermediateNodes(destination)
@@ -287,6 +294,7 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
           path.push(destination)
 
           let packet: Packet<Chain>
+          verbose('creating packet with path', path.join(', \n'))
           try {
             packet = await Packet.create(
               /* prettier-ignore */
@@ -298,7 +306,7 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
             return reject(err)
           }
 
-          const unAcknowledgedDBKey = this.dbKeys.UnAcknowledgedTickets(path[0].pubKey.marshal(), packet.challenge.hash)
+          const unAcknowledgedDBKey = this.dbKeys.UnAcknowledgedTickets(packet.challenge.hash)
 
           await this.db.put(Buffer.from(unAcknowledgedDBKey), Buffer.from(''))
 
@@ -361,7 +369,7 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
       (
         await this.paymentChannels.path.findPath(
           start,
-          MAX_HOPS,
+          MAX_HOPS - 1, // Need a hop for destination node
           MAX_ITERATIONS_PATH_SELECTION,
           (node) => !exclude.includes(node)
         )
@@ -369,24 +377,30 @@ export default class Hopr<Chain extends HoprCoreConnector> extends libp2p {
     )
   }
 
-  static openDatabase(
-    db_dir: string,
-    constants: { CHAIN_NAME: string; NETWORK: string },
-    options?: { id?: number; bootstrapNode?: boolean }
-  ): LevelUp {
-    db_dir += `/${constants.CHAIN_NAME}/${constants.NETWORK}/`
-
-    if (options != null && options.bootstrapNode) {
-      db_dir += `bootstrap`
-    } else if (options != null && options.id != null && Number.isInteger(options.id)) {
-      // For testing ...
-      db_dir += `node_${options.id}`
-    } else {
-      db_dir += `node`
+  static openDatabase(options: HoprOptions, chainName: string, network: string): LevelUp {
+    if (options.db) {
+      return options.db
     }
 
-    createDirectoryIfNotExists(`${process.cwd()}/${db_dir}`)
+    let dbPath: string
+    if (options.dbPath) {
+      dbPath = options.dbPath
+    } else {
+      dbPath = `${process.cwd()}/db/${chainName}/${network}/`
+      if (options.bootstrapNode) {
+        dbPath += `bootstrap`
+      } else if (options.id != null && Number.isInteger(options.id)) {
+        dbPath += `node_${options.id}`
+      } else {
+        dbPath += `node`
+      }
+    }
 
-    return levelup(leveldown(db_dir))
+    verbose('using db at ', dbPath)
+    if (!existsSync(dbPath)) {
+      verbose('db does not exist, creating')
+    }
+    createDirectoryIfNotExists(dbPath)
+    return levelup(leveldown(dbPath))
   }
 }
