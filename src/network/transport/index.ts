@@ -9,7 +9,6 @@ import myHandshake from './handshake'
 // @ts-ignore
 import libp2p = require('libp2p')
 import Listener from './listener'
-import { multiaddrToNetConfig } from './utils'
 import { USE_WEBRTC, CODE_P2P, USE_OWN_STUN_SERVERS } from './constants'
 import Multiaddr from 'multiaddr'
 import PeerInfo from 'peer-info'
@@ -83,16 +82,20 @@ class TCP {
 
       this.stunServers = []
       for (let i = 0; i < this.relays.length; i++) {
-        this.relays[i].multiaddrs.forEach((ma: Multiaddr) => {
-          const opts = ma.toOptions()
+        const multiaddrs = this.relays[i].multiaddrs.toArray()
+        for (let j = 0; j < multiaddrs.length; j++) {
+          const opts = multiaddrs[j].toOptions()
 
-          if (opts.family == 'ipv4') {
-            this.stunServers.push(ma)
-          } else if (opts.family == 'ipv6') {
-            // WebRTC seems to have no support IPv6 addresses
-            throw new Error('Cannot use IPv6 for stun server')
+          switch (opts.family) {
+            case 'ipv6':
+              break
+            case 'ipv4':
+              this.stunServers.push(multiaddrs[j])
+              break
+            default:
+              throw Error('Invalid family')
           }
-        })
+        }
       }
     }
 
@@ -160,11 +163,8 @@ class TCP {
 
         conn = await this._upgrader.upgradeInbound(mAddrConn)
 
-        if (this.connHandler) {
-          this.connHandler(conn)
-        } else {
-          throw new Error('ConnHandler not initialized')
-        }
+        this.connHandler?.(conn)
+
         return
       } catch (err) {
         error(`Could not upgrade to WebRTC direct connection. Error was: ${err} (${counterparty.toB58String()})`)
@@ -193,11 +193,7 @@ class TCP {
       return
     }
 
-    if (this.connHandler) {
-      this.connHandler(conn)
-    } else {
-      throw new Error('ConnHandler not initialized')
-    }
+    this.connHandler?.(conn)
   }
 
   /**
@@ -216,7 +212,7 @@ class TCP {
         verbose('attempting to dial directly', ma.toString())
         return await this.dialDirectly(ma, options)
       } catch (err) {
-        if (err.type === 'timeout') {
+        if (err.code != null && ['ECONNREFUSED', 'ECONNRESET', 'EPIPE'].includes(err.code)) {
           // expected case, continue
           error = err
         } else {
@@ -370,10 +366,13 @@ class TCP {
 
     return new Promise<Socket>((resolve, reject) => {
       const start = Date.now()
-      const cOpts = multiaddrToNetConfig(ma) as any
+      const cOpts = ma.toOptions()
 
       log('dialing %j', cOpts)
-      const rawSocket = net.connect(cOpts)
+      const rawSocket = net.createConnection({
+        host: cOpts.host,
+        port: cOpts.port,
+      })
 
       const onError = (err: Error) => {
         verbose('Error connecting:', err)
@@ -427,9 +426,14 @@ class TCP {
    * @param {function(Connection)} handler
    * @returns {Listener} A TCP listener
    */
-  createListener(handler: (connection: Connection) => void): Listener {
-    this.connHandler = handler
-    return new Listener(handler, this._upgrader, this.stunServers)
+  createListener(options: any, handler: (connection: Connection) => void): Listener {
+    if (options == null) {
+      this.connHandler = options
+    } else {
+      this.connHandler = handler
+    }
+
+    return new Listener(this.connHandler, this._upgrader, this.stunServers)
   }
 
   /**

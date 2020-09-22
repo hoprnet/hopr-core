@@ -10,11 +10,11 @@ const verbose = debug('hopr-core:verbose:listener:error')
 
 import { socketToConn } from './socket-to-conn'
 import { CODE_P2P } from './constants'
-import { getMultiaddrs, multiaddrToNetConfig } from './utils'
 import { MultiaddrConnection, Connection, Upgrader, Libp2pServer } from './types'
 import Multiaddr from 'multiaddr'
 
 import { handleStunRequest, getExternalIp } from './stun'
+import { getAddrs } from './addrs'
 
 /**
  * Attempts to close the given maConn. If a failure occurs, it will be logged.
@@ -60,7 +60,7 @@ class Listener extends EventEmitter {
     this.__connections = []
     this.upgrader = upgrader
 
-    this.tcpSocket = net.createServer(this.onTCPConnection) as Libp2pServer
+    this.tcpSocket = net.createServer(this.onTCPConnection.bind(this)) as Libp2pServer
 
     this.udpSocket = dgram.createSocket({
       // @TODO
@@ -102,13 +102,20 @@ class Listener extends EventEmitter {
     if (this.peerId == null) {
       this.listeningAddr = ma.decapsulateCode(CODE_P2P)
 
-      verbose(`No peerId for ${ma.toString()} - trying decapsulateCode`)
+      verbose(`No peerId for ${ma.toString()}`)
       if (!this.listeningAddr.isThinWaistAddress()) {
         throw Error(`Unable to bind socket to <${this.listeningAddr.toString()}>`)
       }
     }
 
-    const options = multiaddrToNetConfig(this.listeningAddr)
+    const options = this.listeningAddr.toOptions()
+
+    // Prevent from sending a STUN request to ourself
+    this.stunServers = this.stunServers.filter((ma) => {
+      const cOpts = ma.toOptions()
+
+      return cOpts.host !== options.host || cOpts.port !== options.port
+    })
 
     await Promise.all([
       new Promise((resolve, reject) =>
@@ -118,22 +125,26 @@ class Listener extends EventEmitter {
           resolve()
         })
       ),
-      new Promise((resolve) =>
-        this.udpSocket.bind(parseInt(ma.nodeAddress().port, 10), async () => {
-          try {
-            this.externalAddress = await getExternalIp(this.stunServers, this.udpSocket)
-          } catch (err) {
-            error(`Unable to fetch external address using STUN. Error was: ${err}`)
-          }
+      this.stunServers.length > 0
+        ? new Promise((resolve) =>
+            this.udpSocket.bind(options.port, async () => {
+              try {
+                this.externalAddress = await getExternalIp(this.stunServers, this.udpSocket)
+              } catch (err) {
+                error(`Unable to fetch external address using STUN. Error was: ${err}`)
+              }
 
-          resolve()
-        })
-      ),
-    ]).then(() => (this.state = State.LISTENING))
+              resolve()
+            })
+          )
+        : Promise.resolve(),
+    ])
+
+    this.state = State.LISTENING
   }
 
   async close(): Promise<void> {
-    return new Promise(async (resolve, rejcect) => {
+    return new Promise(async (resolve) => {
       await Promise.all([
         new Promise((resolve) => {
           this.udpSocket.once('close', resolve)
@@ -162,33 +173,45 @@ class Listener extends EventEmitter {
     let addrs: Multiaddr[] = []
     const address = this.tcpSocket.address() as AddressInfo
 
-    // Because TCP will only return the IPv6 version
-    // we need to capture from the passed multiaddr
-    if (this.listeningAddr?.toString().startsWith('/ip4')) {
-      if (this.externalAddress != null) {
-        if (this.externalAddress.port == null) {
-          console.log(`Attention: Bidirectional NAT detected. Publishing no public ip address to the DHT`)
-          if (this.peerId != null) {
-            addrs.push(Multiaddr(''))
-          }
-        } else {
-          addrs.push(Multiaddr(`/ip4/${this.externalAddress.address}/tcp/${this.externalAddress.port}`))
-        }
-      }
+    if (this.externalAddress != undefined && this.externalAddress.port == null) {
+      console.log(`Attention: Bidirectional NAT detected. Publishing no public IPv4 address to the DHT`)
 
-      addrs.push(...getMultiaddrs('ip4', address.address, address.port))
-    } else if (address.family === 'IPv6') {
-      addrs = addrs.concat(getMultiaddrs('ip6', address.address, address.port))
+      addrs.push(Multiaddr(`/p2p/${this.peerId}`))
+
+      addrs.push(
+        ...getAddrs(address.port, this.peerId, {
+          useIPv6: true,
+        })
+      )
+    } else if (this.externalAddress != null && this.externalAddress.port != null) {
+      addrs.push(
+        Multiaddr.fromNodeAddress(
+          {
+            ...this.externalAddress,
+            family: 'IPv4',
+            port: this.externalAddress.port.toString(),
+          },
+          'tcp'
+        ).encapsulate(`/p2p/${this.peerId}`)
+      )
+
+      addrs.push(
+        ...getAddrs(address.port, this.peerId, {
+          useIPv6: true,
+        })
+      )
+    } else {
+      addrs.push(this.listeningAddr)
     }
 
-    return addrs.map((ma) => (this.peerId ? ma.encapsulate(`/p2p/${this.peerId}`) : ma))
+    return addrs
   }
 
   private trackConn(maConn: MultiaddrConnection) {
     this.__connections.push(maConn)
 
     const untrackConn = () => {
-      this.__connections = this.__connections.filter((c) => c !== maConn)
+      this.__connections = this.__connections.filter((c: MultiaddrConnection) => c !== maConn)
     }
 
     maConn.conn.once('close', untrackConn)

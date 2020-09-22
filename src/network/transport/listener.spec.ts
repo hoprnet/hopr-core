@@ -4,6 +4,8 @@ import Multiaddr from 'multiaddr'
 import { Upgrader } from './types'
 import dgram, { Socket, RemoteInfo } from 'dgram'
 import { handleStunRequest } from './stun'
+import PeerId from 'peer-id'
+import net from 'net'
 
 describe('check listening to sockets', function () {
   async function startStunServer(port: number, state: { msgReceived: boolean }): Promise<Socket> {
@@ -24,6 +26,7 @@ describe('check listening to sockets', function () {
   }
   it('should successfully recreate the socket', async function () {
     let listener: Listener
+    const peerId = await PeerId.create({ keyType: 'secp256k1' })
 
     // Create objects to pass boolean by reference and NOT by value
     const msgReceived = [
@@ -43,7 +46,8 @@ describe('check listening to sockets', function () {
         Multiaddr(`/ip4/127.0.0.1/udp/${stunServers[1].address().port}`),
       ])
 
-      await listener.listen(Multiaddr('/ip4/127.0.0.1/tcp/9090'))
+      await listener.listen(Multiaddr(`/ip4/127.0.0.1/tcp/9090/p2p/${peerId.toB58String()}`))
+
       await listener.close()
     }
 
@@ -52,6 +56,77 @@ describe('check listening to sockets', function () {
     assert(
       msgReceived[0].msgReceived && msgReceived[1].msgReceived,
       `Stun Server must have received messages from both Listener instances.`
+    )
+  })
+
+  it('should create two servers and exchange messages', async function () {
+    const AMOUNT_OF_NODES = 2
+
+    const msgReceived = Array.from({ length: AMOUNT_OF_NODES }).map((_) => ({
+      received: false,
+    }))
+
+    const listeners = await Promise.all(
+      Array.from({ length: AMOUNT_OF_NODES }).map(async (_, index) => {
+        const peerId = await PeerId.create({ keyType: 'secp256k1' })
+
+        const stunServers = []
+        for (let i = 0; i < AMOUNT_OF_NODES; i++) {
+          stunServers.push(Multiaddr(`/ip4/127.0.0.1/udp/${9090 + i}`))
+        }
+
+        const listener = new Listener(
+          () => {
+            msgReceived[index].received = true
+          },
+          ({
+            upgradeInbound: async () => {},
+          } as unknown) as Upgrader,
+          stunServers
+        )
+
+        await listener.listen(Multiaddr(`/ip4/127.0.0.1/tcp/${9090 + index}/p2p/${peerId.toB58String()}`))
+
+        return listener
+      })
+    )
+
+    await Promise.all([
+      new Promise((resolve) => {
+        const socket = net.createConnection(
+          {
+            host: '127.0.0.1',
+            port: 9090,
+          },
+          () => {
+            socket.write(Buffer.from('test'), () => {
+              socket.destroy()
+              resolve()
+            })
+          }
+        )
+      }),
+      new Promise((resolve) => {
+        const socket = net.createConnection(
+          {
+            host: '::1',
+            port: 9091,
+          },
+          () => {
+            socket.write(Buffer.from('test'), () => {
+              socket.destroy()
+              resolve()
+            })
+          }
+        )
+      }),
+    ])
+
+    await Promise.all(listeners.map((l) => l.close()))
+
+    assert(
+      msgReceived.every((msg) => msg.received),
+      'Should receive all messages'
     )
   })
 })
