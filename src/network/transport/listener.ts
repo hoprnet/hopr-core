@@ -16,6 +16,8 @@ import Multiaddr from 'multiaddr'
 import { handleStunRequest, getExternalIp } from './stun'
 import { getAddrs } from './addrs'
 
+const SOCKET_CLOSE_TIMEOUT = 100
+
 /**
  * Attempts to close the given maConn. If a failure occurs, it will be logged.
  * @private
@@ -161,7 +163,7 @@ class Listener extends EventEmitter {
       this.state = State.CLOSED
 
       // Give the operating system some time to release the sockets
-      setTimeout(resolve, 100)
+      setTimeout(resolve, SOCKET_CLOSE_TIMEOUT)
     })
   }
 

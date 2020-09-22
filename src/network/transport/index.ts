@@ -106,7 +106,7 @@ class TCP {
     this._upgrader = upgrader
 
     this._relay = new Relay(libp2p, this.handleDelivery.bind(this))
-    verbose(`Created TCP stack (Stun: ${this.stunServers.map((x) => x.toString()).join(',')}`)
+    verbose(`Created TCP stack (Stun: ${this.stunServers?.map((x) => x.toString()).join(',')}`)
   }
 
   async handleDelivery({ stream, connection, counterparty }: Handler & { counterparty: PeerId }) {
