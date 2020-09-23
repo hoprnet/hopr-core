@@ -11,9 +11,6 @@ import MPLEX = require('libp2p-mplex')
 // @ts-ignore
 import SECIO = require('libp2p-secio')
 
-import Debug from 'debug'
-import chalk from 'chalk'
-
 import Hopr from '..'
 import HoprCoreConnector from '@hoprnet/hopr-core-connector-interface'
 import { Interactions } from '../interactions'
@@ -21,6 +18,7 @@ import { Crawler, CRAWL_TIMEOUT, shouldIncludePeerInCrawlResponse } from './craw
 import { Crawler as CrawlerInteraction } from '../interactions/network/crawler'
 import Multiaddr from 'multiaddr'
 import PeerStore, { BLACKLIST_TIMEOUT, BlacklistedEntry } from './peerStore'
+import { durations } from '@hoprnet/hopr-utils'
 
 describe('test crawler', function () {
   async function generateNode(
@@ -157,50 +155,55 @@ describe('test crawler', function () {
     ])
   })
 
-  it('should crawl the network and timeout while crawling', async function () {
-    let timeoutCorrectly = false
-    let before = Date.now()
-    const [Alice, Bob, Chris] = await Promise.all([
-      generateNode(),
-      generateNode({
-        timeoutIntentionally: true,
-      }),
-      generateNode({
-        timeoutIntentionally: true,
-      }),
-    ])
+  it(
+    'should crawl the network and timeout while crawling',
+    async function () {
+      let timeoutCorrectly = false
+      let before = Date.now()
+      const [Alice, Bob, Chris] = await Promise.all([
+        generateNode(),
+        generateNode({
+          timeoutIntentionally: true,
+        }),
+        generateNode({
+          timeoutIntentionally: true,
+        }),
+      ])
 
-    await Alice.network.crawler.crawl()
+      await Alice.network.crawler.crawl()
 
-    // await assert.rejects(
-    //   () => Alice.network.crawler.crawl(),
-    //   Error(`Unable to find enough other nodes in the network.`)
-    // )
+      // await assert.rejects(
+      //   () => Alice.network.crawler.crawl(),
+      //   Error(`Unable to find enough other nodes in the network.`)
+      // )
 
-    Alice.emit('peer:connect', Bob.peerInfo)
-    await Alice.network.crawler.crawl()
-    Bob.emit('peer:connect', Chris.peerInfo)
-    await Alice.network.crawler.crawl()
-    await new Promise((resolve) => setTimeout(resolve, 100))
-    await Bob.stop()
-    await Alice.network.crawler.crawl()
-    await new Promise((resolve) => setTimeout(resolve, 200))
+      Alice.emit('peer:connect', Bob.peerInfo)
+      await Alice.network.crawler.crawl()
+      Bob.emit('peer:connect', Chris.peerInfo)
+      await Alice.network.crawler.crawl()
 
-    timeoutCorrectly = true
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      await Bob.stop()
+      await Alice.network.crawler.crawl()
+      await new Promise((resolve) => setTimeout(resolve, 200))
 
-    const after = Date.now() - before
-    assert(
-      timeoutCorrectly && after < 3 * CRAWL_TIMEOUT && after >= 2 * CRAWL_TIMEOUT,
-      `Crawling should timeout correctly`
-    )
+      timeoutCorrectly = true
 
-    await Promise.all([
-      /* prettier-ignore */
-      Alice.stop(),
-      Bob.stop(),
-      Chris.stop(),
-    ])
-  })
+      const after = Date.now() - before
+      assert(
+        timeoutCorrectly && after < 3 * CRAWL_TIMEOUT && after >= 2 * CRAWL_TIMEOUT,
+        `Crawling should timeout correctly`
+      )
+
+      await Promise.all([
+        /* prettier-ignore */
+        Alice.stop(),
+        Bob.stop(),
+        Chris.stop(),
+      ])
+    },
+    durations.seconds(8)
+  )
   it('shouldIncludePeerInCrawlResponse', async () => {
     assert(
       shouldIncludePeerInCrawlResponse(Multiaddr('/ip4/123.4.5.6/tcp/5000'), Multiaddr('/ip4/12.34.56.7/tcp/5000'))
