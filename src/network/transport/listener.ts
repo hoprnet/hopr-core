@@ -16,7 +16,7 @@ import Multiaddr from 'multiaddr'
 import { handleStunRequest, getExternalIp } from './stun'
 import { getAddrs } from './addrs'
 
-const SOCKET_CLOSE_TIMEOUT = 100
+const SOCKET_CLOSE_TIMEOUT = 500
 
 /**
  * Attempts to close the given maConn. If a failure occurs, it will be logged.
