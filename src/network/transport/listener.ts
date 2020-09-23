@@ -117,7 +117,7 @@ class Listener extends EventEmitter {
     const options = this.listeningAddr.toOptions()
 
     // Prevent from sending a STUN request to ourself
-    this.stunServers = this.stunServers.filter((ma) => {
+    this.stunServers = this.stunServers?.filter((ma) => {
       const cOpts = ma.toOptions()
 
       return cOpts.host !== options.host || cOpts.port !== options.port
@@ -131,7 +131,7 @@ class Listener extends EventEmitter {
           resolve()
         })
       ),
-      this.stunServers.length > 0
+      this.stunServers?.length > 0
         ? new Promise((resolve) =>
             this.udpSocket.bind(options.port, async () => {
               try {

@@ -1,7 +1,7 @@
 import Hopr from '../..'
 import type HoprCoreConnector from '@hoprnet/hopr-core-connector-interface'
 
-import HoprEthereum, { Types } from '@hoprnet/hopr-core-ethereum'
+import HoprEthereum from '@hoprnet/hopr-core-ethereum'
 
 import { Ganache } from '@hoprnet/hopr-testing'
 import { migrate, fund } from '@hoprnet/hopr-ethereum'

@@ -7,8 +7,6 @@ export const CLOSE_TIMEOUT = 6000
 
 export const RELAY_CIRCUIT_TIMEOUT = 6000
 
-export const USE_OWN_STUN_SERVERS = false
-
 export const USE_WEBRTC = true
 
 export const WEBRTC_TRAFFIC_PREFIX = 1

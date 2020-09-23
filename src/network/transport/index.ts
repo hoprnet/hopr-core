@@ -9,7 +9,7 @@ import myHandshake from './handshake'
 // @ts-ignore
 import libp2p = require('libp2p')
 import Listener from './listener'
-import { USE_WEBRTC, CODE_P2P, USE_OWN_STUN_SERVERS } from './constants'
+import { USE_WEBRTC, CODE_P2P } from './constants'
 import Multiaddr from 'multiaddr'
 import PeerInfo from 'peer-info'
 import PeerId from 'peer-id'
@@ -36,7 +36,6 @@ class TCP {
   private _useWebRTC: boolean
   private _upgrader: Upgrader
   private _peerInfo: PeerInfo
-  private _handle: (protocols: string[] | string, handler: (connection: Handler) => void) => void
   private relays?: PeerInfo[]
   private stunServers: Multiaddr[]
   private _relay: Relay
@@ -101,7 +100,6 @@ class TCP {
     this._answerIntentionallyWithIncorrectMessages = answerIntentionallyWithIncorrectMessages
     this._failIntentionallyOnWebRTC = failIntentionallyOnWebRTC || false
     this._useWebRTC = useWebRTC === undefined ? USE_WEBRTC : useWebRTC
-    this._handle = libp2p.handle.bind(libp2p)
     this._peerInfo = libp2p.peerInfo
     this._upgrader = upgrader
 
