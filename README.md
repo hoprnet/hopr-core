@@ -1,3 +1,6 @@
+**Development of `hopr` has moved to [`hoprnet/hoprnet`](https://github.com/hoprnet/hoprnet)**
+
+---
 # HOPR
 
 ![Terraform](https://github.com/hoprnet/hopr-devops/workflows/Terraform/badge.svg)
